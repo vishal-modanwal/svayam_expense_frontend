@@ -1,0 +1,535 @@
+<div class="admin-shell">
+  <aside class="admin-sidebar" aria-label="Admin workspace navigation">
+    <div class="sidebar-brand">
+      <div class="brand-mark">
+        <img src="assets/svayam-tracker-logo.png" alt="" width="40" height="40" />
+      </div>
+      <div class="brand-text">
+        <h2 class="brand-title">SvayamExpense</h2>
+        <p class="brand-eyebrow">Admin console</p>
+      </div>
+    </div>
+
+    <p class="sidebar-section-label">Workspace</p>
+    <nav class="menu-list sidebar-menu-grow" role="navigation">
+      <button
+        type="button"
+        class="menu-item"
+        *ngFor="let item of sidebarItems"
+        [class.active]="isSidebarSectionActive(item.key)"
+        (click)="onSidebarItemClick(item.key)">
+        <span class="menu-icon-wrap" aria-hidden="true">
+          <mat-icon>{{ item.icon }}</mat-icon>
+        </span>
+        <span class="menu-label">{{ item.label }}</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button type="button" class="sidebar-logout" (click)="logoutAdmin()">
+        <span class="sidebar-logout-emoji" aria-hidden="true">➡️</span>
+        <span class="sidebar-logout-text">Logout</span>
+      </button>
+    </div>
+  </aside>
+
+  <section class="admin-main">
+    <!-- EXPENSES — same shell as user dashboard -->
+    <ng-container *ngIf="activeSection === 'expenses'">
+      <div class="dashboard dashboard-page">
+        <header class="dashboard-hero">
+          <div class="greet">
+            <div class="title-wrap">
+              <h2 id="name">Good day, <span>{{ userName }}</span></h2>
+              <p class="subtitle">{{ sectionSubtitle }}</p>
+            </div>
+            <button mat-stroked-button color="primary" type="button" class="action-btn" (click)="loadAll()">
+              <mat-icon>refresh</mat-icon>
+              Refresh
+            </button>
+          </div>
+        </header>
+
+        <section class="stat-cards cards stat-cards--admin" aria-label="Budget summary">
+          <mat-card class="card budget">
+            <div class="card-left">
+              <div class="icon-box">
+                <mat-icon>account_balance_wallet</mat-icon>
+              </div>
+              <div class="text">
+                <h3>Budget</h3>
+                <p>Across categories</p>
+              </div>
+            </div>
+            <div class="card-right">₹{{ adminAllocated | number: '1.0-0' }}</div>
+          </mat-card>
+
+          <mat-card class="card expense">
+            <div class="card-left">
+              <div class="icon-box">
+                <mat-icon>trending_down</mat-icon>
+              </div>
+              <div class="text">
+                <h3>Expense</h3>
+                <p>All users</p>
+              </div>
+            </div>
+            <div class="card-right">₹{{ adminSpent | number: '1.0-0' }}</div>
+          </mat-card>
+
+          <mat-card class="card remaining">
+            <div class="card-left">
+              <div class="icon-box">
+                <mat-icon>savings</mat-icon>
+              </div>
+              <div class="text">
+                <h3>Remaining</h3>
+                <p>Headroom vs allocated</p>
+              </div>
+            </div>
+            <div class="card-right">₹{{ adminRemaining | number: '1.0-0' }}</div>
+          </mat-card>
+
+          <mat-card class="card usage">
+            <div class="card-left">
+              <div class="icon-box usage-icon">
+                <mat-icon>percent</mat-icon>
+              </div>
+              <div class="text">
+                <h3>Extra</h3>
+                <p>Overall consumption</p>
+              </div>
+            </div>
+            <div class="card-right">{{ adminUsagePct | number: '1.0-0' }}%</div>
+          </mat-card>
+        </section>
+
+        <div class="toolbar-panel">
+          <div class="toolbar-pair toolbar-pair--grow">
+            <div class="search-shell" role="search">
+              <mat-icon class="search-shell__icon" aria-hidden="true">person_search</mat-icon>
+              <input
+                type="search"
+                class="search-shell__input"
+                [(ngModel)]="expenseSearchInput"
+                (keyup.enter)="applyExpenseSearch()"
+                placeholder="Search by user name…"
+                autocomplete="off"
+                aria-label="Search expenses by user name" />
+              <button
+                mat-icon-button
+                type="button"
+                class="search-shell__submit"
+                aria-label="Run search"
+                (click)="applyExpenseSearch()">
+                <mat-icon>arrow_forward</mat-icon>
+              </button>
+            </div>
+            <button
+              mat-stroked-button
+              type="button"
+              class="search-clear-btn"
+              *ngIf="expenseQuery.filter"
+              (click)="clearExpenseSearch()">
+              <mat-icon>close</mat-icon>
+              Clear
+            </button>
+
+            <div class="sort-wrapper">
+              <button mat-button type="button" [matMenuTriggerFor]="sortMenu" class="sort-btn action-btn">
+                <mat-icon>tune</mat-icon>
+                {{ getExpenseSortLabel() }}
+                <mat-icon class="arrow">expand_more</mat-icon>
+              </button>
+              <mat-menu #sortMenu="matMenu" class="sort-menu">
+                <button mat-menu-item type="button" (click)="applyExpenseSort('latest')">
+                  <mat-icon>schedule</mat-icon>
+                  <span>Latest first</span>
+                  <mat-icon *ngIf="selectedExpenseSort === 'latest'" class="check">check</mat-icon>
+                </button>
+                <button mat-menu-item type="button" (click)="applyExpenseSort('high')">
+                  <mat-icon>trending_down</mat-icon>
+                  <span>Amount: High to Low</span>
+                  <mat-icon *ngIf="selectedExpenseSort === 'high'" class="check">check</mat-icon>
+                </button>
+                <button mat-menu-item type="button" (click)="applyExpenseSort('low')">
+                  <mat-icon>trending_up</mat-icon>
+                  <span>Amount: Low to High</span>
+                  <mat-icon *ngIf="selectedExpenseSort === 'low'" class="check">check</mat-icon>
+                </button>
+              </mat-menu>
+            </div>
+
+            <button mat-stroked-button color="primary" type="button" class="action-btn" (click)="openAdminExpenseModal()">
+              <mat-icon>add</mat-icon>
+              Add expense
+            </button>
+
+            <button mat-stroked-button color="primary" type="button" class="action-btn" (click)="loadAll()">
+              <mat-icon>refresh</mat-icon>
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        <div class="main-section">
+          <mat-card class="table-card table-card--recent-expenses">
+            <div class="section-head section-head--table">
+              <h3>All expenses</h3>
+            </div>
+            <app-dynamic-data-table
+              *ngIf="adminExpenseTableConfig"
+              [config]="adminExpenseTableConfig"
+              [rows]="adminExpenseTableRows"
+              [totalCount]="expenseTotalCount"
+              [loading]="expenseLoading"
+              [sortState]="adminExpenseSortState"
+              [pageIndex]="expenseQuery.pageIndex"
+              [embedded]="true"
+              (queryChange)="onAdminExpenseDynamicQuery($event)"
+              (adminExpenseEdit)="onAdminExpenseDynamicEdit($event)"
+              (adminExpenseDelete)="onAdminExpenseDynamicDelete($event)">
+            </app-dynamic-data-table>
+          </mat-card>
+
+          <div class="charts-stack">
+            <mat-card class="chart-card chart-card--analysis">
+              <div class="chart-card-header">
+                <h3>Budget vs expense</h3>
+                <p class="chart-caption">
+                  Outer ring: expense (spent) vs remaining budget. Inner ring: spend by category (from budget
+                  overview, or from the current expense page if budgets are unavailable). Centre shows share of
+                  allocated budget used.
+                </p>
+              </div>
+              <div class="chart-canvas-well donut-chart-wrap admin-summary-donut">
+                <canvas #adminSummaryDonut></canvas>
+              </div>
+              <div class="admin-donut-legend" *ngIf="summaryDonutInnerLegend.length">
+                <span class="admin-donut-legend__title">Inner ring</span>
+                <span
+                  *ngFor="let li of summaryDonutInnerLegend"
+                  class="admin-donut-legend__chip"
+                  [style.--chip-color]="li.color">
+                  {{ li.name }}
+                </span>
+              </div>
+            </mat-card>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- BUDGETS -->
+    <ng-container *ngIf="activeSection === 'budgets'">
+      <div class="dashboard dashboard-page dashboard-page--inner">
+        <header class="dashboard-hero dashboard-hero--compact">
+          <div class="greet">
+            <div class="title-wrap">
+              <h2 id="name">{{ sectionTitle }}</h2>
+              <p class="subtitle">{{ sectionSubtitle }}</p>
+            </div>
+            <button mat-stroked-button color="primary" type="button" (click)="loadAll()">
+              <mat-icon>refresh</mat-icon>
+              Refresh
+            </button>
+          </div>
+        </header>
+
+        <div class="main-section">
+          <div class="split-grid">
+            <mat-card class="chart-card">
+              <div class="chart-card-header">
+                <h3>Budget vs spent</h3>
+              </div>
+              <div class="chart-canvas-well chart-wrap-budget">
+                <canvas #budgetChart></canvas>
+              </div>
+              <div class="budget-list-hint">Rows below use GET /api/meta/tables/budgets (fallback columns if meta fails).</div>
+            </mat-card>
+
+            <mat-card class="table-card" *ngIf="budgetTableConfig">
+              <app-dynamic-data-table
+                [config]="budgetTableConfig"
+                [rows]="budgetTableRows"
+                [totalCount]="budgetTableRows.length"
+                [loading]="budgetTableLoading"
+                [hidePaginator]="true"
+                [sortState]="budgetTableSortState">
+              </app-dynamic-data-table>
+            </mat-card>
+
+            <mat-card class="panel-card">
+              <h3>Create category + budget</h3>
+              <form [formGroup]="categoryBudgetForm" (ngSubmit)="createCategoryBudget()">
+                <mat-form-field appearance="outline" class="full">
+                  <mat-label>Category name</mat-label>
+                  <input matInput formControlName="name" />
+                </mat-form-field>
+                <mat-form-field appearance="outline" class="full">
+                  <mat-label>Description</mat-label>
+                  <input matInput formControlName="description" />
+                </mat-form-field>
+                <div class="mini-grid">
+                  <mat-form-field appearance="outline">
+                    <mat-label>Month</mat-label>
+                    <input matInput type="number" formControlName="month" />
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>Year</mat-label>
+                    <input matInput type="number" formControlName="year" />
+                  </mat-form-field>
+                </div>
+                <mat-form-field appearance="outline" class="full">
+                  <mat-label>Allocated amount</mat-label>
+                  <input matInput type="number" formControlName="allocated_amount" />
+                </mat-form-field>
+                <button mat-raised-button color="primary" type="submit">Create</button>
+              </form>
+            </mat-card>
+          </div>
+
+          <mat-card class="panel-card">
+            <h3>Category actions</h3>
+            <mat-form-field appearance="outline" class="full">
+              <mat-label>Select category</mat-label>
+              <mat-select (selectionChange)="loadCategoryForEdit($event.value)">
+                <mat-option *ngFor="let category of categories" [value]="category.id">{{ category.name }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+            <form [formGroup]="categoryUpdateForm" (ngSubmit)="updateCategory()" class="category-edit-form">
+              <mat-form-field appearance="outline" class="full">
+                <mat-label>Name</mat-label>
+                <input matInput formControlName="name" />
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="full">
+                <mat-label>Description</mat-label>
+                <input matInput formControlName="description" />
+              </mat-form-field>
+              <button mat-raised-button color="accent" type="submit">Update category</button>
+            </form>
+            <div class="category-list">
+              <button mat-stroked-button color="warn" type="button" *ngFor="let c of categories" (click)="deleteCategory(c.id)">
+                Delete {{ c.name }}
+              </button>
+            </div>
+          </mat-card>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- EMPLOYEES -->
+    <ng-container *ngIf="activeSection === 'employees'">
+      <div class="dashboard dashboard-page dashboard-page--inner">
+        <header class="dashboard-hero dashboard-hero--compact">
+          <div class="greet">
+            <div class="title-wrap">
+              <h2 id="name">{{ sectionTitle }}</h2>
+              <p class="subtitle">{{ sectionSubtitle }}</p>
+            </div>
+            <button mat-stroked-button color="primary" type="button" (click)="loadAll()">
+              <mat-icon>refresh</mat-icon>
+              Refresh
+            </button>
+          </div>
+        </header>
+
+        <div class="main-section">
+          <mat-card class="table-card" *ngIf="usersTableConfig">
+            <p class="section-hint users-meta-hint">
+              Columns from GET /api/admin/users-details (embedded metadata). Prefer this over /api/meta/tables/users for
+              this screen.
+            </p>
+            <app-dynamic-data-table
+              [config]="usersTableConfig"
+              [rows]="usersTableRows"
+              [totalCount]="usersTableRows.length"
+              [loading]="usersTableLoading"
+              [hidePaginator]="true"
+              [sortState]="usersTableSortState">
+            </app-dynamic-data-table>
+          </mat-card>
+
+          <div class="employee-grid">
+            <mat-card class="card employee-card" *ngFor="let emp of employeeInsights">
+              <div class="card-left">
+                <div class="icon-box remaining">
+                  <mat-icon>person</mat-icon>
+                </div>
+                <div class="text">
+                  <h3>{{ emp.name }}</h3>
+                  <p>{{ emp.entries }} entries on this page</p>
+                </div>
+              </div>
+              <div class="card-right">₹{{ emp.spent | number: '1.0-0' }}</div>
+            </mat-card>
+          </div>
+
+          <mat-card class="panel-card">
+            <h3>User status toggle</h3>
+            <form [formGroup]="userToggleForm" (ngSubmit)="toggleUser()" class="toggle-form">
+              <mat-form-field appearance="outline">
+                <mat-label>User ID</mat-label>
+                <input matInput type="number" formControlName="userId" />
+              </mat-form-field>
+              <button mat-raised-button color="primary" type="submit">Toggle active / inactive</button>
+            </form>
+          </mat-card>
+        </div>
+      </div>
+    </ng-container>
+  </section>
+</div>
+
+<div class="overlay" *ngIf="selectedAdminDeleteExpense !== null" (click)="closeAdminDeleteDialog()">
+  <mat-card class="modal-card" (click)="$event.stopPropagation()">
+    <button type="button" class="close-btn" (click)="closeAdminDeleteDialog()">✖</button>
+    <h3>Delete expense</h3>
+    <p>Are you sure you want to delete this expense?</p>
+    <div class="modal-actions">
+      <button mat-stroked-button type="button" (click)="closeAdminDeleteDialog()">Cancel</button>
+      <button mat-raised-button color="warn" type="button" (click)="confirmAdminDeleteSelected()">Delete</button>
+    </div>
+  </mat-card>
+</div>
+
+<div class="overlay" *ngIf="isExpenseFormModalOpen" (click)="closeExpenseFormModal()">
+  <mat-card class="modal-card form-modal expense-form-modal-card" (click)="$event.stopPropagation()">
+    <app-expense-form-modal
+      [categories]="categories"
+      [expense]="expenseForModal"
+      (dismiss)="closeExpenseFormModal()"
+      (saved)="onExpenseFormModalSaved()">
+    </app-expense-form-modal>
+  </mat-card>
+</div>
+
+<!-- SvayamTracker AI Assistant: orb opens chat modal -->
+<div class="admin-ai-fab" aria-label="SvayamTracker AI Assistant">
+  <button
+    type="button"
+    class="admin-ai-fab__orb"
+    aria-label="Open SvayamTracker AI Assistant"
+    aria-haspopup="dialog"
+    [attr.aria-expanded]="isAiChatModalOpen"
+    (click)="openAiChatModal()">
+    <span class="admin-ai-fab__orb-ring" aria-hidden="true"></span>
+    <span class="admin-ai-fab__orb-glow" aria-hidden="true"></span>
+    <img class="admin-ai-fab__orb-logo" src="assets/svayam-tracker-logo.png" width="34" height="34" alt="" />
+    <mat-icon class="admin-ai-fab__orb-sparkle" aria-hidden="true">auto_awesome</mat-icon>
+  </button>
+</div>
+
+<div class="overlay admin-ai-chat-overlay" *ngIf="isAiChatModalOpen" (click)="closeAiChatModal()">
+  <mat-card class="admin-ai-chat-card" role="dialog" aria-labelledby="ai-chat-title" (click)="$event.stopPropagation()">
+    <div class="admin-ai-chat-accent" aria-hidden="true"></div>
+    <button type="button" class="close-btn admin-ai-chat-close" aria-label="Close chat" (click)="closeAiChatModal()">✖</button>
+
+    <div class="admin-ai-chat-card__inner">
+      <div class="admin-ai-chat-header">
+        <div class="admin-ai-chat-header__logo">
+          <img src="assets/svayam-tracker-logo.png" width="40" height="40" alt="" />
+        </div>
+        <div class="admin-ai-chat-header__text">
+          <p class="admin-ai-chat-brand">SvayamTracker</p>
+          <h2 id="ai-chat-title" class="admin-ai-chat-heading">AI Assistant</h2>
+          <p class="admin-ai-chat-welcome">Hi, <strong>{{ userName }}</strong></p>
+        </div>
+      </div>
+
+      <div class="admin-ai-chat-feed" #aiChatScroll>
+        <div
+          *ngFor="let m of aiChatMessages; trackBy: trackAiChatLine"
+          class="admin-ai-bubble"
+          [class.admin-ai-bubble--user]="m.role === 'user'"
+          [class.admin-ai-bubble--assistant]="m.role === 'assistant'">
+          {{ m.text }}
+        </div>
+      </div>
+
+      <div class="admin-ai-chat-chips" aria-label="Suggested questions">
+        <div
+          class="admin-ai-chat-chip-row"
+          *ngFor="let s of aiChatSuggestions"
+          [class.admin-ai-chat-chip-row--dismissed]="dismissedAiChatChipActions.has(s.action)">
+          <button type="button" class="admin-ai-chat-chip" (click)="onAiChatSuggestion(s)">{{ s.label }}</button>
+          <button
+            type="button"
+            class="admin-ai-chat-chip-dismiss"
+            [attr.aria-label]="'Remove suggestion: ' + s.label"
+            (click)="dismissAiChatChip(s.action, $event)">
+            <span aria-hidden="true">×</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="admin-ai-chat-compose">
+        <input
+          type="text"
+          class="admin-ai-chat-compose__input"
+          [(ngModel)]="aiChatDraft"
+          [ngModelOptions]="{ standalone: true }"
+          [disabled]="aiChatSending"
+          (keydown.enter)="sendAiChatMessage(); $event.preventDefault()"
+          placeholder="Type a question…"
+          autocomplete="off"
+          aria-label="Chat message" />
+        <button
+          type="button"
+          class="admin-ai-chat-compose__send"
+          [disabled]="aiChatSending"
+          (click)="sendAiChatMessage()">
+          {{ aiChatSending ? 'Sending…' : 'Send' }}
+        </button>
+      </div>
+
+      <div class="admin-ai-chat-footer">
+        <button mat-stroked-button color="primary" type="button" (click)="openAiSummaryFromChat()">AI spending summary</button>
+      </div>
+    </div>
+  </mat-card>
+</div>
+
+<div class="overlay" *ngIf="isAiSummaryOpen" (click)="closeAiSummary()">
+  <mat-card class="modal-card modal-card--wide" (click)="$event.stopPropagation()">
+    <button type="button" class="close-btn" (click)="closeAiSummary()">✖</button>
+    <h3>AI Summary</h3>
+    <ul class="ai-list">
+      <li *ngFor="let point of aiHighlights">{{ point }}</li>
+    </ul>
+  </mat-card>
+</div>
+
+<div class="overlay" *ngIf="isReportModalOpen" (click)="closeReportModal()">
+  <mat-card class="modal-card modal-card--wide" (click)="$event.stopPropagation()">
+    <button type="button" class="close-btn" (click)="closeReportModal()">✖</button>
+    <h3>Download report</h3>
+
+    <div class="report-switch">
+      <button type="button" [class.active]="reportMode === 'monthly'" (click)="switchReportMode('monthly')">Monthly PDF</button>
+      <button type="button" [class.active]="reportMode === 'user'" (click)="switchReportMode('user')">User-wise CSV</button>
+    </div>
+
+    <div *ngIf="reportMode === 'monthly'" class="report-block">
+      <div class="mini-grid">
+        <mat-form-field appearance="outline">
+          <mat-label>Month</mat-label>
+          <input matInput type="number" [(ngModel)]="reportMonth" [ngModelOptions]="{ standalone: true }" />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Year</mat-label>
+          <input matInput type="number" [(ngModel)]="reportYear" [ngModelOptions]="{ standalone: true }" />
+        </mat-form-field>
+      </div>
+      <button mat-raised-button color="primary" type="button" (click)="downloadMonthlyReport()">Download monthly PDF</button>
+    </div>
+
+    <div *ngIf="reportMode === 'user'" class="report-block">
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>User name</mat-label>
+        <input matInput [(ngModel)]="reportUserName" [ngModelOptions]="{ standalone: true }" />
+      </mat-form-field>
+      <button mat-raised-button color="primary" type="button" (click)="downloadUserWiseReport()">Download user-wise CSV</button>
+    </div>
+  </mat-card>
+</div>

@@ -1,0 +1,123 @@
+<div class="auth-page spendee-login">
+  <div class="auth-card auth-card--wide">
+    <h1 class="auth-title">Create account</h1>
+    <p class="auth-lead auth-lead--narrow">
+      Already have an account?
+      <a routerLink="/login" class="link-accent">Login here</a>
+    </p>
+
+    <mat-horizontal-stepper [linear]="false" class="register-stepper" animationDuration="280ms">
+      <mat-step [stepControl]="emailForm" label="Email">
+        <form [formGroup]="emailForm" class="register-step-body">
+          <div class="form-group">
+            <label class="field-label" for="register-email">Email</label>
+            <input
+              id="register-email"
+              type="email"
+              autocomplete="email"
+              placeholder="Email address"
+              formControlName="email"
+              [class.invalid]="emailForm.get('email')?.touched && emailForm.get('email')?.invalid"
+            />
+            <small *ngIf="emailForm.get('email')?.touched && emailForm.get('email')?.errors?.['required']">
+              Email is required
+            </small>
+            <small *ngIf="emailForm.get('email')?.touched && emailForm.get('email')?.errors?.['email']">
+              Enter a valid email
+            </small>
+          </div>
+          <button type="button" class="btn-login" (click)="sendOtp()">Send OTP</button>
+          <button type="button" class="btn-login btn-login--ghost btn-login--stack" matStepperNext>Next</button>
+        </form>
+      </mat-step>
+
+      <mat-step [stepControl]="otpForm" label="OTP">
+        <form [formGroup]="otpForm" class="register-step-body">
+          <div class="form-group">
+            <label class="field-label" for="register-otp">OTP</label>
+            <input
+              id="register-otp"
+              type="text"
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              maxlength="6"
+              placeholder="Enter OTP"
+              formControlName="otp"
+              [class.invalid]="otpForm.get('otp')?.touched && otpForm.get('otp')?.invalid"
+            />
+            <small *ngIf="otpForm.get('otp')?.touched && otpForm.get('otp')?.errors?.['required']">OTP is required</small>
+            <small
+              *ngIf="
+                otpForm.get('otp')?.touched &&
+                (otpForm.get('otp')?.errors?.['minlength'] || otpForm.get('otp')?.errors?.['maxlength'])
+              "
+            >
+              OTP should be 4 to 6 digits
+            </small>
+          </div>
+          <button type="button" class="btn-login" (click)="verifyOtp()">Verify OTP</button>
+          <span class="status ok" *ngIf="emailVerified">Email verified</span>
+          <div class="step-actions">
+            <button type="button" class="btn-login btn-login--ghost" matStepperPrevious>Back</button>
+            <button type="button" class="btn-login" matStepperNext>Next</button>
+          </div>
+        </form>
+      </mat-step>
+
+      <mat-step [stepControl]="profileForm" label="Profile">
+        <form [formGroup]="profileForm" class="register-step-body">
+          <div class="form-group">
+            <label class="field-label" for="register-name">Name</label>
+            <input
+              id="register-name"
+              type="text"
+              autocomplete="name"
+              placeholder="Your name"
+              formControlName="name"
+              [class.invalid]="profileForm.get('name')?.touched && profileForm.get('name')?.invalid"
+            />
+            <small *ngIf="profileForm.get('name')?.touched && profileForm.get('name')?.errors?.['required']">
+              Name is required
+            </small>
+            <small *ngIf="profileForm.get('name')?.touched && profileForm.get('name')?.errors?.['minlength']">
+              At least 2 characters
+            </small>
+          </div>
+          <div class="form-group">
+            <label class="field-label" for="register-mobile">Mobile number</label>
+            <input
+              id="register-mobile"
+              type="tel"
+              autocomplete="tel"
+              maxlength="10"
+              placeholder="10-digit mobile"
+              formControlName="mobile_no"
+              [class.invalid]="profileForm.get('mobile_no')?.touched && profileForm.get('mobile_no')?.invalid"
+            />
+            <small *ngIf="profileForm.get('mobile_no')?.touched && profileForm.get('mobile_no')?.invalid">
+              10 digit mobile required
+            </small>
+          </div>
+          <div class="form-group">
+            <label class="field-label" for="register-password">Password</label>
+            <input
+              id="register-password"
+              type="password"
+              autocomplete="new-password"
+              placeholder="Password"
+              formControlName="password"
+              [class.invalid]="profileForm.get('password')?.touched && profileForm.get('password')?.invalid"
+            />
+            <small *ngIf="profileForm.get('password')?.touched && profileForm.get('password')?.errors?.['required']">
+              Password is required
+            </small>
+            <small *ngIf="profileForm.get('password')?.touched && profileForm.get('password')?.errors?.['minlength']">
+              Minimum 6 characters required
+            </small>
+          </div>
+          <button type="button" class="btn-login" (click)="register()">Complete registration</button>
+        </form>
+      </mat-step>
+    </mat-horizontal-stepper>
+  </div>
+</div>

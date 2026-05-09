@@ -1,0 +1,96 @@
+:host {
+  display: block;
+}
+
+.table-loading {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  padding: 8px 0 12px;
+}
+
+.modern-table.dimmed {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.modern-table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.modern-table th.mat-header-cell {
+  background: var(--surface-soft);
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--border);
+  padding: 12px 10px;
+  vertical-align: middle;
+}
+
+.modern-table td.mat-cell {
+  border-bottom: 1px solid var(--border);
+  padding: 11px 10px;
+  color: var(--text);
+  font-size: 0.875rem;
+  vertical-align: middle;
+}
+
+.modern-table tr.mat-row:hover {
+  background: color-mix(in srgb, var(--surface-soft) 55%, transparent);
+}
+
+.modern-table .mat-column-title {
+  min-width: 140px;
+  max-width: 220px;
+}
+
+.modern-table td.mat-cell.mat-column-title {
+  font-weight: 500;
+  word-break: break-word;
+}
+
+.modern-table .mat-column-amount {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.modern-table th.mat-header-cell.mat-column-amount {
+  text-align: right;
+}
+
+.cell-link {
+  min-width: auto !important;
+  padding: 4px 6px !important;
+  line-height: 1.2;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.edit-link {
+  color: #0f766e;
+}
+
+.badge {
+  display: inline-block;
+  background: color-mix(in srgb, var(--primary) 14%, var(--surface));
+  color: var(--primary-strong);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  max-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+:host ::ng-deep mat-paginator {
+  margin-top: 8px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}

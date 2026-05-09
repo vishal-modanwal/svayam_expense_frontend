@@ -1,0 +1,174 @@
+<div class="dashboard dashboard-page">
+  <header class="dashboard-hero">
+    <div class="greet">
+      <div class="title-wrap">
+        <h2 id="name">Good day, <span>{{ userName }}</span></h2>
+        <p class="subtitle">Your recorded expenses on this page.</p>
+      </div>
+    </div>
+  </header>
+
+  <section class="metric-section" aria-label="Your expense">
+    <mat-card class="metric-card metric-card--expense">
+      <div class="metric-card__inner">
+        <mat-icon class="metric-card__icon" aria-hidden="true">payments</mat-icon>
+        <div class="metric-card__body">
+          <span class="metric-card__label">Your expense</span>
+          <span class="metric-card__value">₹{{ userExpense | number: '1.0-0' }}</span>
+        </div>
+      </div>
+    </mat-card>
+  </section>
+
+  <div class="dashboard-status-block">
+    <div class="user-status-row" role="status" [attr.aria-label]="isUserActive() ? 'Account active' : 'Account inactive'">
+      <span class="user-status user-status--active" *ngIf="isUserActive()">
+        <span class="user-status__badge user-status__badge--active" aria-hidden="true">
+          <mat-icon class="user-status__check">check</mat-icon>
+        </span>
+        <span class="user-status__label">Active</span>
+      </span>
+      <span class="user-status user-status--inactive" *ngIf="!isUserActive()">
+        <span class="user-status__badge user-status__badge--inactive" aria-hidden="true"></span>
+        <span class="user-status__label">Inactive</span>
+      </span>
+    </div>
+    <div class="dashboard-status-actions">
+      <button
+        mat-stroked-button
+        type="button"
+        class="expense-report-btn"
+        [disabled]="isExpenseReportDownloading"
+        (click)="downloadExpenseReport()"
+        aria-label="Download expense report PDF">
+        <mat-icon class="expense-report-btn__icon" aria-hidden="true">download</mat-icon>
+        Expense Report
+      </button>
+    </div>
+  </div>
+
+  <div class="main-section">
+    <mat-card class="table-card table-card--recent-expenses table-card--sole">
+      <div class="toolbar-panel toolbar-panel--in-card toolbar-panel--card-top">
+        <div class="toolbar-pair toolbar-pair--add-expense">
+          <div class="add-expense-wrap">
+            <button
+              mat-raised-button
+              color="primary"
+              class="action-btn add-btn"
+              type="button"
+              [disabled]="!isUserActive()"
+              (click)="openAddExpense()">
+              <mat-icon>add</mat-icon>
+              Add Expense
+            </button>
+            <p class="inactive-add-hint" *ngIf="!isUserActive()">You are not an active user — you cannot add expenses.</p>
+          </div>
+
+          <div class="sort-wrapper">
+            <button mat-button type="button" [matMenuTriggerFor]="sortMenu" class="sort-btn action-btn">
+              <mat-icon>tune</mat-icon>
+              {{ getSortLabel() }}
+              <mat-icon class="arrow">expand_more</mat-icon>
+            </button>
+            <mat-menu #sortMenu="matMenu" class="sort-menu">
+              <button mat-menu-item type="button" (click)="applySort('latest')">
+                <mat-icon>schedule</mat-icon>
+                <span>Latest first</span>
+                <mat-icon *ngIf="selectedSort === 'latest'" class="check">check</mat-icon>
+              </button>
+              <button mat-menu-item type="button" (click)="applySort('high')">
+                <mat-icon>trending_down</mat-icon>
+                <span>Amount: High to Low</span>
+                <mat-icon *ngIf="selectedSort === 'high'" class="check">check</mat-icon>
+              </button>
+              <button mat-menu-item type="button" (click)="applySort('low')">
+                <mat-icon>trending_up</mat-icon>
+                <span>Amount: Low to High</span>
+                <mat-icon *ngIf="selectedSort === 'low'" class="check">check</mat-icon>
+              </button>
+            </mat-menu>
+          </div>
+
+          <div class="sort-wrapper">
+            <button mat-button type="button" [matMenuTriggerFor]="categoryMenu" class="sort-btn action-btn">
+              <mat-icon>category</mat-icon>
+              {{ selectedCategoryLabel }}
+              <mat-icon class="arrow">expand_more</mat-icon>
+            </button>
+            <mat-menu #categoryMenu="matMenu" class="sort-menu category-filter-menu">
+              <button mat-menu-item type="button" (click)="filterByCategory(null)">
+                <mat-icon>all_inclusive</mat-icon>
+                <span>All Categories</span>
+                <mat-icon *ngIf="selectedCategory === null" class="check">check</mat-icon>
+              </button>
+              <button mat-menu-item type="button" *ngFor="let cat of categories" (click)="filterByCategory(cat)">
+                <span>{{ cat.name }}</span>
+                <mat-icon *ngIf="selectedCategory === cat.id" class="check">check</mat-icon>
+              </button>
+            </mat-menu>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-head section-head--table section-head--after-toolbar">
+        <h3>Recent expenses</h3>
+        <span class="section-hint section-hint--page-scope">This page</span>
+      </div>
+
+      <app-dynamic-data-table
+        *ngIf="userExpenseTableConfig"
+        [config]="userExpenseTableConfig"
+        [rows]="userExpenseTableRows"
+        [totalCount]="totalItems"
+        [loading]="userExpenseLoading"
+        [sortState]="userExpenseSortState"
+        [pageIndex]="page - 1"
+        [embedded]="true"
+        (queryChange)="onUserExpenseDynamicQuery($event)"
+        (userExpenseAction)="onUserExpenseAction($event)">
+      </app-dynamic-data-table>
+    </mat-card>
+  </div>
+</div>
+
+<div class="overlay overlay--sheet" *ngIf="isExpenseFormModalOpen" (click)="closeExpenseFormModal()">
+  <mat-card class="modal-card form-modal expense-form-modal-card" (click)="$event.stopPropagation()">
+    <app-expense-form-modal
+      [categories]="categories"
+      [expense]="expenseForModal"
+      (dismiss)="closeExpenseFormModal()"
+      (saved)="onExpenseFormModalSaved()">
+    </app-expense-form-modal>
+  </mat-card>
+</div>
+
+<div class="overlay overlay--dialog" *ngIf="selectedNote !== null" (click)="closeNotes()">
+  <mat-card class="modal-card modal-card--dialog" (click)="$event.stopPropagation()">
+    <button type="button" class="close-btn" (click)="closeNotes()">✖</button>
+    <h3>Notes</h3>
+    <p class="modal-card__body">{{ selectedNote }}</p>
+  </mat-card>
+</div>
+
+<div class="overlay overlay--dialog" *ngIf="selectedDeleteExpense !== null" (click)="closeDeleteDialog()">
+  <mat-card class="modal-card modal-card--dialog" (click)="$event.stopPropagation()">
+    <button type="button" class="close-btn" (click)="closeDeleteDialog()">✖</button>
+    <h3>Delete expense</h3>
+    <p>Are you sure you want to delete this expense?</p>
+    <div class="modal-actions">
+      <button mat-stroked-button type="button" (click)="closeDeleteDialog()">Cancel</button>
+      <button mat-raised-button color="warn" type="button" (click)="confirmDeleteSelected()">Delete</button>
+    </div>
+  </mat-card>
+</div>
+
+<div class="overlay overlay--dialog" *ngIf="isAiSummaryOpen" (click)="closeAiSummary()">
+  <mat-card class="modal-card modal-card--wide modal-card--dialog" (click)="$event.stopPropagation()">
+    <button type="button" class="close-btn" (click)="closeAiSummary()">✖</button>
+    <h3>AI Summary</h3>
+    <ul class="ai-list">
+      <li *ngFor="let point of aiHighlights">{{ point }}</li>
+    </ul>
+  </mat-card>
+</div>

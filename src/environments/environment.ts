@@ -3,7 +3,14 @@
 // The list of file replacements can be found in `angular.json`.
 
 export const environment = {
-  production: false
+  production: false,
+  appName: 'SvayamExpense',
+  apiBaseUrl: '/api',
+  /**
+   * Origin for static `/uploads/...` (multer). Empty string: same host as the app (ng serve `proxy.conf.json` forwards `/uploads`).
+   * Set to `http://localhost:5000` only if you open files without proxying `/uploads`.
+   */
+  uploadsOrigin: ''
 };
 
 /*

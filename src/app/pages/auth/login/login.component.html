@@ -1,0 +1,53 @@
+<div class="auth-page spendee-login">
+  <div class="auth-card">
+    <h1 class="auth-title">Login to SvayamExpense</h1>
+    <p class="auth-lead">
+      Don't have an account yet?
+      <a routerLink="/register" class="link-accent">Sign up here!</a>
+    </p>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" class="login-form">
+      <div class="form-group">
+        <label class="field-label" for="login-identity">Email or mobile</label>
+        <input
+          id="login-identity"
+          type="text"
+          autocomplete="username"
+          placeholder="Email or mobile number"
+          formControlName="identity"
+          [class.invalid]="(submitted || f['identity']?.touched) && f['identity']?.invalid"
+        />
+        <small *ngIf="(submitted || f['identity']?.touched) && f['identity']?.errors?.['required']">
+          Email or mobile is required
+        </small>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label" for="login-password">Password</label>
+        <input
+          id="login-password"
+          type="password"
+          autocomplete="current-password"
+          placeholder="Password"
+          formControlName="password"
+          [class.invalid]="(submitted || f['password']?.touched) && f['password']?.invalid"
+        />
+        <small *ngIf="(submitted || f['password']?.touched) && f['password']?.errors?.['required']">
+          Password is required
+        </small>
+        <small *ngIf="(submitted || f['password']?.touched) && f['password']?.errors?.['minlength']">
+          Minimum 6 characters required
+        </small>
+      </div>
+
+      <p class="forgot-row">
+        <a routerLink="/forgot-password" class="link-accent">Forgot password?</a>
+      </p>
+
+      <button type="submit" class="btn-login" [disabled]="loading">
+        <span *ngIf="loading">Logging in…</span>
+        <span *ngIf="!loading">Login to SvayamExpense</span>
+      </button>
+    </form>
+  </div>
+</div>

@@ -1,0 +1,13 @@
+<div class="overlay" *ngIf="loaderService.loading$ | async">
+  <div class="loader-brand" role="status" aria-live="polite" aria-label="Loading">
+    <div class="loader-orbit" aria-hidden="true"></div>
+    <div class="loader-glow" aria-hidden="true"></div>
+    <img
+      class="loader-logo"
+      src="assets/svayam-tracker-logo.png"
+      width="72"
+      height="72"
+      alt=""
+    />
+  </div>
+</div>

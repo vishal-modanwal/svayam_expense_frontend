@@ -1,0 +1,923 @@
+.dashboard.dashboard-page {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.dashboard-page {
+  width: 100%;
+  max-width: min(1180px, 100%);
+  margin: 0 auto;
+  padding: 20px 16px 36px;
+  padding-bottom: max(36px, calc(28px + env(safe-area-inset-bottom, 0px)));
+  box-sizing: border-box;
+  overflow-x: clip;
+}
+
+.dashboard-hero {
+  margin-bottom: 0;
+}
+
+/** Small PDF report control — black / neutral, readable on all breakpoints */
+.expense-report-btn.mat-stroked-button {
+  border-radius: 9px;
+  border-width: 1px;
+  border-color: color-mix(in srgb, #0f172a 22%, var(--border));
+  color: #0f172a;
+  background: color-mix(in srgb, var(--surface-muted) 55%, var(--surface));
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  min-height: 32px;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.expense-report-btn.mat-stroked-button .mat-button-wrapper {
+  padding: 4px 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  line-height: 1.25;
+}
+
+.expense-report-btn__icon.mat-icon {
+  font-size: 17px;
+  width: 17px;
+  height: 17px;
+  margin: 0;
+}
+
+.expense-report-btn.mat-stroked-button:not(:disabled):hover {
+  background: color-mix(in srgb, var(--surface-muted) 88%, var(--surface));
+  border-color: color-mix(in srgb, #0f172a 32%, var(--border));
+  color: #020617;
+}
+
+body.dark-theme .expense-report-btn.mat-stroked-button {
+  color: #f1f5f9;
+  border-color: color-mix(in srgb, #f1f5f9 28%, var(--border));
+  background: color-mix(in srgb, var(--surface-muted) 40%, var(--surface));
+}
+
+body.dark-theme .expense-report-btn.mat-stroked-button:not(:disabled):hover {
+  background: color-mix(in srgb, var(--surface-muted) 65%, var(--surface));
+  border-color: color-mix(in srgb, #f1f5f9 38%, var(--border));
+  color: #ffffff;
+}
+
+.greet {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+#name {
+  margin: 0;
+  color: var(--text);
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+
+#name span {
+  color: var(--primary);
+}
+
+.subtitle {
+  margin: 0;
+  max-width: min(40rem, 100%);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.dashboard-status-block {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+  margin: 10px 0 18px;
+  min-width: 0;
+}
+
+.dashboard-status-block .user-status-row {
+  margin-top: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.dashboard-status-actions {
+  flex: 0 0 auto;
+}
+
+.user-status-row {
+  margin-top: 2px;
+}
+
+.user-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.user-status--active {
+  color: var(--text);
+}
+
+.user-status--inactive {
+  color: var(--text-muted);
+  opacity: 0.72;
+}
+
+.user-status__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+
+.user-status__badge--active {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.user-status__check {
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
+  line-height: 14px;
+}
+
+.user-status__badge--inactive {
+  width: 10px;
+  height: 10px;
+  margin: 0 6px;
+  border: 2px solid color-mix(in srgb, var(--text-muted) 60%, transparent);
+  background: transparent;
+}
+
+/** Single KPI / metric tile — label + value only */
+.metric-section {
+  margin: 16px 0 0;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.metric-card {
+  margin: 0;
+  padding: 0;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    var(--shadow-soft);
+  background: var(--surface);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.metric-card--expense .metric-card__inner {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  min-width: 0;
+}
+
+.metric-card__icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  box-sizing: border-box;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+}
+
+.metric-card__icon.mat-icon {
+  font-size: 24px;
+  width: 24px;
+  height: 24px;
+}
+
+.metric-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.metric-card__label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.metric-card__value {
+  font-size: clamp(1.35rem, 5vw, 1.85rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  word-break: break-word;
+}
+
+body.dark-theme .metric-card {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+.toolbar-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    var(--shadow-soft);
+}
+
+.toolbar-panel--in-card {
+  margin: 0 0 16px;
+  background: var(--surface-muted);
+  box-shadow: none;
+  border-color: color-mix(in srgb, var(--border) 90%, var(--surface));
+}
+
+/** Toolbar is first inside the expense card: tuck to card padding, space before title */
+.toolbar-panel--in-card.toolbar-panel--card-top {
+  margin-top: 0;
+  margin-bottom: 14px;
+}
+
+.section-head--after-toolbar {
+  margin-top: 0;
+}
+
+body.dark-theme .toolbar-panel--in-card {
+  border-color: var(--border);
+}
+
+.toolbar-pair {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.add-expense-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+}
+
+.inactive-add-hint {
+  margin: 0;
+  max-width: min(280px, 100%);
+  font-size: 0.6875rem;
+  line-height: 1.35;
+  color: #b91c1c;
+  font-weight: 500;
+}
+
+body.dark-theme .inactive-add-hint {
+  color: #f87171;
+}
+
+.toolbar-pair--add-expense .add-expense-wrap {
+  align-self: flex-start;
+}
+
+.action-btn {
+  border-radius: 10px;
+  min-height: 36px;
+}
+
+.add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sort-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.sort-btn {
+  border: 1px solid var(--border);
+  color: var(--text);
+  background: var(--surface);
+}
+
+.sort-btn .arrow {
+  margin-left: 2px;
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+::ng-deep .sort-menu .mat-menu-item .check {
+  margin-left: auto;
+  color: var(--primary);
+}
+
+::ng-deep .category-filter-menu .mat-menu-content {
+  max-height: min(70vh, 420px);
+  overflow-y: auto;
+}
+
+.ai-btn-solid {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 10px;
+  min-height: 36px;
+  cursor: pointer;
+  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: var(--shadow-soft);
+  font-family: inherit;
+  font-size: 0.875rem;
+}
+
+.ai-btn-solid mat-icon {
+  width: 17px;
+  height: 17px;
+  font-size: 17px;
+}
+
+.main-section {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.table-card {
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    var(--shadow-soft);
+  background: var(--surface);
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  /** Wide table scrolls only inside `app-dynamic-data-table` (`.dynamic-table__scroll`), not this card. */
+  overflow-x: clip;
+  overflow-y: visible;
+  padding: 18px 18px 10px;
+}
+
+/** Reference-style “Recent expenses” panel (light card + table like design mock). */
+.table-card--recent-expenses {
+  padding: 22px 24px 16px;
+  border-radius: 14px;
+  border: 1px solid #e8ecf1;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.05),
+    0 14px 40px rgba(15, 23, 42, 0.07);
+  background: #ffffff;
+  overflow-x: clip;
+}
+
+.table-card--recent-expenses app-dynamic-data-table {
+  display: block;
+  min-width: 0;
+}
+
+body.dark-theme .table-card--recent-expenses {
+  border-color: var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 2px 14px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.section-head--table {
+  padding: 0 0 16px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #eef2f6;
+}
+
+body.dark-theme .section-head--table {
+  border-bottom-color: var(--border);
+}
+
+.section-head h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 1.0625rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.section-head--table h3 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: #0f172a;
+}
+
+body.dark-theme .section-head--table h3 {
+  color: var(--text);
+}
+
+.section-hint {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.section-hint--page-scope {
+  letter-spacing: 0.1em;
+  color: #94a3b8;
+  font-weight: 700;
+  font-size: 0.625rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--surface-muted) 88%, transparent);
+  border: 1px solid #eef2f6;
+}
+
+body.dark-theme .section-hint--page-scope {
+  color: var(--text-muted);
+  border-color: var(--border);
+  background: color-mix(in srgb, var(--surface-muted) 70%, transparent);
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 9999;
+  background: rgba(2, 6, 23, 0.4);
+  backdrop-filter: blur(3px);
+}
+
+.modal-card {
+  width: min(420px, 92%);
+  max-width: calc(100vw - 32px);
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  padding: 20px;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.modal-card--wide {
+  width: min(560px, 92%);
+  max-width: calc(100vw - 32px);
+}
+
+.modal-card h3 {
+  margin-top: 0;
+  padding-right: 44px;
+  line-height: 1.3;
+}
+
+.modal-card__body {
+  margin: 0;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.modal-card.modal-card--dialog {
+  max-height: min(520px, calc(100vh - 48px));
+  overflow-y: auto;
+}
+
+.modal-card.modal-card--dialog.modal-card--wide {
+  max-height: min(640px, calc(100vh - 48px));
+}
+
+.form-modal {
+  width: min(760px, 94%);
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+}
+
+.modal-card.form-modal.expense-form-modal-card {
+  width: min(520px, 94%);
+  max-height: calc(100vh - 40px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.close-btn {
+  position: absolute;
+  top: max(8px, env(safe-area-inset-top, 0px));
+  right: max(10px, env(safe-area-inset-right, 0px));
+  border: none;
+  background: transparent;
+  font-size: 1rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  z-index: 1;
+}
+
+.modal-actions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.full {
+  width: 100%;
+}
+
+.placeholder-copy {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.ai-list {
+  margin: 12px 0 0;
+  padding-left: 1.25rem;
+  padding-right: 4px;
+  color: var(--text-muted);
+  display: grid;
+  gap: 8px;
+}
+
+.right-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+@media (min-width: 640px) {
+  .dashboard-page {
+    padding-top: 24px;
+  }
+
+  .greet {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  #name {
+    font-size: 1.65rem;
+  }
+}
+
+@media (max-width: 639px) {
+  .dashboard-page {
+    width: 100%;
+    max-width: 100%;
+    padding: 12px max(12px, env(safe-area-inset-right, 0px)) max(28px, calc(20px + env(safe-area-inset-bottom, 0px)))
+      max(12px, env(safe-area-inset-left, 0px));
+  }
+
+  .metric-section {
+    margin-top: 14px;
+    margin-bottom: 0;
+  }
+
+  .dashboard-status-block {
+    margin: 8px 0 14px;
+    align-items: center;
+  }
+
+  .metric-card--expense .metric-card__inner {
+    padding: 14px 14px;
+    gap: 12px;
+  }
+
+  .metric-card__icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .metric-card__icon.mat-icon {
+    font-size: 22px;
+    width: 22px;
+    height: 22px;
+  }
+
+  .metric-card__value {
+    font-size: clamp(1.2rem, 6.5vw, 1.6rem);
+  }
+
+  #name {
+    font-size: 1.25rem;
+    line-height: 1.25;
+  }
+
+  .subtitle {
+    font-size: 0.875rem;
+  }
+
+  .expense-report-btn.mat-stroked-button {
+    font-size: 0.6875rem;
+    min-height: 30px;
+  }
+
+  .expense-report-btn.mat-stroked-button .mat-button-wrapper {
+    padding: 3px 10px;
+    gap: 4px;
+  }
+
+  .expense-report-btn__icon.mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+
+  /** Normal document flow: toolbar scrolls with the page (no sticky / overlap). */
+  .toolbar-panel {
+    flex-direction: column;
+    align-items: stretch;
+    position: static;
+    padding: 8px 10px;
+    margin-bottom: 12px;
+    gap: 8px;
+  }
+
+  /** Add row full width; sort + category share one row — less tall / heavy than three stacked blocks. */
+  .toolbar-pair {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .toolbar-pair .add-expense-wrap {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .toolbar-pair .add-btn {
+    width: 100%;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+
+  .toolbar-pair .sort-wrapper {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .toolbar-pair .sort-btn {
+    width: 100%;
+    min-width: 0;
+    justify-content: center;
+    box-sizing: border-box;
+    font-size: 0.6875rem;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    line-height: 1.28;
+    white-space: normal;
+    text-align: center;
+    padding: 0 4px;
+    min-height: 32px;
+    height: auto;
+    border-radius: 999px;
+    border-color: color-mix(in srgb, var(--border) 72%, transparent);
+    color: color-mix(in srgb, var(--text-muted) 35%, var(--text));
+    background: color-mix(in srgb, var(--surface) 65%, var(--surface-muted));
+    box-shadow: none;
+    transition:
+      background 0.15s ease,
+      border-color 0.15s ease,
+      color 0.15s ease;
+  }
+
+  body.dark-theme .toolbar-pair .sort-btn {
+    color: color-mix(in srgb, var(--text) 78%, var(--text-muted));
+    border-color: color-mix(in srgb, var(--border) 88%, transparent);
+    background: color-mix(in srgb, var(--surface) 55%, var(--surface-muted));
+  }
+
+  .toolbar-panel .add-btn {
+    min-height: 32px;
+    padding-top: 0;
+    padding-bottom: 0;
+    box-sizing: border-box;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    line-height: 1.2;
+  }
+
+  .toolbar-panel .add-btn mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    margin-right: 2px;
+  }
+
+  .toolbar-panel .sort-btn mat-icon:not(.arrow) {
+    font-size: 15px;
+    width: 15px;
+    height: 15px;
+    margin-right: 1px;
+    flex-shrink: 0;
+    opacity: 0.88;
+  }
+
+  .toolbar-panel .sort-btn .arrow {
+    font-size: 15px;
+    width: 15px;
+    height: 15px;
+    margin-left: 1px;
+    flex-shrink: 0;
+    opacity: 0.75;
+  }
+
+  /** Material 13: compact Add Expense on small screens */
+  .toolbar-panel .add-btn.mat-raised-button .mat-button-wrapper {
+    padding: 4px 12px;
+    line-height: 1.2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 2px 4px;
+    min-height: 32px;
+    box-sizing: border-box;
+  }
+
+  .toolbar-panel .sort-btn.mat-button .mat-button-wrapper {
+    padding: 4px 6px;
+    line-height: 1.25;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 1px 3px;
+    min-height: 32px;
+    box-sizing: border-box;
+  }
+
+  .right-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .right-actions > button {
+    width: 100%;
+  }
+
+  .table-card {
+    padding: 14px 10px 8px;
+  }
+
+  .table-card--recent-expenses {
+    padding: 16px 12px 12px;
+    border-radius: 12px;
+  }
+
+  .section-head {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .section-hint {
+    white-space: normal;
+  }
+
+  /** All modals: bottom sheet pattern, safe areas, scroll inside card */
+  .overlay {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0;
+    box-sizing: border-box;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .overlay .modal-card {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    border-radius: 16px 16px 0 0;
+    max-height: min(90dvh, 90vh);
+    overflow-y: auto;
+    padding: 18px max(16px, env(safe-area-inset-right, 0px)) max(20px, env(safe-area-inset-bottom, 0px))
+      max(16px, env(safe-area-inset-left, 0px));
+    box-sizing: border-box;
+  }
+
+  .overlay .modal-card.form-modal.expense-form-modal-card {
+    max-height: min(92dvh, 92vh);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px))
+      max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  }
+
+  .ai-list {
+    max-height: min(42dvh, 260px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .overlay .modal-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .overlay .modal-actions button {
+    width: 100%;
+  }
+
+  .close-btn {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-grid;
+    place-items: center;
+    top: 4px;
+    right: 6px;
+    padding: 8px;
+    box-sizing: border-box;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .section-head--table h3 {
+    font-size: 1rem;
+  }
+}
+

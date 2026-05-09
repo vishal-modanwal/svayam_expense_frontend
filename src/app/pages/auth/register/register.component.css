@@ -1,0 +1,125 @@
+.spendee-login .auth-card--wide {
+  width: min(460px, 100%);
+}
+
+.spendee-login .auth-lead--narrow {
+  max-width: 24rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.register-stepper {
+  margin-top: 8px;
+}
+
+.register-step-body {
+  padding-top: 16px;
+}
+
+.spendee-login .btn-login--stack {
+  margin-top: 12px;
+}
+
+.step-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.step-actions .btn-login {
+  flex: 1;
+}
+
+.spendee-login .btn-login--ghost {
+  background: transparent;
+  color: var(--accent-deep, #0f766e);
+  border: 2px solid rgba(13, 148, 136, 0.45);
+  box-shadow: none;
+}
+
+.spendee-login .btn-login--ghost:hover:not(:disabled) {
+  background: rgba(13, 148, 136, 0.08);
+  filter: none;
+  transform: none;
+  box-shadow: 0 2px 10px rgba(13, 148, 136, 0.12);
+}
+
+body.dark-theme .spendee-login .btn-login--ghost {
+  color: #5eead4;
+  border-color: rgba(45, 212, 191, 0.45);
+}
+
+body.dark-theme .spendee-login .btn-login--ghost:hover:not(:disabled) {
+  background: rgba(45, 212, 191, 0.08);
+  color: #99f6e4;
+}
+
+.status.ok {
+  display: inline-block;
+  margin-top: 12px;
+  color: #0d9488;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+body.dark-theme .status.ok {
+  color: #5eead4;
+}
+
+:host ::ng-deep .register-stepper.mat-stepper-horizontal {
+  background: transparent;
+}
+
+:host ::ng-deep .register-stepper .mat-horizontal-stepper-header-container {
+  margin-bottom: 4px;
+}
+
+:host ::ng-deep .register-stepper .mat-step-header {
+  padding: 0 8px;
+}
+
+:host ::ng-deep .register-stepper .mat-step-header .mat-step-icon {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+:host ::ng-deep .register-stepper .mat-step-header .mat-step-icon-selected {
+  background: linear-gradient(135deg, #14b8a6, #0d9488);
+  color: #fff;
+}
+
+:host ::ng-deep .register-stepper .mat-step-header .mat-step-icon-state-done {
+  background: #0d9488;
+  color: #fff;
+}
+
+:host ::ng-deep .register-stepper .mat-step-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+:host ::ng-deep .register-stepper .mat-step-header.mat-step-header-selected .mat-step-label {
+  color: #0f766e;
+}
+
+:host ::ng-deep .register-stepper .mat-stepper-horizontal-line {
+  border-top-color: #cbd5e1;
+}
+
+body.dark-theme :host ::ng-deep .register-stepper .mat-step-label {
+  color: #94a3b8;
+}
+
+body.dark-theme :host ::ng-deep .register-stepper .mat-step-header.mat-step-header-selected .mat-step-label {
+  color: #5eead4;
+}
+
+body.dark-theme :host ::ng-deep .register-stepper .mat-step-header .mat-step-icon {
+  background: #334155;
+  color: #e2e8f0;
+}
+
+body.dark-theme :host ::ng-deep .register-stepper .mat-stepper-horizontal-line {
+  border-top-color: #475569;
+}

@@ -1,0 +1,82 @@
+<table mat-table [dataSource]="dataSource" class="modern-table">
+
+  <ng-container matColumnDef="title">
+    <th mat-header-cell *matHeaderCellDef>Title</th>
+    <td mat-cell *matCellDef="let e">{{ e.title }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="amount">
+    <th mat-header-cell *matHeaderCellDef>Amount</th>
+    <td mat-cell *matCellDef="let e">₹{{ e.amount | number: '1.0-2' }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="category">
+    <th mat-header-cell *matHeaderCellDef>Category</th>
+    <td mat-cell *matCellDef="let e">
+      <span class="badge">{{ e.category }}</span>
+    </td>
+  </ng-container>
+
+  <ng-container matColumnDef="date">
+    <th mat-header-cell *matHeaderCellDef>Date</th>
+    <td mat-cell *matCellDef="let e">{{ e.expense_date }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="payment">
+    <th mat-header-cell *matHeaderCellDef>Payment</th>
+    <td mat-cell *matCellDef="let e">{{ e.payment_method }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="notes">
+    <th mat-header-cell *matHeaderCellDef>Notes</th>
+    <td mat-cell *matCellDef="let e">
+      <button mat-button type="button" class="cell-link" (click)="viewNotes.emit(e)">View</button>
+    </td>
+  </ng-container>
+
+  <ng-container matColumnDef="update">
+    <th mat-header-cell *matHeaderCellDef>Update</th>
+    <td mat-cell *matCellDef="let e">
+      <button mat-button type="button" class="cell-link edit-link" (click)="edit.emit(e)">Edit</button>
+    </td>
+  </ng-container>
+
+  <ng-container matColumnDef="delete">
+    <th mat-header-cell *matHeaderCellDef>Delete</th>
+    <td mat-cell *matCellDef="let e">
+      <button mat-button type="button" class="cell-link delete-link" (click)="delete.emit(e)">Delete</button>
+    </td>
+  </ng-container>
+
+  <ng-container matColumnDef="receipt">
+    <th mat-header-cell *matHeaderCellDef>Receipt</th>
+    <td mat-cell *matCellDef="let e">
+      <a
+        *ngIf="e.receipt_url"
+        [href]="receiptHref(e.receipt_url)"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="cell-link edit-link">
+        View
+      </a>
+      <span *ngIf="!e.receipt_url" class="receipt-empty">—</span>
+    </td>
+  </ng-container>
+
+  <ng-container matColumnDef="vendor">
+    <th mat-header-cell *matHeaderCellDef>Vendor</th>
+    <td mat-cell *matCellDef="let e">{{ e.vendor || '—' }}</td>
+  </ng-container>
+
+  <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+  <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+</table>
+
+<mat-paginator
+  [length]="totalRecords"
+  [pageSizeOptions]="pageSizeOptions"
+  [pageSize]="pageSize"
+  [pageIndex]="pageIndex"
+  (page)="onPage($event)"
+  showFirstLastButtons>
+</mat-paginator>

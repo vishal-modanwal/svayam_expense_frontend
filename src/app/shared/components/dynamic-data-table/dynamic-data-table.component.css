@@ -1,0 +1,629 @@
+.dynamic-table {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.dynamic-table--embedded {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.dynamic-table__link {
+  min-width: auto;
+  padding: 0 8px;
+  line-height: 32px;
+  font-size: 0.8125rem;
+}
+
+.dynamic-table__link--view {
+  color: #2563eb !important;
+}
+
+.dynamic-table__link--edit {
+  color: #16a34a !important;
+  font-weight: 600;
+}
+
+.dynamic-table__link--delete {
+  color: #dc2626 !important;
+  font-weight: 600;
+}
+
+body.dark-theme .dynamic-table__link--view {
+  color: #93c5fd !important;
+}
+
+body.dark-theme .dynamic-table__link--edit {
+  color: #4ade80 !important;
+}
+
+body.dark-theme .dynamic-table__link--delete {
+  color: #f87171 !important;
+}
+
+.dynamic-table__actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+}
+
+.dynamic-table__muted {
+  color: var(--text-muted, #64748b);
+  font-size: 0.85rem;
+}
+
+.dynamic-table__card {
+  padding: 0;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid var(--border, #e2e8f0);
+  background: var(--surface, #ffffff);
+  box-shadow: var(--shadow-soft, 0 4px 14px rgba(15, 23, 42, 0.06));
+}
+
+.dynamic-table__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 16px 0;
+}
+
+.dynamic-table__title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text, #0f172a);
+  letter-spacing: -0.02em;
+}
+
+.dynamic-table__filter {
+  flex: 1 1 220px;
+  max-width: min(100%, 360px);
+  margin-bottom: 0;
+}
+
+.dynamic-table__filter-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  color: var(--text-muted, #64748b);
+  opacity: 0.85;
+}
+
+.dynamic-table__scroll {
+  position: relative;
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.dynamic-table__loading {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.35) 40%,
+    rgba(255, 255, 255, 0.55) 50%,
+    rgba(255, 255, 255, 0.35) 60%,
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: dynamic-table-shimmer 1.2s ease-in-out infinite;
+}
+
+body.dark-theme .dynamic-table__loading {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(30, 41, 59, 0.4) 40%,
+    rgba(51, 65, 85, 0.55) 50%,
+    rgba(30, 41, 59, 0.4) 60%,
+    transparent
+  );
+  background-size: 200% 100%;
+}
+
+@keyframes dynamic-table-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+.dynamic-table__mat {
+  width: 100%;
+  min-width: 520px;
+  background: transparent;
+}
+
+.dynamic-table__th {
+  font-weight: 600;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted, #64748b);
+  border-bottom-color: var(--border, #e2e8f0) !important;
+}
+
+.dynamic-table__td {
+  font-size: 0.9rem;
+  color: var(--text, #0f172a);
+  border-bottom-color: var(--border, #e2e8f0) !important;
+}
+
+.dynamic-table__header-row {
+  background: var(--surface-muted, #f8fafc);
+}
+
+body.dark-theme .dynamic-table__header-row {
+  background: var(--surface-muted, #1e293b);
+}
+
+.dynamic-table__data-row:hover {
+  background: rgba(37, 99, 235, 0.04);
+}
+
+body.dark-theme .dynamic-table__data-row:hover {
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.dynamic-table__empty {
+  text-align: center;
+  padding: 28px 16px !important;
+  color: var(--text-muted, #64748b);
+  font-size: 0.95rem;
+}
+
+.dynamic-table__paginator {
+  border-top: 1px solid var(--border, #e2e8f0);
+  background: var(--surface-muted, #f8fafc);
+}
+
+body.dark-theme .dynamic-table__paginator {
+  background: var(--section-band, #111827);
+}
+
+.dynamic-table__no-config {
+  margin: 0;
+  padding: 24px;
+  text-align: center;
+  color: var(--text-muted, #64748b);
+  font-size: 0.95rem;
+}
+
+/* —— Embedded “recent expenses” look (reference dashboard table) —— */
+.dynamic-table--embedded .dynamic-table__card {
+  box-shadow: none;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.dynamic-table--embedded .dynamic-table__scroll {
+  position: relative;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 1px solid #e5e9ef;
+  border-radius: 14px 14px 0 0;
+  border-bottom: none;
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  background: #ffffff;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
+}
+
+body.dark-theme .dynamic-table--embedded .dynamic-table__scroll {
+  border-color: var(--border);
+  background: var(--surface);
+  box-shadow: none;
+}
+
+.dynamic-table__mat--modern {
+  width: 100%;
+  min-width: min(100%, 960px);
+  table-layout: fixed;
+  border-collapse: collapse;
+  border-spacing: 0;
+  font-family: var(--font-ui, system-ui, sans-serif);
+}
+
+.dynamic-table__mat--modern .dynamic-table__th,
+.dynamic-table__mat--modern .dynamic-table__td {
+  padding: 12px 10px;
+  vertical-align: middle;
+  box-sizing: border-box;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.dynamic-table__mat--modern .dynamic-table__th {
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: #64748b;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.dynamic-table__mat--modern .dynamic-table__td {
+  font-size: 0.875rem;
+  color: #0f172a;
+  border-bottom: 1px solid #eef2f6 !important;
+}
+
+/** Embedded: faint vertical guides + header tint (scoped to user-style table) */
+.dynamic-table--embedded .dynamic-table__mat--modern .dynamic-table__th:not(:last-of-type),
+.dynamic-table--embedded .dynamic-table__mat--modern .dynamic-table__td:not(:last-of-type) {
+  border-right: 1px solid rgba(100, 116, 139, 0.08);
+}
+
+.dynamic-table--embedded .dynamic-table__mat--modern .dynamic-table__th {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #1e293b;
+  border-bottom-color: color-mix(in srgb, #94a3b8 18%, #e2e8f0) !important;
+}
+
+/** Override Material default cell padding / uneven first–last gutters */
+.dynamic-table--embedded .dynamic-table__mat--modern th.mat-header-cell,
+.dynamic-table--embedded .dynamic-table__mat--modern td.mat-cell {
+  padding: 12px 10px !important;
+}
+
+.dynamic-table--embedded .dynamic-table__mat--modern th.mat-header-cell:first-of-type,
+.dynamic-table--embedded .dynamic-table__mat--modern td.mat-cell:first-of-type {
+  padding-left: 10px !important;
+}
+
+.dynamic-table--embedded .dynamic-table__mat--modern th.mat-header-cell:last-of-type,
+.dynamic-table--embedded .dynamic-table__mat--modern td.mat-cell:last-of-type {
+  padding-right: 10px !important;
+}
+
+.dynamic-table--embedded .dynamic-table__mat--modern th.mat-header-cell .mat-sort-header-content {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.dynamic-table--embedded .dynamic-table__mat--modern th.mat-header-cell.dynamic-table__th--amount .mat-sort-header-content {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.dynamic-table--embedded .dynamic-table__mat--modern th.mat-header-cell.dynamic-table__th--center .mat-sort-header-content {
+  justify-content: center;
+  text-align: center;
+}
+
+.dynamic-table--embedded .dynamic-table__mat--modern th.mat-header-cell.mat-column-category_name .mat-sort-header-content,
+.dynamic-table--embedded .dynamic-table__mat--modern th.mat-header-cell.mat-column-category .mat-sort-header-content {
+  justify-content: center;
+  text-align: center;
+}
+
+.dynamic-table--embedded .dynamic-table__mat--modern .dynamic-table__header-row {
+  background: linear-gradient(180deg, #eef4ff 0%, #e8f0fc 55%, #e4ebf8 100%);
+}
+
+body.dark-theme .dynamic-table--embedded .dynamic-table__mat--modern .dynamic-table__header-row {
+  background: linear-gradient(180deg, color-mix(in srgb, #1d4ed8 14%, var(--surface-muted)) 0%, var(--surface-muted) 100%);
+}
+
+body.dark-theme .dynamic-table--embedded .dynamic-table__mat--modern .dynamic-table__th:not(:last-of-type),
+body.dark-theme .dynamic-table--embedded .dynamic-table__mat--modern .dynamic-table__td:not(:last-of-type) {
+  border-right-color: rgba(148, 163, 184, 0.1);
+}
+
+body.dark-theme .dynamic-table--embedded .dynamic-table__mat--modern .dynamic-table__th {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #e2e8f0;
+  border-bottom-color: var(--border) !important;
+}
+
+body.dark-theme .dynamic-table__mat--modern .dynamic-table__th {
+  color: var(--text-muted);
+  border-bottom-color: var(--border) !important;
+}
+
+body.dark-theme .dynamic-table__mat--modern .dynamic-table__td {
+  color: var(--text);
+  border-bottom-color: var(--border) !important;
+}
+
+.dynamic-table__mat--modern .dynamic-table__th--amount,
+.dynamic-table__mat--modern .dynamic-table__td--amount {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.dynamic-table__mat--modern .dynamic-table__th--center,
+.dynamic-table__mat--modern .dynamic-table__td--center {
+  text-align: center;
+}
+
+.dynamic-table__mat--modern .dynamic-table__td--title {
+  font-weight: 500;
+}
+
+.dynamic-table__mat--modern .dynamic-table__td--payment {
+  text-transform: capitalize;
+}
+
+/** Non-embedded modern fallback header (embedded overrides above with higher specificity) */
+.dynamic-table__mat--modern .dynamic-table__header-row {
+  background: #f4f6f9;
+}
+
+body.dark-theme .dynamic-table__mat--modern .dynamic-table__header-row {
+  background: var(--surface-muted, #1e293b);
+}
+
+/** Mat sort header flex alignment (Material stretches labels otherwise) */
+.dynamic-table--embedded .dynamic-table__mat--modern th.mat-header-cell .mat-sort-header-container {
+  width: 100%;
+  min-width: 0;
+}
+
+.dynamic-table--embedded .dynamic-table__mat--modern th.mat-header-cell.dynamic-table__th--amount .mat-sort-header-container {
+  justify-content: flex-end;
+}
+
+.dynamic-table--embedded .dynamic-table__mat--modern th.mat-header-cell.dynamic-table__th--center .mat-sort-header-container {
+  justify-content: center;
+}
+
+.dynamic-table--embedded .dynamic-table__mat--modern th.mat-header-cell.dynamic-table__th--title .mat-sort-header-container,
+.dynamic-table--embedded
+  .dynamic-table__mat--modern
+  th.mat-header-cell:not(.dynamic-table__th--center):not(.dynamic-table__th--amount)
+  .mat-sort-header-container {
+  justify-content: flex-start;
+}
+
+.dynamic-table--embedded .dynamic-table__mat--modern .dynamic-table__td:not(.dynamic-table__td--center):not(.dynamic-table__td--amount) {
+  text-align: left;
+}
+
+.dynamic-table--embedded .dynamic-table__data-row:hover {
+  background: #f8fafc;
+}
+
+body.dark-theme .dynamic-table--embedded .dynamic-table__data-row:hover {
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.dynamic-table__badge {
+  display: inline-block;
+  background: color-mix(in srgb, var(--primary, #2563eb) 14%, var(--surface, #ffffff));
+  color: var(--primary-strong, #1d4ed8);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  line-height: 1.2;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dynamic-table--embedded .dynamic-table__badge {
+  background: #e8f1fe;
+  color: #1e40af;
+  border: 1px solid rgba(37, 99, 235, 0.2);
+  font-weight: 600;
+  font-size: 0.6875rem;
+  padding: 5px 11px;
+}
+
+body.dark-theme .dynamic-table__badge {
+  background: color-mix(in srgb, #3b82f6 18%, #1e293b);
+  color: #93c5fd;
+}
+
+body.dark-theme .dynamic-table--embedded .dynamic-table__badge {
+  border-color: rgba(59, 130, 246, 0.25);
+}
+
+.dynamic-table--embedded .dynamic-table__link--cell {
+  min-width: auto !important;
+  padding: 4px 6px !important;
+  line-height: 1.25;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.dynamic-table--embedded .dynamic-table__link--edit {
+  color: #15803d !important;
+  font-weight: 700 !important;
+}
+
+.dynamic-table--embedded .dynamic-table__link--delete {
+  color: #b91c1c !important;
+  font-weight: 700 !important;
+}
+
+.dynamic-table--embedded .dynamic-table__link--view {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+.dynamic-table--embedded .dynamic-table__link--view:hover {
+  text-decoration: underline;
+  color: #020617 !important;
+}
+
+body.dark-theme .dynamic-table--embedded .dynamic-table__link--edit {
+  color: #4ade80 !important;
+}
+
+body.dark-theme .dynamic-table--embedded .dynamic-table__link--delete {
+  color: #fca5a5 !important;
+}
+
+body.dark-theme .dynamic-table--embedded .dynamic-table__link--view {
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme .dynamic-table--embedded .dynamic-table__link--view:hover {
+  color: #ffffff !important;
+}
+
+.dynamic-table--embedded .dynamic-table__paginator {
+  background: linear-gradient(180deg, #f9fafb 0%, #f1f5f9 100%);
+  border: 1px solid #e5e9ef;
+  border-top: 1px solid #e8ecf0;
+  border-radius: 0 0 14px 14px;
+  margin-top: 0;
+  padding-top: 0;
+  box-shadow: 0 10px 28px -18px rgba(15, 23, 42, 0.18);
+}
+
+body.dark-theme .dynamic-table--embedded .dynamic-table__paginator {
+  background: var(--surface-muted, #1e293b);
+  border-color: var(--border);
+  box-shadow: none;
+}
+
+.dynamic-table--embedded .dynamic-table__paginator ::ng-deep .mat-paginator-container {
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 12px 10px;
+  min-height: 48px;
+}
+
+.dynamic-table--embedded .dynamic-table__paginator ::ng-deep .mat-paginator-page-size {
+  align-items: center;
+  margin-right: 8px;
+}
+
+.dynamic-table--embedded .dynamic-table__paginator ::ng-deep .mat-paginator-page-size-label,
+.dynamic-table--embedded .dynamic-table__paginator ::ng-deep .mat-select-value {
+  font-size: 0.8125rem;
+  color: #64748b;
+}
+
+.dynamic-table--embedded .dynamic-table__paginator ::ng-deep .mat-paginator-range-label {
+  margin: 0 12px 0 0;
+  font-size: 0.8125rem;
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
+}
+
+.dynamic-table--embedded .dynamic-table__paginator ::ng-deep .mat-icon-button {
+  width: 36px;
+  height: 36px;
+  line-height: 36px;
+}
+
+body.dark-theme .dynamic-table--embedded .dynamic-table__paginator ::ng-deep .mat-paginator-page-size-label,
+body.dark-theme .dynamic-table--embedded .dynamic-table__paginator ::ng-deep .mat-paginator-range-label,
+body.dark-theme .dynamic-table--embedded .dynamic-table__paginator ::ng-deep .mat-select-value {
+  color: var(--text-muted);
+}
+
+/**
+ * User expense table: explicit % widths (sum 100%) for `table-layout: fixed`.
+ * Keys match `matColumnDef` / `mat-column-*` classes.
+ */
+.dynamic-table--embedded .dynamic-table__mat--modern .mat-column-title {
+  width: 20%;
+}
+
+.dynamic-table--embedded .dynamic-table__mat--modern .mat-column-amount {
+  width: 10%;
+}
+
+.dynamic-table--embedded .dynamic-table__mat--modern .mat-column-category_name,
+.dynamic-table--embedded .dynamic-table__mat--modern .mat-column-category {
+  width: 12%;
+  text-align: center;
+}
+
+.dynamic-table--embedded .dynamic-table__mat--modern .mat-column-category_name .dynamic-table__badge {
+  vertical-align: middle;
+  max-width: 100%;
+}
+
+.dynamic-table--embedded .dynamic-table__mat--modern .mat-column-expense_date {
+  width: 10%;
+}
+
+.dynamic-table--embedded .dynamic-table__mat--modern .mat-column-payment_method,
+.dynamic-table--embedded .dynamic-table__mat--modern .mat-column-payment {
+  width: 10%;
+}
+
+.dynamic-table--embedded .dynamic-table__mat--modern .mat-column-description {
+  width: 8%;
+}
+
+.dynamic-table--embedded .dynamic-table__mat--modern .mat-column-_update {
+  width: 7%;
+}
+
+.dynamic-table--embedded .dynamic-table__mat--modern .mat-column-_delete {
+  width: 7%;
+}
+
+.dynamic-table--embedded .dynamic-table__mat--modern .mat-column-_receipt {
+  width: 8%;
+}
+
+.dynamic-table--embedded .dynamic-table__mat--modern .mat-column-vendor {
+  width: 8%;
+}
+
+.dynamic-table--embedded .dynamic-table__mat--modern .mat-column-user_name {
+  width: 12%;
+}
+
+.dynamic-table--embedded .dynamic-table__mat--modern .mat-column-_edit {
+  width: 7%;
+}
+
+.dynamic-table--embedded .dynamic-table__mat--modern td .dynamic-table__link--cell {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.dynamic-table--embedded .dynamic-table__mat--modern ::ng-deep .mat-sort-header-arrow {
+  color: #94a3b8;
+}
+
+@media (max-width: 600px) {
+  .dynamic-table__head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dynamic-table__filter {
+    max-width: none;
+  }
+}

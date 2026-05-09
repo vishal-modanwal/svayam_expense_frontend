@@ -1,0 +1,295 @@
+:host {
+  --nav-bar-offset: 56px;
+  --accent: #0d9488;
+  --accent-deep: #0f766e;
+  --accent-glow: rgba(13, 148, 136, 0.35);
+}
+
+@media (min-width: 960px) {
+  :host {
+    --nav-bar-offset: 64px;
+  }
+}
+
+/* Login — richer Spendee base + teal accent */
+.spendee-login.auth-page {
+  position: relative;
+  isolation: isolate;
+  min-height: calc(100vh - var(--nav-bar-offset) - env(safe-area-inset-top, 0px));
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 48px 20px;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(13, 148, 136, 0.18), transparent 55%),
+    radial-gradient(ellipse 90% 60% at 100% 50%, rgba(14, 116, 144, 0.12), transparent 50%),
+    radial-gradient(ellipse 70% 50% at 0% 80%, rgba(13, 148, 136, 0.1), transparent 45%),
+    linear-gradient(165deg, #f0fdfa 0%, #f8fafc 38%, #eef2ff 100%);
+}
+
+.spendee-login.auth-page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.45;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%230d9488' fill-opacity='0.06'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+.spendee-login .auth-card {
+  position: relative;
+  width: min(420px, 100%);
+  padding: 48px 40px 44px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #ffffff 0%, #fafefe 100%);
+  border: 1px solid rgba(13, 148, 136, 0.14);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.8) inset,
+    0 4px 6px -1px rgba(15, 23, 42, 0.06),
+    0 22px 48px -12px rgba(15, 118, 110, 0.18);
+}
+
+.spendee-login .auth-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 20px;
+  right: 20px;
+  height: 4px;
+  border-radius: 0 0 6px 6px;
+  background: linear-gradient(90deg, #14b8a6, #0d9488, #0e7490);
+  box-shadow: 0 2px 12px var(--accent-glow);
+}
+
+.spendee-login .auth-title {
+  margin: 0 0 14px;
+  font-size: 1.7rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  text-align: center;
+  line-height: 1.2;
+  background: linear-gradient(120deg, #0f766e 0%, #0d9488 45%, #0e7490 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.spendee-login .auth-lead {
+  margin: 0 0 34px;
+  text-align: center;
+  font-size: 0.95rem;
+  color: #64748b;
+  line-height: 1.55;
+}
+
+.spendee-login .link-accent {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.spendee-login .link-accent:hover {
+  color: var(--accent-deep);
+  text-decoration: underline;
+}
+
+.spendee-login .login-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.spendee-login .form-group {
+  margin-bottom: 20px;
+}
+
+.spendee-login .field-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: #475569;
+  text-transform: none;
+}
+
+.spendee-login input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 13px 15px;
+  font-size: 0.95rem;
+  color: #1e293b;
+  background: #ffffff;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.spendee-login input::placeholder {
+  color: #94a3b8;
+}
+
+.spendee-login input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.2);
+}
+
+.spendee-login input.invalid {
+  border-color: #f87171;
+  box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.15);
+}
+
+.spendee-login small {
+  display: block;
+  margin-top: 8px;
+  color: #dc2626;
+  font-size: 0.78rem;
+}
+
+.spendee-login .forgot-row {
+  margin: -6px 0 26px;
+  text-align: right;
+  font-size: 0.9rem;
+}
+
+.spendee-login .btn-login {
+  width: 100%;
+  border: none;
+  border-radius: 10px;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, #14b8a6 0%, #0d9488 48%, #0f766e 100%);
+  color: #ffffff;
+  font-size: 0.96rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow:
+    0 2px 4px rgba(15, 118, 110, 0.25),
+    0 12px 28px -6px rgba(13, 148, 136, 0.45);
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    filter 0.18s ease;
+}
+
+.spendee-login .btn-login:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+  box-shadow:
+    0 4px 8px rgba(15, 118, 110, 0.3),
+    0 16px 36px -8px rgba(13, 148, 136, 0.5);
+}
+
+.spendee-login .btn-login:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.spendee-login .btn-login:disabled {
+  opacity: 0.72;
+  cursor: not-allowed;
+  filter: grayscale(0.15);
+  box-shadow: none;
+}
+
+/* Dark theme */
+body.dark-theme .spendee-login.auth-page {
+  background:
+    radial-gradient(ellipse 100% 70% at 50% -15%, rgba(45, 212, 191, 0.12), transparent 55%),
+    radial-gradient(ellipse 80% 50% at 100% 30%, rgba(13, 148, 136, 0.1), transparent 45%),
+    linear-gradient(165deg, #0c1220 0%, #0f1419 50%, #0a1626 100%);
+}
+
+body.dark-theme .spendee-login.auth-page::before {
+  opacity: 0.35;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%232dd4bf' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+body.dark-theme .spendee-login .auth-card {
+  background: linear-gradient(180deg, #1a2431 0%, #151d28 100%);
+  border-color: rgba(45, 212, 191, 0.2);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+    0 8px 32px -8px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(13, 148, 136, 0.15);
+}
+
+body.dark-theme .spendee-login .auth-card::before {
+  background: linear-gradient(90deg, #5eead4, #2dd4bf, #14b8a6);
+  box-shadow: 0 2px 20px rgba(45, 212, 191, 0.35);
+}
+
+body.dark-theme .spendee-login .auth-title {
+  background: linear-gradient(120deg, #5eead4 0%, #2dd4bf 40%, #14b8a6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+body.dark-theme .spendee-login .auth-lead {
+  color: #94a3b8;
+}
+
+body.dark-theme .spendee-login .field-label {
+  color: #cbd5e1;
+}
+
+body.dark-theme .spendee-login input {
+  background: rgba(15, 23, 42, 0.5);
+  border-color: #475569;
+  color: #f1f5f9;
+}
+
+body.dark-theme .spendee-login input::placeholder {
+  color: #64748b;
+}
+
+body.dark-theme .spendee-login input:focus {
+  border-color: #2dd4bf;
+  box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.22);
+}
+
+body.dark-theme .spendee-login .btn-login {
+  background: linear-gradient(135deg, #2dd4bf 0%, #14b8a6 45%, #0d9488 100%);
+  color: #042f2e;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.35),
+    0 12px 32px -6px rgba(45, 212, 191, 0.35);
+}
+
+body.dark-theme .spendee-login .btn-login:hover:not(:disabled) {
+  filter: brightness(1.08);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.4),
+    0 18px 40px -8px rgba(45, 212, 191, 0.4);
+}
+
+body.dark-theme .spendee-login .link-accent {
+  color: #5eead4;
+}
+
+body.dark-theme .spendee-login .link-accent:hover {
+  color: #99f6e4;
+}
+
+@media (max-width: 480px) {
+  .spendee-login.auth-page {
+    padding: max(24px, env(safe-area-inset-top, 0px)) max(14px, env(safe-area-inset-right, 0px))
+      max(24px, env(safe-area-inset-bottom, 0px)) max(14px, env(safe-area-inset-left, 0px));
+    align-items: flex-start;
+  }
+
+  .spendee-login .auth-card {
+    padding: 36px 22px 38px;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .spendee-login .auth-title {
+    font-size: 1.45rem;
+  }
+}

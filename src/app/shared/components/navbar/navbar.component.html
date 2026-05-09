@@ -1,0 +1,113 @@
+<nav class="navbar" role="navigation" aria-label="Main">
+  <div class="navbar-inner">
+    <a routerLink="/landing" class="brand" aria-label="SvayamTracker home">
+      <img class="brand-logo" src="assets/svayam-tracker-logo.png" width="34" height="34" alt="" />
+      <span class="brand-text">SvayamExpense</span>
+    </a>
+
+    <div class="right-links right-links--desktop">
+      <a class="links" routerLink="/landing" routerLinkActive="nav-link--active" [routerLinkActiveOptions]="{ exact: true }">Home</a>
+
+      <a
+        *ngIf="isLoggedIn() && showDashboardNavLink()"
+        class="links"
+        [routerLink]="dashboardRouterLink()"
+        routerLinkActive="nav-link--active"
+        >{{ dashboardLabel() }}</a>
+
+      <a
+        *ngIf="isLoggedIn() && !isAdmin()"
+        class="links"
+        routerLink="/profile"
+        routerLinkActive="nav-link--active"
+        >Profile</a>
+
+      <a *ngIf="showRegisterNav()" class="links" routerLink="/register">Signup</a>
+
+      <a *ngIf="showLoginNav()" routerLink="/login" class="links">Login</a>
+
+      <ng-container *ngIf="showProfileMenu()">
+        <div
+          class="profile-wrapper"
+          [matMenuTriggerFor]="profileMenu"
+          #desktopProfileMenuTrigger="matMenuTrigger">
+          <div class="profile-box" [attr.aria-label]="'Account menu for ' + (userName || 'user')">
+            <span class="profile-trigger-avatar" aria-hidden="true">{{ userInitials }}</span>
+            <mat-icon class="profile-chevron">arrow_drop_down</mat-icon>
+          </div>
+        </div>
+
+        <mat-menu #profileMenu="matMenu" [overlapTrigger]="false" panelClass="profile-dropdown-panel">
+          <div class="profile-menu-header" (click)="$event.stopPropagation()">
+            <div class="profile-avatar" aria-hidden="true">{{ userInitials }}</div>
+            <div class="profile-meta">
+              <span class="profile-name">{{ userName || 'Account' }}</span>
+              <span class="profile-email-line">{{ userEmail || '—' }}</span>
+              <span class="profile-mobile-line" *ngIf="userMobile">{{ userMobile }}</span>
+              <span class="profile-mobile-line muted" *ngIf="!userMobile">No mobile on file</span>
+            </div>
+          </div>
+          <mat-divider></mat-divider>
+          <button mat-menu-item type="button" (click)="goToEditProfilePage()">
+            <mat-icon>edit</mat-icon>
+            <span>Edit profile</span>
+          </button>
+          <button mat-menu-item type="button" (click)="logout()">
+            <mat-icon>logout</mat-icon>
+            <span>Logout</span>
+          </button>
+        </mat-menu>
+      </ng-container>
+    </div>
+
+    <div class="navbar-mobile">
+      <a *ngIf="showLoginNav()" routerLink="/login" class="nav-login-btn nav-login-btn--mobile">Sign in</a>
+      <button
+        mat-icon-button
+        type="button"
+        class="mobile-menu-trigger"
+        [matMenuTriggerFor]="mobileNavMenu"
+        #mobileNavMenuTrigger="matMenuTrigger"
+        aria-label="Open navigation menu">
+        <mat-icon>menu</mat-icon>
+      </button>
+
+      <mat-menu #mobileNavMenu="matMenu" panelClass="nav-mobile-menu-panel">
+        <!-- Two ng-containers (no ng-template else): mat-menu content must stay direct children for MatMenuItem queries. -->
+        <ng-container *ngIf="isLoggedIn()">
+          <a mat-menu-item routerLink="/landing" (click)="closeMobileNav()">
+            <mat-icon>home</mat-icon>
+            <span>Home</span>
+          </a>
+          <a mat-menu-item [routerLink]="dashboardRouterLink()" (click)="closeMobileNav()">
+            <mat-icon>{{ isAdmin() ? 'admin_panel_settings' : 'dashboard' }}</mat-icon>
+            <span>{{ dashboardLabel() }}</span>
+          </a>
+          <a *ngIf="!isAdmin()" mat-menu-item routerLink="/profile" (click)="closeMobileNav()">
+            <mat-icon>person</mat-icon>
+            <span>Profile</span>
+          </a>
+          <button mat-menu-item type="button" (click)="logout(); closeMobileNav()">
+            <mat-icon>logout</mat-icon>
+            <span>Logout</span>
+          </button>
+        </ng-container>
+
+        <ng-container *ngIf="!isLoggedIn()">
+          <a mat-menu-item routerLink="/landing" (click)="closeMobileNav()">
+            <mat-icon>home</mat-icon>
+            <span>Home</span>
+          </a>
+          <a *ngIf="showDashboardNavLink()" mat-menu-item [routerLink]="dashboardRouterLink()" (click)="closeMobileNav()">
+            <mat-icon>dashboard</mat-icon>
+            <span>{{ dashboardLabel() }}</span>
+          </a>
+          <a *ngIf="showRegisterNav()" mat-menu-item routerLink="/register" (click)="closeMobileNav()">
+            <mat-icon>person_add</mat-icon>
+            <span>Get started</span>
+          </a>
+        </ng-container>
+      </mat-menu>
+    </div>
+  </div>
+</nav>
