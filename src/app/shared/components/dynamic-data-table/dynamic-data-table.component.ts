@@ -10,6 +10,7 @@ import {
   SimpleChanges,
   ViewChild
 } from '@angular/core';
+import { DomSanitizer, SafeResourceUrl, SafeUrl } from '@angular/platform-browser';
 import { FormControl } from '@angular/forms';
 import { MatPaginator } from '@angular/material/paginator';
 import { MatSort, Sort } from '@angular/material/sort';
@@ -18,6 +19,7 @@ import { Observable, Subject, Subscription, merge } from 'rxjs';
 import { debounceTime, distinctUntilChanged, takeUntil, tap } from 'rxjs/operators';
 import {
   DynamicTableColumn,
+  DynamicTableEmbeddedVariant,
   DynamicTableQuery,
   DynamicTableViewConfig
 } from './dynamic-data-table.models';
@@ -45,12 +47,17 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy {
    * (used on user dashboard to match the reference expense table).
    */
   @Input() embedded = false;
+  /**
+   * When `embedded` is true, selects column width presets (`table-layout: fixed`).
+   * Omit when `embedded` is false.
+   */
+  @Input() embeddedVariant: DynamicTableEmbeddedVariant | null = null;
 
   @Output() readonly queryChange = new EventEmitter<DynamicTableQuery>();
   @Output() readonly adminExpenseEdit = new EventEmitter<Record<string, unknown>>();
   @Output() readonly adminExpenseDelete = new EventEmitter<Record<string, unknown>>();
   @Output() readonly userExpenseAction = new EventEmitter<{
-    action: 'notes' | 'edit' | 'delete' | 'receipt';
+    action: 'notes' | 'edit' | 'delete';
     row: Record<string, unknown>;
   }>();
 
@@ -89,13 +96,22 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy {
 
   displayedColumnKeys: string[] = [];
 
+  /** Inline receipt preview (View). */
+  receiptModalOpen = false;
+  receiptModalHasFile = false;
+  receiptPreviewImageUrl: SafeUrl | null = null;
+  receiptPreviewFrameUrl: SafeResourceUrl | null = null;
+
   private _paginator?: MatPaginator;
   private _sort?: MatSort;
   private readonly destroy$ = new Subject<void>();
   private interactionsWired = false;
   private interactionSub?: Subscription;
 
-  constructor(private readonly cdr: ChangeDetectorRef) {}
+  constructor(
+    private readonly cdr: ChangeDetectorRef,
+    private readonly sanitizer: DomSanitizer
+  ) {}
 
   get columns(): DynamicTableColumn[] {
     return this.config?.columns ?? [];
@@ -142,7 +158,8 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy {
       c === 'userExpenseReceipt' ||
       c === 'adminExpenseReceipt' ||
       c === 'adminExpenseDelete' ||
-      c === 'adminExpenseEdit'
+      c === 'adminExpenseEdit' ||
+      c === 'expenseReceiptDownload'
     );
   }
 
@@ -227,6 +244,84 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy {
     return resolveReceiptPublicUrl(String(url), environment.uploadsOrigin);
   }
 
+  openReceiptModal(row: Record<string, unknown>): void {
+    const href = this.receiptHref(row);
+    this.receiptModalOpen = true;
+    this.receiptModalHasFile = !!href;
+    this.receiptPreviewImageUrl = null;
+    this.receiptPreviewFrameUrl = null;
+    if (href && this.isLikelyImageReceiptUrl(href)) {
+      this.receiptPreviewImageUrl = this.sanitizer.bypassSecurityTrustUrl(href);
+    } else if (href) {
+      this.receiptPreviewFrameUrl = this.sanitizer.bypassSecurityTrustResourceUrl(href);
+    }
+    this.cdr.markForCheck();
+  }
+
+  closeReceiptModal(): void {
+    this.receiptModalOpen = false;
+    this.receiptModalHasFile = false;
+    this.receiptPreviewImageUrl = null;
+    this.receiptPreviewFrameUrl = null;
+    this.cdr.markForCheck();
+  }
+
+  downloadReceipt(row: Record<string, unknown>): void {
+    const href = this.receiptHref(row);
+    if (!href) {
+      return;
+    }
+    const name = this.receiptDownloadFilename(href);
+    fetch(href, { credentials: 'include', mode: 'cors' })
+      .then((r) => {
+        if (!r.ok) {
+          throw new Error('fetch failed');
+        }
+        return r.blob();
+      })
+      .then((blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = name;
+        a.rel = 'noopener';
+        a.click();
+        URL.revokeObjectURL(url);
+        this.cdr.markForCheck();
+      })
+      .catch(() => {
+        const a = document.createElement('a');
+        a.href = href;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.click();
+        this.cdr.markForCheck();
+      });
+  }
+
+  private isLikelyImageReceiptUrl(href: string): boolean {
+    try {
+      const u = new URL(href, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
+      return /\.(png|jpe?g|gif|webp|bmp|svg)(\?.*)?$/i.test(u.pathname);
+    } catch {
+      return /\.(png|jpe?g|gif|webp|bmp|svg)(\?|$)/i.test(href);
+    }
+  }
+
+  private receiptDownloadFilename(href: string): string {
+    try {
+      const u = new URL(href, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
+      const seg = u.pathname.split('/').filter(Boolean).pop();
+      if (seg) {
+        return seg;
+      }
+    } catch {
+      /* fall through */
+    }
+    const tail = href.split(/[/?#]/).filter(Boolean).pop();
+    return tail && tail.includes('.') ? tail : 'receipt';
+  }
+
   onAdminExpenseEditClick(row: Record<string, unknown>): void {
     this.adminExpenseEdit.emit(row);
   }
@@ -235,7 +330,7 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy {
     this.adminExpenseDelete.emit(row);
   }
 
-  onUserExpenseAction(action: 'notes' | 'edit' | 'delete' | 'receipt', row: Record<string, unknown>): void {
+  onUserExpenseAction(action: 'notes' | 'edit' | 'delete', row: Record<string, unknown>): void {
     this.userExpenseAction.emit({ action, row });
   }
 

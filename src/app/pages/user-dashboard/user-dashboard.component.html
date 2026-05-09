@@ -125,6 +125,7 @@
         [sortState]="userExpenseSortState"
         [pageIndex]="page - 1"
         [embedded]="true"
+        embeddedVariant="user"
         (queryChange)="onUserExpenseDynamicQuery($event)"
         (userExpenseAction)="onUserExpenseAction($event)">
       </app-dynamic-data-table>

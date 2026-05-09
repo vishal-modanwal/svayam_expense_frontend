@@ -3,6 +3,7 @@ import { FormBuilder, Validators } from '@angular/forms';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { ProfileService } from 'src/app/core/services/profile.service';
 import { ToastService } from 'src/app/core/services/toast.service';
+import { mergeStoredProfileWithUser } from 'src/app/core/utils/stored-user-profile';
 
 @Component({
   selector: 'app-profile',
@@ -38,7 +39,7 @@ export class ProfileComponent implements OnInit {
           name: res.user.name,
           mobile_no: res.user.mobile_no || res.user.mobile || ''
         });
-        this.authService.syncProfile(res.user);
+        mergeStoredProfileWithUser(res.user, this.authService);
       },
       error: (err) => this.toastService.error(err?.error?.message || 'Failed to load profile')
     });

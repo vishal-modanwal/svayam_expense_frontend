@@ -9,6 +9,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatCardModule } from '@angular/material/card';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatOptionModule } from '@angular/material/core';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatStepperModule } from '@angular/material/stepper';
@@ -32,8 +33,6 @@ import { AdminDashboardComponent } from './pages/admin-dashboard/admin-dashboard
 import { ProfileComponent } from './pages/profile/profile.component';
 import { AuthInterceptor } from './core/interceptors/auth.interceptor';
 import { DynamicDataTableComponent } from './shared/components/dynamic-data-table/dynamic-data-table.component';
-import { ExpenseDataTableComponent } from './shared/components/expense-data-table/expense-data-table.component';
-import { AdminExpenseDataTableComponent } from './shared/components/admin-expense-data-table/admin-expense-data-table.component';
 import { ExpenseFormModalComponent } from './shared/components/expense-form-modal/expense-form-modal.component';
 
 export function lottiePlayerFactory(): typeof player {
@@ -53,8 +52,6 @@ export function lottiePlayerFactory(): typeof player {
     AdminDashboardComponent,
     ProfileComponent,
     DynamicDataTableComponent,
-    ExpenseDataTableComponent,
-    AdminExpenseDataTableComponent,
     ExpenseFormModalComponent
   ],
   imports: [
@@ -71,6 +68,7 @@ export function lottiePlayerFactory(): typeof player {
     MatCardModule,
     MatInputModule,
     MatFormFieldModule,
+    MatOptionModule,
     MatSelectModule,
     MatSnackBarModule,
     MatStepperModule,

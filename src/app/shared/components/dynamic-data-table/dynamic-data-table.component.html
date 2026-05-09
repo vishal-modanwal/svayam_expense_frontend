@@ -1,5 +1,11 @@
 <ng-container *ngIf="config?.columns?.length; else noConfig">
-  <div class="dynamic-table" [class.dynamic-table--embedded]="embedded">
+  <div
+    class="dynamic-table"
+    [class.dynamic-table--embedded]="embedded"
+    [class.dynamic-table--variant-user]="embedded && embeddedVariant === 'user'"
+    [class.dynamic-table--variant-admin-expenses]="embedded && embeddedVariant === 'admin-expenses'"
+    [class.dynamic-table--variant-admin-budget]="embedded && embeddedVariant === 'admin-budget'"
+    [class.dynamic-table--variant-admin-users]="embedded && embeddedVariant === 'admin-users'">
     <mat-card class="dynamic-table__card" [class.mat-elevation-z2]="!embedded">
       <div class="dynamic-table__head" *ngIf="showTableHead">
         <h2 class="dynamic-table__title" *ngIf="config?.title as title">{{ title }}</h2>
@@ -53,18 +59,14 @@
                   </button>
                 </ng-container>
                 <ng-container *ngSwitchCase="'adminExpenseReceipt'">
-                  <a
-                    *ngIf="receiptHref(row) as href"
+                  <button
                     mat-button
                     type="button"
-                    class="dynamic-table__link"
+                    class="dynamic-table__link dynamic-table__link--view"
                     [class.dynamic-table__link--cell]="embedded"
-                    [href]="href"
-                    target="_blank"
-                    rel="noopener noreferrer">
-                    Open
-                  </a>
-                  <span *ngIf="!receiptHref(row)" class="dynamic-table__muted" aria-hidden="true">—</span>
+                    (click)="openReceiptModal(row)">
+                    View
+                  </button>
                 </ng-container>
                 <ng-container *ngSwitchCase="'adminExpenseDelete'">
                   <button
@@ -99,17 +101,6 @@
                       (click)="onUserExpenseAction('delete', row)">
                       <mat-icon>delete</mat-icon>
                     </button>
-                    <a
-                      *ngIf="receiptHref(row) as href"
-                      mat-button
-                      type="button"
-                      class="dynamic-table__link"
-                      [href]="href"
-                      target="_blank"
-                      rel="noopener noreferrer">
-                      Receipt
-                    </a>
-                    <span *ngIf="!receiptHref(row)" class="dynamic-table__muted" aria-hidden="true">—</span>
                   </span>
                 </ng-container>
                 <ng-container *ngSwitchCase="'userExpenseViewNotes'">
@@ -143,18 +134,26 @@
                   </button>
                 </ng-container>
                 <ng-container *ngSwitchCase="'userExpenseReceipt'">
-                  <a
-                    *ngIf="receiptHref(row) as href"
+                  <button
                     mat-button
                     type="button"
-                    class="dynamic-table__link"
+                    class="dynamic-table__link dynamic-table__link--view"
                     [class.dynamic-table__link--cell]="embedded"
-                    [href]="href"
-                    target="_blank"
-                    rel="noopener noreferrer">
-                    Open
-                  </a>
-                  <span *ngIf="!receiptHref(row)" class="dynamic-table__muted" aria-hidden="true">—</span>
+                    (click)="openReceiptModal(row)">
+                    View
+                  </button>
+                </ng-container>
+                <ng-container *ngSwitchCase="'expenseReceiptDownload'">
+                  <button
+                    mat-icon-button
+                    type="button"
+                    class="dynamic-table__icon-btn"
+                    aria-label="Download receipt"
+                    [disabled]="!receiptHref(row)"
+                    [attr.title]="receiptHref(row) ? 'Download receipt' : 'No receipt uploaded'"
+                    (click)="downloadReceipt(row)">
+                    <mat-icon>download</mat-icon>
+                  </button>
                 </ng-container>
                 <ng-container *ngSwitchDefault>
                   <span *ngIf="embedded && isCategoryColumn(col)" class="dynamic-table__badge">{{ formatCell(row, col) }}</span>
@@ -183,6 +182,43 @@
         class="dynamic-table__paginator"
       ></mat-paginator>
     </mat-card>
+  </div>
+
+  <div
+    *ngIf="receiptModalOpen"
+    class="receipt-modal-backdrop"
+    role="presentation"
+    (click)="closeReceiptModal()">
+    <div
+      class="receipt-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="receipt-modal-title"
+      (click)="$event.stopPropagation()">
+      <div class="receipt-modal__toolbar">
+        <h2 id="receipt-modal-title" class="receipt-modal__title">Receipt</h2>
+        <button mat-icon-button type="button" aria-label="Close receipt" (click)="closeReceiptModal()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+      <div class="receipt-modal__body">
+        <ng-container *ngIf="receiptModalHasFile; else receiptModalEmpty">
+          <img
+            *ngIf="receiptPreviewImageUrl"
+            [src]="receiptPreviewImageUrl"
+            class="receipt-modal__img"
+            alt="Receipt preview" />
+          <iframe
+            *ngIf="receiptPreviewFrameUrl && !receiptPreviewImageUrl"
+            [src]="receiptPreviewFrameUrl"
+            class="receipt-modal__frame"
+            title="Receipt preview"></iframe>
+        </ng-container>
+        <ng-template #receiptModalEmpty>
+          <p class="dynamic-table__muted receipt-modal__empty">No receipt was uploaded for this expense.</p>
+        </ng-template>
+      </div>
+    </div>
   </div>
 </ng-container>
 

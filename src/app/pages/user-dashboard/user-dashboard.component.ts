@@ -1,5 +1,6 @@
-import { Component, OnInit } from '@angular/core';
-import { finalize } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { Subscription, finalize } from 'rxjs';
 import { Sort } from '@angular/material/sort';
 import { Category, Expense } from 'src/app/core/models/app.models';
 import { MetaService } from 'src/app/core/services/meta.service';
@@ -9,6 +10,7 @@ import { ExpenseService } from 'src/app/core/services/expense.service';
 import { ToastService } from 'src/app/core/services/toast.service';
 import { ProfileService } from 'src/app/core/services/profile.service';
 import { mergeStoredProfileWithUser } from 'src/app/core/utils/stored-user-profile';
+import { isUserAccountInactive } from 'src/app/core/utils/user-activity.utils';
 import {
   buildFallbackUserExpenseMetaConfig,
   buildUserExpenseViewConfigFromTableMeta,
@@ -24,7 +26,7 @@ import {
   templateUrl: './user-dashboard.component.html',
   styleUrls: ['./user-dashboard.component.css']
 })
-export class UserDashboardComponent implements OnInit {
+export class UserDashboardComponent implements OnInit, OnDestroy {
   userExpenseTableConfig: DynamicTableViewConfig | null = null;
   userExpenseTableRows: Record<string, unknown>[] = [];
   userExpenseSortState: Sort | null = { active: 'expense_date', direction: 'desc' };
@@ -55,22 +57,35 @@ export class UserDashboardComponent implements OnInit {
   selectedNote: string | null = null;
   selectedDeleteExpense: Expense | null = null;
 
+  private readonly subs = new Subscription();
+
   constructor(
     private readonly authService: AuthService,
     private readonly categoryService: CategoryService,
     private readonly expenseService: ExpenseService,
     private readonly metaService: MetaService,
     private readonly profileService: ProfileService,
-    private readonly toastService: ToastService
+    private readonly toastService: ToastService,
+    private readonly cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
     this.hydrateUserFromSession();
     this.refreshUserFromProfile();
+    this.subs.add(
+      this.authService.user$.subscribe(() => {
+        this.hydrateUserFromSession();
+        this.cdr.detectChanges();
+      })
+    );
     this.bootstrapUserExpenseTableConfig();
     this.loadExpenseTableMeta();
     this.loadCategories();
     this.loadExpenses();
+  }
+
+  ngOnDestroy(): void {
+    this.subs.unsubscribe();
   }
 
   /** True when the user is allowed to add expenses (API may omit flag = treat as active). */
@@ -79,14 +94,7 @@ export class UserDashboardComponent implements OnInit {
     if (!u) {
       return true;
     }
-    if (u.is_active === false || u.is_active === 0) {
-      return false;
-    }
-    const s = (u.status || '').toLowerCase().trim();
-    if (s === 'inactive' || s === 'disabled' || s === 'suspended' || s === 'deactivated') {
-      return false;
-    }
-    return true;
+    return !isUserAccountInactive(u);
   }
 
   private hydrateUserFromSession(): void {
@@ -101,9 +109,33 @@ export class UserDashboardComponent implements OnInit {
           mergeStoredProfileWithUser(u, this.authService);
         }
         this.hydrateUserFromSession();
+        this.cdr.detectChanges();
       },
-      error: () => {
-        /* keep session user */
+      error: (err: HttpErrorResponse) => {
+        const cur = this.authService.getCurrentUser();
+        const payload = err?.error;
+        const rawMsg =
+          typeof payload === 'string'
+            ? payload
+            : String(
+                (payload as { message?: string })?.message ??
+                  (payload as { error?: string })?.error ??
+                  err?.message ??
+                  ''
+              );
+        const msg = rawMsg.toLowerCase();
+        const inactiveHint =
+          /inactive|deactivated|disabled|not\s+active|account\s+is\s+not|cannot\s+add|not\s+an\s+active\s+user/.test(
+            msg
+          );
+        if (cur && inactiveHint) {
+          mergeStoredProfileWithUser(
+            { ...cur, is_active: 0, activity_status: 'inactive' },
+            this.authService
+          );
+        }
+        this.hydrateUserFromSession();
+        this.cdr.detectChanges();
       }
     });
   }
@@ -259,15 +291,12 @@ export class UserDashboardComponent implements OnInit {
     this.loadExpenses();
   }
 
-  onUserExpenseAction(ev: { action: 'notes' | 'edit' | 'delete' | 'receipt'; row: Record<string, unknown> }): void {
+  onUserExpenseAction(ev: { action: 'notes' | 'edit' | 'delete'; row: Record<string, unknown> }): void {
     const id = Number(ev.row['id']);
     const expense = this.expenses.find((x) => x.id === id);
     if (ev.action === 'notes') {
       const desc = ev.row['description'];
       this.openNotes(desc == null ? null : String(desc));
-      return;
-    }
-    if (ev.action === 'receipt') {
       return;
     }
     if (!expense) {

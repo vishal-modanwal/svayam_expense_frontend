@@ -546,63 +546,124 @@ body.dark-theme .dynamic-table--embedded .dynamic-table__paginator ::ng-deep .ma
 }
 
 /**
- * User expense table: explicit % widths (sum 100%) for `table-layout: fixed`.
- * Keys match `matColumnDef` / `mat-column-*` classes.
+ * Embedded column % widths (`table-layout: fixed`) — scoped by `embeddedVariant`
+ * so user vs admin presets do not fight each other.
  */
-.dynamic-table--embedded .dynamic-table__mat--modern .mat-column-title {
-  width: 20%;
+
+/** User “Recent expenses” — keys match mat-column-* (eleven columns, sum 100%) */
+.dynamic-table--embedded.dynamic-table--variant-user .dynamic-table__mat--modern .mat-column-title {
+  width: 16%;
 }
 
-.dynamic-table--embedded .dynamic-table__mat--modern .mat-column-amount {
-  width: 10%;
+.dynamic-table--embedded.dynamic-table--variant-user .dynamic-table__mat--modern .mat-column-amount {
+  width: 9%;
 }
 
-.dynamic-table--embedded .dynamic-table__mat--modern .mat-column-category_name,
-.dynamic-table--embedded .dynamic-table__mat--modern .mat-column-category {
-  width: 12%;
+.dynamic-table--embedded.dynamic-table--variant-user .dynamic-table__mat--modern .mat-column-category_name,
+.dynamic-table--embedded.dynamic-table--variant-user .dynamic-table__mat--modern .mat-column-category {
+  width: 9%;
   text-align: center;
 }
 
-.dynamic-table--embedded .dynamic-table__mat--modern .mat-column-category_name .dynamic-table__badge {
+.dynamic-table--embedded.dynamic-table--variant-user .dynamic-table__mat--modern .mat-column-category_name .dynamic-table__badge {
   vertical-align: middle;
   max-width: 100%;
 }
 
-.dynamic-table--embedded .dynamic-table__mat--modern .mat-column-expense_date {
+.dynamic-table--embedded.dynamic-table--variant-user .dynamic-table__mat--modern .mat-column-expense_date {
+  width: 9%;
+}
+
+.dynamic-table--embedded.dynamic-table--variant-user .dynamic-table__mat--modern .mat-column-payment_method,
+.dynamic-table--embedded.dynamic-table--variant-user .dynamic-table__mat--modern .mat-column-payment {
+  width: 9%;
+}
+
+.dynamic-table--embedded.dynamic-table--variant-user .dynamic-table__mat--modern .mat-column-description {
+  width: 7%;
+}
+
+.dynamic-table--embedded.dynamic-table--variant-user .dynamic-table__mat--modern .mat-column-_update {
+  width: 6%;
+}
+
+.dynamic-table--embedded.dynamic-table--variant-user .dynamic-table__mat--modern .mat-column-_delete {
+  width: 6%;
+}
+
+.dynamic-table--embedded.dynamic-table--variant-user .dynamic-table__mat--modern .mat-column-_receipt {
+  width: 6%;
+}
+
+.dynamic-table--embedded.dynamic-table--variant-user .dynamic-table__mat--modern .mat-column-vendor {
+  width: 7%;
+}
+
+.dynamic-table--embedded.dynamic-table--variant-user .dynamic-table__mat--modern .mat-column-_download {
   width: 10%;
 }
 
-.dynamic-table--embedded .dynamic-table__mat--modern .mat-column-payment_method,
-.dynamic-table--embedded .dynamic-table__mat--modern .mat-column-payment {
-  width: 10%;
+/** Admin “All expenses” — ten columns, sum 100% */
+.dynamic-table--embedded.dynamic-table--variant-admin-expenses .dynamic-table__mat--modern .mat-column-title {
+  width: 18%;
 }
 
-.dynamic-table--embedded .dynamic-table__mat--modern .mat-column-description {
+.dynamic-table--embedded.dynamic-table--variant-admin-expenses .dynamic-table__mat--modern .mat-column-category_name,
+.dynamic-table--embedded.dynamic-table--variant-admin-expenses .dynamic-table__mat--modern .mat-column-category {
+  width: 8%;
+  text-align: center;
+}
+
+.dynamic-table--embedded.dynamic-table--variant-admin-expenses .dynamic-table__mat--modern .mat-column-category_name .dynamic-table__badge {
+  vertical-align: middle;
+  max-width: 100%;
+}
+
+.dynamic-table--embedded.dynamic-table--variant-admin-expenses .dynamic-table__mat--modern .mat-column-amount {
   width: 8%;
 }
 
-.dynamic-table--embedded .dynamic-table__mat--modern .mat-column-_update {
+.dynamic-table--embedded.dynamic-table--variant-admin-expenses .dynamic-table__mat--modern .mat-column-payment_method,
+.dynamic-table--embedded.dynamic-table--variant-admin-expenses .dynamic-table__mat--modern .mat-column-payment {
   width: 7%;
 }
 
-.dynamic-table--embedded .dynamic-table__mat--modern .mat-column-_delete {
+.dynamic-table--embedded.dynamic-table--variant-admin-expenses .dynamic-table__mat--modern .mat-column-_receipt {
   width: 7%;
 }
 
-.dynamic-table--embedded .dynamic-table__mat--modern .mat-column-_receipt {
+.dynamic-table--embedded.dynamic-table--variant-admin-expenses .dynamic-table__mat--modern .mat-column-user_name {
   width: 8%;
 }
 
-.dynamic-table--embedded .dynamic-table__mat--modern .mat-column-vendor {
+.dynamic-table--embedded.dynamic-table--variant-admin-expenses .dynamic-table__mat--modern .mat-column-vendor {
   width: 8%;
 }
 
-.dynamic-table--embedded .dynamic-table__mat--modern .mat-column-user_name {
-  width: 12%;
+.dynamic-table--embedded.dynamic-table--variant-admin-expenses .dynamic-table__mat--modern .mat-column-expense_date {
+  width: 8%;
 }
 
-.dynamic-table--embedded .dynamic-table__mat--modern .mat-column-_edit {
-  width: 7%;
+.dynamic-table--embedded.dynamic-table--variant-admin-expenses .dynamic-table__mat--modern .mat-column-_delete {
+  width: 9%;
+}
+
+.dynamic-table--embedded.dynamic-table--variant-admin-expenses .dynamic-table__mat--modern .mat-column-_download {
+  width: 9%;
+}
+
+/** Admin budgets — typical meta keys */
+.dynamic-table--embedded.dynamic-table--variant-admin-budget .dynamic-table__mat--modern .mat-column-category_name,
+.dynamic-table--embedded.dynamic-table--variant-admin-budget .dynamic-table__mat--modern .mat-column-category {
+  width: 42%;
+}
+
+.dynamic-table--embedded.dynamic-table--variant-admin-budget .dynamic-table__mat--modern .mat-column-total_spent {
+  width: 29%;
+}
+
+.dynamic-table--embedded.dynamic-table--variant-admin-budget .dynamic-table__mat--modern .mat-column-budget_limit {
+  width: 29%;
 }
 
 .dynamic-table--embedded .dynamic-table__mat--modern td .dynamic-table__link--cell {
@@ -615,6 +676,98 @@ body.dark-theme .dynamic-table--embedded .dynamic-table__paginator ::ng-deep .ma
 
 .dynamic-table--embedded .dynamic-table__mat--modern ::ng-deep .mat-sort-header-arrow {
   color: #94a3b8;
+}
+
+.dynamic-table__icon-btn.mat-icon-button[disabled],
+.dynamic-table__icon-btn.mat-mdc-icon-button[disabled] {
+  opacity: 0.38;
+}
+
+.receipt-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(2px);
+  box-sizing: border-box;
+}
+
+.receipt-modal {
+  width: min(920px, 100%);
+  max-height: min(88vh, 900px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
+  background: var(--surface, #fff);
+  border: 1px solid var(--border, #e2e8f0);
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.2);
+  overflow: hidden;
+}
+
+body.dark-theme .receipt-modal {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+.receipt-modal__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 12px 12px 18px;
+  border-bottom: 1px solid var(--border, #e2e8f0);
+  flex-shrink: 0;
+}
+
+.receipt-modal__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text, #0f172a);
+}
+
+.receipt-modal__body {
+  flex: 1;
+  min-height: 200px;
+  max-height: calc(88vh - 72px);
+  padding: 12px 16px 16px;
+  overflow: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.receipt-modal__empty {
+  margin: 0;
+  text-align: center;
+  padding: 24px 12px;
+}
+
+.receipt-modal__img {
+  max-width: 100%;
+  max-height: min(72vh, 720px);
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.receipt-modal__frame {
+  width: 100%;
+  min-height: 360px;
+  height: min(72vh, 720px);
+  border: 0;
+  border-radius: 8px;
+  background: #f1f5f9;
+}
+
+body.dark-theme .receipt-modal__frame {
+  background: #1e293b;
 }
 
 @media (max-width: 600px) {

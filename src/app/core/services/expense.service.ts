@@ -8,7 +8,19 @@ interface ExpenseFilter {
   page?: number;
   limit?: number;
   category_id?: number | null;
-  sortBy?: 'amount' | 'expense_date';
+  sortBy?: 'amount' | 'expense_date' | 'created_at';
+  order?: 'ASC' | 'DESC';
+  /** When supported by the API, restricts the list to standard (employee) vs extra (admin) expenses. */
+  expense_type?: 'standard' | 'extra';
+  /** Admin dashboard audience slice. */
+  view?: 'users' | 'admins' | 'admins-extra';
+}
+
+interface AdminDashboardExpenseFilter {
+  view: 'users' | 'admins' | 'admins-extra';
+  page?: number;
+  limit?: number;
+  sortBy?: 'expense_date' | 'amount' | 'created_at';
   order?: 'ASC' | 'DESC';
 }
 
@@ -44,10 +56,28 @@ export class ExpenseService {
     });
   }
 
-  searchByUserName(search: string, page = 1, limit?: number): Observable<PaginatedExpenses> {
+  getDashboardExpenses(filter: AdminDashboardExpenseFilter): Observable<PaginatedExpenses> {
+    return this.http.get<PaginatedExpenses>(`${this.api}/admin/dashboard-expenses`, {
+      params: this.toParams(filter)
+    });
+  }
+
+  searchByUserName(
+    search: string,
+    page = 1,
+    limit?: number,
+    expenseType?: 'standard' | 'extra',
+    view?: 'users' | 'admins' | 'admins-extra'
+  ): Observable<PaginatedExpenses> {
     let params = new HttpParams().set('search', search).set('page', String(page));
     if (limit != null && limit > 0) {
       params = params.set('limit', String(limit));
+    }
+    if (expenseType) {
+      params = params.set('expense_type', expenseType);
+    }
+    if (view) {
+      params = params.set('view', view);
     }
     return this.http.get<PaginatedExpenses>(`${this.api}/expense/search`, { params });
   }

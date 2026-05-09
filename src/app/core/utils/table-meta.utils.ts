@@ -57,6 +57,14 @@ export const USER_EXPENSE_RECEIPT_COLUMN: DynamicTableColumn = {
   cellControl: 'userExpenseReceipt'
 };
 
+/** Receipt file download (icon column); shared by user and admin expense tables. */
+export const EXPENSE_RECEIPT_DOWNLOAD_COLUMN: DynamicTableColumn = {
+  key: '_download',
+  label: 'Download',
+  sortable: false,
+  cellControl: 'expenseReceiptDownload'
+};
+
 function pickMetaColumnLabel(meta: TableMetaResponse, keys: string[]): string | undefined {
   for (const k of keys) {
     const hit = meta.columns?.find((m) => m.key.toLowerCase() === k.toLowerCase());
@@ -104,7 +112,8 @@ function cloneUserExpenseDashboardColumns(meta?: TableMetaResponse | null): Dyna
     { key: '_update', label: 'Update', sortable: false, cellControl: 'userExpenseEdit' },
     { ...USER_EXPENSE_DELETE_COLUMN },
     { ...USER_EXPENSE_RECEIPT_COLUMN },
-    { key: 'vendor', label: 'Vendor', sortable: false }
+    { key: 'vendor', label: 'Vendor', sortable: false },
+    { ...EXPENSE_RECEIPT_DOWNLOAD_COLUMN }
   ];
   if (!meta?.columns?.length) {
     return columns.map((c) => ({ ...c }));
@@ -216,27 +225,29 @@ function adminExpenseLabelKeys(columnKey: string): string[] {
       return ['_edit', 'update'];
     case '_delete':
       return ['_delete', 'delete'];
+    case '_download':
+      return ['_download', 'download'];
     default:
       return [columnKey];
   }
 }
 
 /**
- * Admin “All expenses” table: Title, User, Category, Amount, Payment method, Vendor, Receipt, Date, Edit, Delete.
+ * Admin “All expenses” table: Title, Category, Amount, Pay method, Receipt, Employee name, Vendor, Expense date, Delete, Download.
  * Fixed columns; API meta may only override labels for matching keys.
  */
 function cloneAdminExpenseDashboardColumns(meta?: TableMetaResponse | null): DynamicTableColumn[] {
   const columns: DynamicTableColumn[] = [
     { key: 'title', label: 'Title', sortable: true },
-    { key: 'user_name', label: 'User', sortable: false },
     { key: 'category_name', label: 'Category', sortable: false },
     { key: 'amount', label: 'Amount', sortable: true, valueFormat: 'inr' },
-    { key: 'payment_method', label: 'Payment method', sortable: false },
-    { key: 'vendor', label: 'Vendor', sortable: false },
+    { key: 'payment_method', label: 'Pay method', sortable: false },
     { ...ADMIN_EXPENSE_RECEIPT_COLUMN },
-    { key: 'expense_date', label: 'Date', sortable: true, valueFormat: 'shortDate' },
-    { ...ADMIN_EXPENSE_ACTIONS_COLUMN },
-    { ...ADMIN_EXPENSE_DELETE_COLUMN }
+    { key: 'user_name', label: 'Employee name', sortable: false },
+    { key: 'vendor', label: 'Vendor', sortable: false },
+    { key: 'expense_date', label: 'Expense date', sortable: true, valueFormat: 'shortDate' },
+    { ...ADMIN_EXPENSE_DELETE_COLUMN },
+    { ...EXPENSE_RECEIPT_DOWNLOAD_COLUMN }
   ];
   if (!meta?.columns?.length) {
     return columns.map((c) => ({ ...c }));

@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { ProfileService } from 'src/app/core/services/profile.service';
 import { ToastService } from 'src/app/core/services/toast.service';
+import { mergeStoredProfileWithUser } from 'src/app/core/utils/stored-user-profile';
 
 @Component({
   selector: 'app-login',
@@ -49,7 +50,7 @@ export class LoginComponent {
         this.profileService.getMe().subscribe({
           next: (profile) => {
             this.loading = false;
-            this.authService.syncProfile(profile.user);
+            mergeStoredProfileWithUser(profile.user, this.authService);
             this.toastService.success('Login successful');
             this.router.navigate([profile.user.role === 'admin' ? '/admin' : '/dashboard']);
           },

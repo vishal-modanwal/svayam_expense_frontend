@@ -165,17 +165,42 @@
               Add expense
             </button>
 
-            <button mat-stroked-button color="primary" type="button" class="action-btn" (click)="loadAll()">
-              <mat-icon>refresh</mat-icon>
-              Refresh
-            </button>
           </div>
         </div>
 
         <div class="main-section">
           <mat-card class="table-card table-card--recent-expenses">
-            <div class="section-head section-head--table">
-              <h3>All expenses</h3>
+            <div class="section-head section-head--table section-head--all-expenses">
+              <div class="section-head__title-row">
+                <h3>All expenses</h3>
+                <span class="section-hint section-hint--page-scope">This page</span>
+              </div>
+              <div
+                class="expense-audience-chips"
+                role="group"
+                aria-label="Filter expenses by type">
+                <button
+                  type="button"
+                  class="expense-audience-chip"
+                  [class.expense-audience-chip--active]="expenseAudience === 'employee'"
+                  (click)="setExpenseAudience('employee')">
+                  Employee
+                </button>
+                <button
+                  type="button"
+                  class="expense-audience-chip"
+                  [class.expense-audience-chip--active]="expenseAudience === 'admin'"
+                  (click)="setExpenseAudience('admin')">
+                  Admin
+                </button>
+                <button
+                  type="button"
+                  class="expense-audience-chip"
+                  [class.expense-audience-chip--active]="expenseAudience === 'admin-extra'"
+                  (click)="setExpenseAudience('admin-extra')">
+                  Admin-Extra
+                </button>
+              </div>
             </div>
             <app-dynamic-data-table
               *ngIf="adminExpenseTableConfig"
@@ -186,8 +211,8 @@
               [sortState]="adminExpenseSortState"
               [pageIndex]="expenseQuery.pageIndex"
               [embedded]="true"
+              embeddedVariant="admin-expenses"
               (queryChange)="onAdminExpenseDynamicQuery($event)"
-              (adminExpenseEdit)="onAdminExpenseDynamicEdit($event)"
               (adminExpenseDelete)="onAdminExpenseDynamicDelete($event)">
             </app-dynamic-data-table>
           </mat-card>
@@ -248,14 +273,20 @@
               <div class="budget-list-hint">Rows below use GET /api/meta/tables/budgets (fallback columns if meta fails).</div>
             </mat-card>
 
-            <mat-card class="table-card" *ngIf="budgetTableConfig">
+            <mat-card class="table-card table-card--recent-expenses" *ngIf="budgetTableConfig">
+              <div class="section-head section-head--table">
+                <h3>Budget overview</h3>
+                <span class="section-hint section-hint--page-scope">This page</span>
+              </div>
               <app-dynamic-data-table
                 [config]="budgetTableConfig"
                 [rows]="budgetTableRows"
                 [totalCount]="budgetTableRows.length"
                 [loading]="budgetTableLoading"
                 [hidePaginator]="true"
-                [sortState]="budgetTableSortState">
+                [sortState]="budgetTableSortState"
+                [embedded]="true"
+                embeddedVariant="admin-budget">
               </app-dynamic-data-table>
             </mat-card>
 
@@ -335,8 +366,12 @@
         </header>
 
         <div class="main-section">
-          <mat-card class="table-card" *ngIf="usersTableConfig">
-            <p class="section-hint users-meta-hint">
+          <mat-card class="table-card table-card--recent-expenses" *ngIf="usersTableConfig">
+            <div class="section-head section-head--table">
+              <h3>Users</h3>
+              <span class="section-hint section-hint--page-scope">This page</span>
+            </div>
+            <p class="users-meta-hint">
               Columns from GET /api/admin/users-details (embedded metadata). Prefer this over /api/meta/tables/users for
               this screen.
             </p>
@@ -346,7 +381,9 @@
               [totalCount]="usersTableRows.length"
               [loading]="usersTableLoading"
               [hidePaginator]="true"
-              [sortState]="usersTableSortState">
+              [sortState]="usersTableSortState"
+              [embedded]="true"
+              embeddedVariant="admin-users">
             </app-dynamic-data-table>
           </mat-card>
 

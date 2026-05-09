@@ -11,6 +11,13 @@ export interface AuthUser {
   is_active?: boolean | number;
   /** Optional string from API, e.g. active | inactive | suspended */
   status?: string;
+  /**
+   * Activity flag from profile API (e.g. active | inactive).
+   * When inactive, user dashboard shows inactive state and blocks adding expenses.
+   */
+  activity_status?: string;
+  /** Some APIs use camelCase instead of snake_case. */
+  activityStatus?: string;
 }
 
 export interface AuthResponse {
@@ -38,6 +45,17 @@ export interface Expense {
   expense_type: 'standard' | 'extra';
   user_id?: number;
   user_name?: string;
+  user_role?: UserRole;
+  user?: {
+    id?: number;
+    name?: string;
+    email?: string;
+    role?: UserRole;
+  };
+  category?: {
+    id?: number;
+    name?: string;
+  };
   /** Receipt file URL from API (absolute or path under uploads). */
   receipt_url?: string | null;
 }

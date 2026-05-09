@@ -5,7 +5,7 @@ import { Sort } from '@angular/material/sort';
 import { Chart, registerables } from 'chart.js';
 import type { ChartConfiguration } from 'chart.js';
 import { forkJoin } from 'rxjs';
-import { AdminExpenseTableRow, Category, Expense } from 'src/app/core/models/app.models';
+import { Category, Expense } from 'src/app/core/models/app.models';
 import { AdminService } from 'src/app/core/services/admin.service';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { CategoryService } from 'src/app/core/services/category.service';
@@ -78,6 +78,14 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
   expenseSearchInput = '';
   selectedExpenseSort: 'latest' | 'high' | 'low' = 'latest';
+
+  /**
+   * Expense table view chips.
+   * - employee => users
+   * - admin => admins (standard only)
+   * - admin-extra => admins-extra
+   */
+  expenseAudience: 'employee' | 'admin' | 'admin-extra' = 'employee';
 
   reportMode: 'monthly' | 'user' = 'monthly';
   reportMonth = new Date().getMonth() + 1;
@@ -447,6 +455,15 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.loadExpenses();
   }
 
+  setExpenseAudience(audience: 'employee' | 'admin' | 'admin-extra'): void {
+    if (this.expenseAudience === audience) {
+      return;
+    }
+    this.expenseAudience = audience;
+    this.expenseQuery.pageIndex = 0;
+    this.loadExpenses();
+  }
+
   onAdminExpenseDynamicDelete(row: Record<string, unknown>): void {
     const id = Number(row['id']);
     const full = this.adminExpensesCache.find((e) => e.id === id);
@@ -474,16 +491,6 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       },
       error: (err) => this.toastService.error(err?.error?.message || 'Delete failed')
     });
-  }
-
-  onAdminExpenseDynamicEdit(row: Record<string, unknown>): void {
-    const id = Number(row['id']);
-    const full = this.adminExpensesCache.find((e) => e.id === id);
-    if (!full) {
-      this.toastService.error('Expense not found on this page. Refresh and try again.');
-      return;
-    }
-    this.openAdminEditExpense(this.mapToAdminRow(full));
   }
 
   isSidebarSectionActive(key: SidebarAction): boolean {
@@ -540,17 +547,6 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   openAdminExpenseModal(): void {
     this.loadCategories();
     this.expenseForModal = null;
-    this.isExpenseFormModalOpen = true;
-  }
-
-  openAdminEditExpense(row: AdminExpenseTableRow): void {
-    const full = this.adminExpensesCache.find((e) => e.id === row.id);
-    if (!full) {
-      this.toastService.error('Expense not found on this page. Refresh and try again.');
-      return;
-    }
-    this.loadCategories();
-    this.expenseForModal = { ...full };
     this.isExpenseFormModalOpen = true;
   }
 
@@ -797,6 +793,71 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     return { ...e, amount: Number(e.amount) } as Record<string, unknown>;
   }
 
+  private normalizeExpense(item: Expense): Expense {
+    const anyItem = item as Expense & {
+      user?: { id?: number; name?: string; role?: 'user' | 'admin' };
+      category?: { id?: number; name?: string };
+    };
+    return {
+      ...item,
+      user_id: item.user_id ?? anyItem.user?.id,
+      user_name: item.user_name ?? anyItem.user?.name,
+      user_role: item.user_role ?? anyItem.user?.role,
+      category_id: item.category_id ?? anyItem.category?.id ?? item.category_id,
+      category_name: item.category_name ?? anyItem.category?.name
+    };
+  }
+
+  private getExpenseAudienceView(): 'users' | 'admins' | 'admins-extra' {
+    if (this.expenseAudience === 'admin-extra') {
+      return 'admins-extra';
+    }
+    if (this.expenseAudience === 'admin') {
+      return 'admins';
+    }
+    return 'users';
+  }
+
+  private getExpenseRole(expense: Expense): string {
+    const loose = expense as unknown as { role?: unknown };
+    const role = expense.user_role || expense.user?.role || loose.role || '';
+    return String(role).toLowerCase().trim();
+  }
+
+  private getExpenseType(expense: Expense): string {
+    return String(expense.expense_type || '').toLowerCase().trim();
+  }
+
+  private isAdminRole(role: string): boolean {
+    return role === 'admin' || role === 'administrator';
+  }
+
+  /** Safe client-side fallback in case API view filtering is unavailable. */
+  private applyExpenseAudienceFilter(list: Expense[]): Expense[] {
+    const hasAnyRole = list.some((e) => this.getExpenseRole(e) !== '');
+
+    if (this.expenseAudience === 'employee') {
+      // Employee chip should show all non-admin roles (user / employee etc.).
+      if (hasAnyRole) {
+        return list.filter((e) => !this.isAdminRole(this.getExpenseRole(e)));
+      }
+      // Role missing from payload: fall back to non-extra as closest approximation.
+      return list.filter((e) => this.getExpenseType(e) !== 'extra');
+    }
+    if (this.expenseAudience === 'admin') {
+      if (hasAnyRole) {
+        return list.filter((e) => this.isAdminRole(this.getExpenseRole(e)) && this.getExpenseType(e) !== 'extra');
+      }
+      // Role missing from payload: fall back to standard slice.
+      return list.filter((e) => this.getExpenseType(e) !== 'extra');
+    }
+    if (hasAnyRole) {
+      return list.filter((e) => this.isAdminRole(this.getExpenseRole(e)) && this.getExpenseType(e) === 'extra');
+    }
+    // Role missing from payload: fall back to extra slice.
+    return list.filter((e) => this.getExpenseType(e) === 'extra');
+  }
+
   private loadExpenses(): void {
     this.expenseLoading = true;
     const search = this.expenseQuery.filter.trim();
@@ -812,23 +873,10 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         : this.expenseQuery.sortDirection === 'desc'
           ? 'DESC'
           : undefined;
+    const view = this.getExpenseAudienceView();
 
-    const source$ = search
-      ? this.expenseService.searchByUserName(search, page, limit)
-      : this.expenseService.getAllExpenses({ page, limit, sortBy, order });
-
-    source$.subscribe({
-      next: (res) => {
-        const expenses = (res.data || []).map((item) => ({ ...item, amount: Number(item.amount) }));
-        this.adminExpensesCache = expenses;
-        this.adminExpenseTableRows = expenses.map((item) => this.expenseToFlatRow(item));
-        this.expenseTotalCount = res.pagination?.totalItems ?? expenses.length;
-        this.employeeInsights = this.buildEmployeeInsights(expenses);
-        this.expenseLoading = false;
-        if (this.activeSection === 'expenses') {
-          setTimeout(() => this.renderSummaryDonut(), 0);
-        }
-      },
+    this.expenseService.getDashboardExpenses({ page, limit, sortBy, order, view }).subscribe({
+      next: (res) => this.applyExpenseResponse(res, search),
       error: (err) => {
         this.expenseLoading = false;
         this.toastService.error(err?.error?.message || 'Expense load failed');
@@ -836,15 +884,26 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  private mapToAdminRow(item: Expense): AdminExpenseTableRow {
-    return {
-      id: item.id,
-      title: item.title || '—',
-      user: item.user_name || '—',
-      category: item.category_name || '—',
-      date: this.formatDate(item.expense_date),
-      amount: Number(item.amount || 0)
-    };
+  private applyExpenseResponse(
+    res: { data?: Expense[]; pagination?: { totalItems?: number; total_records?: number } },
+    search = ''
+  ): void {
+    const raw = (res.data || []).map((item) => this.normalizeExpense(item as Expense));
+    const rawNormalized = raw.map((item) => ({ ...item, amount: Number(item.amount || 0) })) as Expense[];
+    const audienceFiltered = this.applyExpenseAudienceFilter(rawNormalized);
+    const q = search.trim().toLowerCase();
+    const expenses = q
+      ? audienceFiltered.filter((item) => String(item.user_name || '').toLowerCase().includes(q))
+      : audienceFiltered;
+    this.adminExpensesCache = expenses;
+    this.adminExpenseTableRows = expenses.map((item) => this.expenseToFlatRow(item));
+    const serverTotal = res.pagination?.totalItems ?? res.pagination?.total_records ?? expenses.length;
+    this.expenseTotalCount = q ? expenses.length : serverTotal;
+    this.employeeInsights = this.buildEmployeeInsights(expenses);
+    this.expenseLoading = false;
+    if (this.activeSection === 'expenses') {
+      setTimeout(() => this.renderSummaryDonut(), 0);
+    }
   }
 
   private loadCategories(): void {
