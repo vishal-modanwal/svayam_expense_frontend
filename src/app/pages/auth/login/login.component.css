@@ -1,8 +1,8 @@
 :host {
   --nav-bar-offset: 56px;
-  --accent: #0d9488;
-  --accent-deep: #0f766e;
-  --accent-glow: rgba(13, 148, 136, 0.35);
+  --accent: #2563eb;
+  --accent-deep: #1d4ed8;
+  --accent-glow: rgba(37, 99, 235, 0.35);
 }
 
 @media (min-width: 960px) {
@@ -11,7 +11,7 @@
   }
 }
 
-/* Login — richer Spendee base + teal accent */
+/* Login — richer Spendee base + blue accent */
 .spendee-login.auth-page {
   position: relative;
   isolation: isolate;
@@ -22,9 +22,9 @@
   padding: 48px 20px;
   overflow: hidden;
   background:
-    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(13, 148, 136, 0.18), transparent 55%),
-    radial-gradient(ellipse 90% 60% at 100% 50%, rgba(14, 116, 144, 0.12), transparent 50%),
-    radial-gradient(ellipse 70% 50% at 0% 80%, rgba(13, 148, 136, 0.1), transparent 45%),
+    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(37, 99, 235, 0.18), transparent 55%),
+    radial-gradient(ellipse 90% 60% at 100% 50%, rgba(59, 130, 246, 0.12), transparent 50%),
+    radial-gradient(ellipse 70% 50% at 0% 80%, rgba(37, 99, 235, 0.1), transparent 45%),
     linear-gradient(165deg, #f0fdfa 0%, #f8fafc 38%, #eef2ff 100%);
 }
 
@@ -34,7 +34,7 @@
   inset: 0;
   z-index: -1;
   opacity: 0.45;
-  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%230d9488' fill-opacity='0.06'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%232563eb' fill-opacity='0.06'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
   pointer-events: none;
 }
 
@@ -44,11 +44,11 @@
   padding: 48px 40px 44px;
   border-radius: 16px;
   background: linear-gradient(180deg, #ffffff 0%, #fafefe 100%);
-  border: 1px solid rgba(13, 148, 136, 0.14);
+  border: 1px solid rgba(37, 99, 235, 0.14);
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.8) inset,
     0 4px 6px -1px rgba(15, 23, 42, 0.06),
-    0 22px 48px -12px rgba(15, 118, 110, 0.18);
+    0 22px 48px -12px rgba(29, 78, 216, 0.18);
 }
 
 .spendee-login .auth-card::before {
@@ -59,7 +59,7 @@
   right: 20px;
   height: 4px;
   border-radius: 0 0 6px 6px;
-  background: linear-gradient(90deg, #14b8a6, #0d9488, #0e7490);
+  background: linear-gradient(90deg, #3b82f6, #2563eb, #1d4ed8);
   box-shadow: 0 2px 12px var(--accent-glow);
 }
 
@@ -70,7 +70,7 @@
   letter-spacing: -0.03em;
   text-align: center;
   line-height: 1.2;
-  background: linear-gradient(120deg, #0f766e 0%, #0d9488 45%, #0e7490 100%);
+  background: linear-gradient(120deg, #1d4ed8 0%, #2563eb 45%, #3b82f6 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -136,7 +136,7 @@
 .spendee-login input:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.2);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
 }
 
 .spendee-login input.invalid {
@@ -162,15 +162,15 @@
   border: none;
   border-radius: 10px;
   padding: 14px 18px;
-  background: linear-gradient(135deg, #14b8a6 0%, #0d9488 48%, #0f766e 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 48%, #1d4ed8 100%);
   color: #ffffff;
   font-size: 0.96rem;
   font-weight: 600;
   letter-spacing: 0.02em;
   cursor: pointer;
   box-shadow:
-    0 2px 4px rgba(15, 118, 110, 0.25),
-    0 12px 28px -6px rgba(13, 148, 136, 0.45);
+    0 2px 4px rgba(29, 78, 216, 0.25),
+    0 12px 28px -6px rgba(37, 99, 235, 0.45);
   transition:
     transform 0.18s ease,
     box-shadow 0.18s ease,
@@ -181,8 +181,8 @@
   transform: translateY(-1px);
   filter: brightness(1.05);
   box-shadow:
-    0 4px 8px rgba(15, 118, 110, 0.3),
-    0 16px 36px -8px rgba(13, 148, 136, 0.5);
+    0 4px 8px rgba(29, 78, 216, 0.3),
+    0 16px 36px -8px rgba(37, 99, 235, 0.5);
 }
 
 .spendee-login .btn-login:active:not(:disabled) {
@@ -199,32 +199,32 @@
 /* Dark theme */
 body.dark-theme .spendee-login.auth-page {
   background:
-    radial-gradient(ellipse 100% 70% at 50% -15%, rgba(45, 212, 191, 0.12), transparent 55%),
-    radial-gradient(ellipse 80% 50% at 100% 30%, rgba(13, 148, 136, 0.1), transparent 45%),
+    radial-gradient(ellipse 100% 70% at 50% -15%, rgba(96, 165, 250, 0.12), transparent 55%),
+    radial-gradient(ellipse 80% 50% at 100% 30%, rgba(37, 99, 235, 0.1), transparent 45%),
     linear-gradient(165deg, #0c1220 0%, #0f1419 50%, #0a1626 100%);
 }
 
 body.dark-theme .spendee-login.auth-page::before {
   opacity: 0.35;
-  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%232dd4bf' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2360a5fa' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
 }
 
 body.dark-theme .spendee-login .auth-card {
   background: linear-gradient(180deg, #1a2431 0%, #151d28 100%);
-  border-color: rgba(45, 212, 191, 0.2);
+  border-color: rgba(96, 165, 250, 0.2);
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.04) inset,
     0 8px 32px -8px rgba(0, 0, 0, 0.45),
-    0 0 0 1px rgba(13, 148, 136, 0.15);
+    0 0 0 1px rgba(37, 99, 235, 0.15);
 }
 
 body.dark-theme .spendee-login .auth-card::before {
-  background: linear-gradient(90deg, #5eead4, #2dd4bf, #14b8a6);
-  box-shadow: 0 2px 20px rgba(45, 212, 191, 0.35);
+  background: linear-gradient(90deg, #93c5fd, #60a5fa, #3b82f6);
+  box-shadow: 0 2px 20px rgba(96, 165, 250, 0.35);
 }
 
 body.dark-theme .spendee-login .auth-title {
-  background: linear-gradient(120deg, #5eead4 0%, #2dd4bf 40%, #14b8a6 100%);
+  background: linear-gradient(120deg, #93c5fd 0%, #60a5fa 40%, #3b82f6 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -249,31 +249,31 @@ body.dark-theme .spendee-login input::placeholder {
 }
 
 body.dark-theme .spendee-login input:focus {
-  border-color: #2dd4bf;
-  box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.22);
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.22);
 }
 
 body.dark-theme .spendee-login .btn-login {
-  background: linear-gradient(135deg, #2dd4bf 0%, #14b8a6 45%, #0d9488 100%);
-  color: #042f2e;
+  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 45%, #2563eb 100%);
+  color: #eff6ff;
   box-shadow:
     0 2px 8px rgba(0, 0, 0, 0.35),
-    0 12px 32px -6px rgba(45, 212, 191, 0.35);
+    0 12px 32px -6px rgba(96, 165, 250, 0.35);
 }
 
 body.dark-theme .spendee-login .btn-login:hover:not(:disabled) {
   filter: brightness(1.08);
   box-shadow:
     0 4px 12px rgba(0, 0, 0, 0.4),
-    0 18px 40px -8px rgba(45, 212, 191, 0.4);
+    0 18px 40px -8px rgba(96, 165, 250, 0.4);
 }
 
 body.dark-theme .spendee-login .link-accent {
-  color: #5eead4;
+  color: #93c5fd;
 }
 
 body.dark-theme .spendee-login .link-accent:hover {
-  color: #99f6e4;
+  color: #bfdbfe;
 }
 
 @media (max-width: 480px) {

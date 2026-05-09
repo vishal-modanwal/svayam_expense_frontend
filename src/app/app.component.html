@@ -1,5 +1,8 @@
-<app-navbar *ngIf="showNavbar"></app-navbar>
 <app-loader-overlay></app-loader-overlay>
-<main class="app-shell" [class.app-shell--with-navbar]="showNavbar" [class.app-shell--no-navbar]="!showNavbar">
-  <router-outlet></router-outlet>
-</main>
+<div class="app-layout">
+  <app-navbar *ngIf="showNavbar"></app-navbar>
+  <main class="app-shell" [class.app-shell--with-navbar]="showNavbar" [class.app-shell--no-navbar]="!showNavbar">
+    <router-outlet></router-outlet>
+  </main>
+  <app-footer *ngIf="showFooter"></app-footer>
+</div>

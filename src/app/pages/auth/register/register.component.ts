@@ -1,8 +1,18 @@
-import { Component } from '@angular/core';
-import { FormBuilder, Validators } from '@angular/forms';
+import { Component, ViewChild } from '@angular/core';
+import { AbstractControl, FormBuilder, ValidationErrors, Validators } from '@angular/forms';
+import { MatStepper } from '@angular/material/stepper';
 import { Router } from '@angular/router';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { ToastService } from 'src/app/core/services/toast.service';
+
+function passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
+  const password = control.get('password')?.value;
+  const confirmPassword = control.get('confirm_password')?.value;
+  if (!confirmPassword) {
+    return null;
+  }
+  return password === confirmPassword ? null : { passwordMismatch: true };
+}
 
 @Component({
   selector: 'app-register',
@@ -10,6 +20,8 @@ import { ToastService } from 'src/app/core/services/toast.service';
   styleUrls: ['../login/login.component.css', './register.component.css']
 })
 export class RegisterComponent {
+  @ViewChild(MatStepper) private stepper?: MatStepper;
+
   readonly emailForm = this.fb.group({
     email: ['', [Validators.required, Validators.email]]
   });
@@ -21,10 +33,12 @@ export class RegisterComponent {
   readonly profileForm = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(2)]],
     mobile_no: ['', [Validators.required, Validators.pattern(/^[0-9]{10}$/)]],
-    password: ['', [Validators.required, Validators.minLength(6)]]
-  });
+    password: ['', [Validators.required, Validators.minLength(6)]],
+    confirm_password: ['', [Validators.required]]
+  }, { validators: [passwordMatchValidator] });
 
   emailVerified = false;
+  private otpVerifyInProgress = false;
 
   constructor(
     private readonly fb: FormBuilder,
@@ -39,7 +53,12 @@ export class RegisterComponent {
       return;
     }
     this.authService.sendEmailOtp(this.emailForm.value.email as string).subscribe({
-      next: (res) => this.toastService.success(res.message || 'OTP sent'),
+      next: (res) => {
+        this.emailVerified = false;
+        this.otpForm.reset();
+        this.toastService.success(res.message || 'OTP sent');
+        this.stepper?.next();
+      },
       error: (err) => this.toastService.error(err?.error?.message || 'OTP send failed')
     });
   }
@@ -49,24 +68,43 @@ export class RegisterComponent {
       this.otpForm.markAllAsTouched();
       return;
     }
+    if (this.otpVerifyInProgress) {
+      return;
+    }
+    this.otpVerifyInProgress = true;
     this.authService
       .verifyEmailOtp(this.emailForm.value.email as string, this.otpForm.value.otp as string)
       .subscribe({
         next: (res) => {
+          this.otpVerifyInProgress = false;
           this.emailVerified = !!res.verified;
           if (this.emailVerified) {
             this.toastService.success(res.message || 'Email verified');
+            this.stepper?.next();
           } else {
             this.toastService.error(res.message || 'Invalid OTP');
           }
         },
-        error: (err) => this.toastService.error(err?.error?.message || 'OTP verification failed')
+        error: (err) => {
+          this.otpVerifyInProgress = false;
+          this.toastService.error(err?.error?.message || 'OTP verification failed');
+        }
       });
+  }
+
+  onOtpInput(): void {
+    const otpValue = (this.otpForm.value.otp || '').toString().trim();
+    if (otpValue.length === 6 && !this.emailVerified) {
+      this.verifyOtp();
+    }
   }
 
   register(): void {
     if (this.profileForm.invalid || !this.emailVerified) {
       this.profileForm.markAllAsTouched();
+      if (this.profileForm.hasError('passwordMismatch')) {
+        this.toastService.error('Password and confirm password must match');
+      }
       if (!this.emailVerified) {
         this.toastService.error('Verify email OTP first');
       }
