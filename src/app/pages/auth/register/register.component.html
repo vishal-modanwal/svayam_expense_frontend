@@ -6,7 +6,7 @@
       <a routerLink="/login" class="link-accent">Login here</a>
     </p>
 
-    <mat-horizontal-stepper [linear]="false" class="register-stepper" animationDuration="280ms">
+    <mat-horizontal-stepper [linear]="true" class="register-stepper" animationDuration="280ms">
       <mat-step [stepControl]="emailForm" label="Email">
         <form [formGroup]="emailForm" class="register-step-body">
           <div class="form-group">
@@ -27,11 +27,10 @@
             </small>
           </div>
           <button type="button" class="btn-login" (click)="sendOtp()">Send OTP</button>
-          <button type="button" class="btn-login btn-login--ghost btn-login--stack" matStepperNext>Next</button>
         </form>
       </mat-step>
 
-      <mat-step [stepControl]="otpForm" label="OTP">
+      <mat-step [stepControl]="otpForm" [completed]="emailVerified" label="OTP">
         <form [formGroup]="otpForm" class="register-step-body">
           <div class="form-group">
             <label class="field-label" for="register-otp">OTP</label>
@@ -43,6 +42,7 @@
               maxlength="6"
               placeholder="Enter OTP"
               formControlName="otp"
+              (input)="onOtpInput()"
               [class.invalid]="otpForm.get('otp')?.touched && otpForm.get('otp')?.invalid"
             />
             <small *ngIf="otpForm.get('otp')?.touched && otpForm.get('otp')?.errors?.['required']">OTP is required</small>
@@ -59,7 +59,6 @@
           <span class="status ok" *ngIf="emailVerified">Email verified</span>
           <div class="step-actions">
             <button type="button" class="btn-login btn-login--ghost" matStepperPrevious>Back</button>
-            <button type="button" class="btn-login" matStepperNext>Next</button>
           </div>
         </form>
       </mat-step>
@@ -113,6 +112,26 @@
             </small>
             <small *ngIf="profileForm.get('password')?.touched && profileForm.get('password')?.errors?.['minlength']">
               Minimum 6 characters required
+            </small>
+          </div>
+          <div class="form-group">
+            <label class="field-label" for="register-confirm-password">Confirm password</label>
+            <input
+              id="register-confirm-password"
+              type="password"
+              autocomplete="new-password"
+              placeholder="Confirm password"
+              formControlName="confirm_password"
+              [class.invalid]="
+                (profileForm.get('confirm_password')?.touched && profileForm.get('confirm_password')?.invalid) ||
+                (profileForm.get('confirm_password')?.touched && profileForm.hasError('passwordMismatch'))
+              "
+            />
+            <small *ngIf="profileForm.get('confirm_password')?.touched && profileForm.get('confirm_password')?.errors?.['required']">
+              Confirm password is required
+            </small>
+            <small *ngIf="profileForm.get('confirm_password')?.touched && profileForm.hasError('passwordMismatch')">
+              Password and confirm password must match
             </small>
           </div>
           <button type="button" class="btn-login" (click)="register()">Complete registration</button>

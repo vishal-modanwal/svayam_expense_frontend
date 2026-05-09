@@ -11,6 +11,7 @@ export class AppComponent {
   title = 'SvayamExpense';
 
   showNavbar = true;
+  showFooter = true;
 
   constructor(private readonly router: Router) {
     this.updateNavbarVisibility(this.router.url);
@@ -23,5 +24,6 @@ export class AppComponent {
 
   private updateNavbarVisibility(url: string): void {
     this.showNavbar = !url.startsWith('/admin');
+    this.showFooter = !url.startsWith('/admin');
   }
 }
