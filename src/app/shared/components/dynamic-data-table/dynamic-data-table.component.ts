@@ -17,8 +17,9 @@ import { MatSort, Sort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { Observable, Subject, Subscription, merge } from 'rxjs';
 import { debounceTime, distinctUntilChanged, takeUntil, tap } from 'rxjs/operators';
-import { DynamicTableColumn, DynamicTableQuery, DynamicTableViewConfig } from './dynamic-data-table.models';
-import { resolveReceiptPublicUrl } from 'src/app/core/utils/receipt-url';
+import { DynamicTableCellControl, DynamicTableColumn, DynamicTableQuery, DynamicTableViewConfig } from './dynamic-data-table.models';
+import { expenseRowReceiptHref, normalizeReceiptHttpUrl } from 'src/app/core/utils/receipt-url';
+import { ToastService } from 'src/app/core/services/toast.service';
 import { environment } from 'src/environments/environment';
 
 @Component({
@@ -88,9 +89,11 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy {
 
   displayedColumnKeys: string[] = [];
 
-  /** Inline receipt preview (View). */
+  /** Inline receipt preview (View) — direct URL on `<img>` / `<iframe>` (see spec). */
   receiptModalOpen = false;
   receiptModalHasFile = false;
+  /** Normalized URL for modal, toolbar “new tab”, and download link. */
+  receiptModalDirectUrl: string | null = null;
   receiptPreviewImageUrl: SafeUrl | null = null;
   receiptPreviewFrameUrl: SafeResourceUrl | null = null;
 
@@ -102,7 +105,8 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy {
 
   constructor(
     private readonly cdr: ChangeDetectorRef,
-    private readonly sanitizer: DomSanitizer
+    private readonly sanitizer: DomSanitizer,
+    private readonly toast: ToastService
   ) {}
 
   get columns(): DynamicTableColumn[] {
@@ -123,6 +127,23 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy {
 
   get showTableHead(): boolean {
     return !!(this.config?.title || this.showFilter);
+  }
+
+  /**
+   * `cellControl` is sometimes missing on receipt columns after meta merges — fall back by `key`
+   * so View/Download buttons still render (otherwise `ngSwitch` hits default and shows plain text).
+   */
+  effectiveCellSwitch(col: DynamicTableColumn): DynamicTableCellControl | '__plain__' {
+    if (col.cellControl) {
+      return col.cellControl;
+    }
+    if (col.key === '_receipt') {
+      return 'adminExpenseReceipt';
+    }
+    if (col.key === '_download') {
+      return 'expenseReceiptDownload';
+    }
+    return '__plain__';
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -199,78 +220,95 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy {
   }
 
   receiptHref(row: Record<string, unknown>): string | null {
-    const url = row['receipt_url'] ?? row['receipt_path'];
-    if (url == null || String(url).trim() === '') {
-      return null;
-    }
-    return resolveReceiptPublicUrl(String(url), environment.uploadsOrigin);
+    return expenseRowReceiptHref(row, environment.uploadsOrigin, environment.apiBaseUrl);
   }
 
-  openReceiptModal(row: Record<string, unknown>): void {
-    const href = this.receiptHref(row);
-    this.receiptModalOpen = true;
-    this.receiptModalHasFile = !!href;
+  /** Same-origin friendly URL for `<a href>` / `<img src>` (proxy when dev :4200 + API :5000). */
+  receiptDirectAbs(row: Record<string, unknown>): string | null {
+    const h = this.receiptHref(row);
+    return h ? normalizeReceiptHttpUrl(h, environment.apiBaseUrl) : null;
+  }
+
+  openReceiptModal(row: Record<string, unknown>, ev?: Event): void {
+    ev?.stopPropagation();
+    ev?.preventDefault();
     this.receiptPreviewImageUrl = null;
     this.receiptPreviewFrameUrl = null;
-    if (href && this.isLikelyImageReceiptUrl(href)) {
-      this.receiptPreviewImageUrl = this.sanitizer.bypassSecurityTrustUrl(href);
-    } else if (href) {
-      this.receiptPreviewFrameUrl = this.sanitizer.bypassSecurityTrustResourceUrl(href);
+
+    const href = this.receiptHref(row);
+    if (!href) {
+      this.toast.info('No receipt file on this row — check API sends a path field (e.g. receipt_path).');
+      this.cdr.detectChanges();
+      return;
     }
-    this.cdr.markForCheck();
+    const url = normalizeReceiptHttpUrl(href, environment.apiBaseUrl);
+    this.receiptModalDirectUrl = url;
+    this.receiptModalOpen = true;
+    this.receiptModalHasFile = true;
+
+    if (this.isLikelyImageReceiptUrl(url)) {
+      this.receiptPreviewImageUrl = this.sanitizer.bypassSecurityTrustUrl(url);
+      this.receiptPreviewFrameUrl = null;
+    } else if (this.isLikelyPdfReceiptUrl(url)) {
+      this.receiptPreviewImageUrl = null;
+      this.receiptPreviewFrameUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+    } else {
+      this.receiptPreviewImageUrl = null;
+      this.receiptPreviewFrameUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+    }
+    this.cdr.detectChanges();
+  }
+
+  openReceiptInNewTab(ev?: Event): void {
+    ev?.stopPropagation();
+    const u = this.receiptModalDirectUrl;
+    if (u) {
+      window.open(u, '_blank', 'noopener,noreferrer');
+    }
+  }
+
+  get receiptModalDownloadName(): string {
+    return this.receiptModalDirectUrl
+      ? this.receiptDownloadFilenameFromHref(this.receiptModalDirectUrl)
+      : 'receipt';
   }
 
   closeReceiptModal(): void {
     this.receiptModalOpen = false;
     this.receiptModalHasFile = false;
+    this.receiptModalDirectUrl = null;
     this.receiptPreviewImageUrl = null;
     this.receiptPreviewFrameUrl = null;
-    this.cdr.markForCheck();
-  }
-
-  downloadReceipt(row: Record<string, unknown>): void {
-    const href = this.receiptHref(row);
-    if (!href) {
-      return;
-    }
-    const name = this.receiptDownloadFilename(href);
-    fetch(href, { credentials: 'include', mode: 'cors' })
-      .then((r) => {
-        if (!r.ok) {
-          throw new Error('fetch failed');
-        }
-        return r.blob();
-      })
-      .then((blob) => {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = name;
-        a.rel = 'noopener';
-        a.click();
-        URL.revokeObjectURL(url);
-        this.cdr.markForCheck();
-      })
-      .catch(() => {
-        const a = document.createElement('a');
-        a.href = href;
-        a.target = '_blank';
-        a.rel = 'noopener noreferrer';
-        a.click();
-        this.cdr.markForCheck();
-      });
+    this.cdr.detectChanges();
   }
 
   private isLikelyImageReceiptUrl(href: string): boolean {
     try {
       const u = new URL(href, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
-      return /\.(png|jpe?g|gif|webp|bmp|svg)(\?.*)?$/i.test(u.pathname);
+      return /\.(png|jpe?g|gif|webp|bmp|svg|heic|heif)(\?.*)?$/i.test(u.pathname);
     } catch {
-      return /\.(png|jpe?g|gif|webp|bmp|svg)(\?|$)/i.test(href);
+      return /\.(png|jpe?g|gif|webp|bmp|svg|heic|heif)(\?|$)/i.test(href);
     }
   }
 
-  private receiptDownloadFilename(href: string): string {
+  private isLikelyPdfReceiptUrl(href: string): boolean {
+    try {
+      const u = new URL(href, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
+      return /\.pdf(\?.*)?$/i.test(u.pathname);
+    } catch {
+      return /\.pdf(\?|$)/i.test(href);
+    }
+  }
+
+  receiptDownloadFilename(row: Record<string, unknown>): string {
+    const href = this.receiptDirectAbs(row);
+    if (!href) {
+      return 'receipt';
+    }
+    return this.receiptDownloadFilenameFromHref(href);
+  }
+
+  private receiptDownloadFilenameFromHref(href: string): string {
     try {
       const u = new URL(href, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
       const seg = u.pathname.split('/').filter(Boolean).pop();

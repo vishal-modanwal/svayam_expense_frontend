@@ -50,6 +50,11 @@ body.dark-theme .dynamic-table__link--delete {
   gap: 4px;
 }
 
+.dynamic-table__actions--receipt {
+  gap: 2px;
+  flex-wrap: nowrap;
+}
+
 .dynamic-table__muted {
   color: var(--text-muted, #64748b);
   font-size: 0.85rem;
@@ -223,7 +228,7 @@ body.dark-theme .dynamic-table__paginator {
 .receipt-modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 1200;
+  z-index: 10002;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -248,6 +253,14 @@ body.dark-theme .dynamic-table__paginator {
 body.dark-theme .receipt-modal {
   background: var(--surface);
   border-color: var(--border);
+}
+
+.receipt-modal__toolbar-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-left: auto;
 }
 
 .receipt-modal__toolbar {
@@ -277,6 +290,29 @@ body.dark-theme .receipt-modal {
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
+}
+
+.receipt-modal__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 120px;
+  color: var(--text-muted, #64748b);
+  font-size: 0.9rem;
+}
+
+.receipt-modal__loading-icon {
+  font-size: 22px;
+  width: 22px;
+  height: 22px;
+  animation: receipt-spin 0.9s linear infinite;
+}
+
+@keyframes receipt-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .receipt-modal__empty {

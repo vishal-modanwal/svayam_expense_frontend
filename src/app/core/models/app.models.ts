@@ -56,8 +56,12 @@ export interface Expense {
     id?: number;
     name?: string;
   };
-  /** Receipt file URL from API (absolute or path under uploads). */
+  /**
+   * Optional; list APIs should omit. Receipt file URL is not required when `receipt_path` is set.
+   */
   receipt_url?: string | null;
+  /** List/detail: filename or relative storage key; browser URL = `{apiBase}/uploads/{receipt_path}`. */
+  receipt_path?: string | null;
 }
 
 /** Row shape for the shared expense mat-table (maps from `Expense`). */
@@ -70,7 +74,8 @@ export interface ExpenseTableRow {
   payment_method: string;
   notes: string | null;
   vendor: string | null;
-  receipt_url: string | null;
+  /** List row: filename or null; View URL = `{apiBase}/uploads/{receipt_path}` (no `receipt_url` in list). */
+  receipt_path?: string | null;
 }
 
 /** Admin “all expenses” mat-table row. */

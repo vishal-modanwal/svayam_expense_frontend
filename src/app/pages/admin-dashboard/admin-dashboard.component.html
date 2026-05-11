@@ -178,10 +178,20 @@
               </mat-menu>
             </div>
 
-            <button mat-stroked-button color="primary" type="button" class="action-btn" (click)="openAdminExpenseModal()">
-              <mat-icon>add</mat-icon>
-              Add expense
-            </button>
+            <span class="admin-expense-add-actions">
+              <button mat-stroked-button color="primary" type="button" class="action-btn" (click)="openAdminExpenseModal()">
+                <mat-icon>add</mat-icon>
+                Add expense
+              </button>
+              <button
+                mat-stroked-button
+                type="button"
+                class="action-btn action-btn--lite-green-expense"
+                (click)="openAdminExtraExpenseModal()">
+                <mat-icon>bolt</mat-icon>
+                Add extra expense
+              </button>
+            </span>
 
           </div>
         </div>
@@ -196,13 +206,13 @@
               <div
                 class="expense-audience-chips"
                 role="group"
-                aria-label="Filter expenses by type">
+                aria-label="Filter expenses by audience">
                 <button
                   type="button"
                   class="expense-audience-chip"
                   [class.expense-audience-chip--active]="expenseAudience === 'employee'"
                   (click)="setExpenseAudience('employee')">
-                  Employee
+                  Employees
                 </button>
                 <button
                   type="button"
@@ -217,6 +227,13 @@
                   [class.expense-audience-chip--active]="expenseAudience === 'admin-extra'"
                   (click)="setExpenseAudience('admin-extra')">
                   Admin-Extra
+                </button>
+                <button
+                  type="button"
+                  class="expense-audience-chip"
+                  [class.expense-audience-chip--active]="expenseAudience === 'inactive-users'"
+                  (click)="setExpenseAudience('inactive-users')">
+                  Inactive users
                 </button>
               </div>
             </div>
@@ -571,6 +588,7 @@
     <app-expense-form-modal
       [categories]="categories"
       [expense]="expenseForModal"
+      [createAsExtra]="adminExpenseModalCreateExtra"
       (dismiss)="closeExpenseFormModal()"
       (saved)="onExpenseFormModalSaved()">
     </app-expense-form-modal>

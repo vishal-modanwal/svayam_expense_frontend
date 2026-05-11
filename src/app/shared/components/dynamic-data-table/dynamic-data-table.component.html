@@ -56,7 +56,7 @@
                   col.cellControl !== 'adminBudgetEdit' &&
                   col.cellControl !== 'adminBudgetDelete'
                 "
-                [ngSwitch]="col.cellControl">
+                [ngSwitch]="effectiveCellSwitch(col)">
                 <ng-container *ngSwitchCase="'adminExpenseEdit'">
                   <button
                     mat-button
@@ -71,7 +71,8 @@
                     mat-button
                     type="button"
                     class="dynamic-table__link dynamic-table__link--view"
-                    (click)="openReceiptModal(row)">
+                    [attr.title]="receiptHref(row) ? 'View receipt' : 'No receipt on this row'"
+                    (click)="openReceiptModal(row, $event)">
                     View
                   </button>
                 </ng-container>
@@ -141,20 +142,28 @@
                     mat-button
                     type="button"
                     class="dynamic-table__link dynamic-table__link--view"
-                    (click)="openReceiptModal(row)">
+                    [attr.title]="receiptHref(row) ? 'View receipt' : 'No receipt on this row'"
+                    (click)="openReceiptModal(row, $event)">
                     View
                   </button>
                 </ng-container>
                 <ng-container *ngSwitchCase="'expenseReceiptDownload'">
-                  <button
+                  <a
+                    *ngIf="receiptDirectAbs(row) as dl; else noReceiptDl"
                     mat-button
                     type="button"
                     class="dynamic-table__link dynamic-table__link--view"
-                    [disabled]="!receiptHref(row)"
-                    [attr.title]="receiptHref(row) ? 'Download receipt' : 'No receipt uploaded'"
-                    (click)="downloadReceipt(row)">
+                    [href]="dl"
+                    [attr.download]="receiptDownloadFilename(row)"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Download receipt (same-origin download works best)"
+                    (click)="$event.stopPropagation()">
                     Download
-                  </button>
+                  </a>
+                  <ng-template #noReceiptDl>
+                    <span class="dynamic-table__muted" title="No receipt">—</span>
+                  </ng-template>
                 </ng-container>
                 <ng-container *ngSwitchDefault>
                   <span>{{ formatCell(row, col) }}</span>
@@ -197,26 +206,51 @@
       (click)="$event.stopPropagation()">
       <div class="receipt-modal__toolbar">
         <h2 id="receipt-modal-title" class="receipt-modal__title">Receipt</h2>
-        <button mat-icon-button type="button" aria-label="Close receipt" (click)="closeReceiptModal()">
-          <mat-icon>close</mat-icon>
-        </button>
+        <div class="receipt-modal__toolbar-actions">
+          <a
+            *ngIf="receiptModalDirectUrl"
+            mat-stroked-button
+            type="button"
+            [href]="receiptModalDirectUrl"
+            [attr.download]="receiptModalDownloadName"
+            target="_blank"
+            rel="noopener noreferrer"
+            (click)="$event.stopPropagation()">
+            Download
+          </a>
+          <button
+            *ngIf="receiptModalDirectUrl"
+            mat-stroked-button
+            type="button"
+            (click)="openReceiptInNewTab($event)">
+            Open in new tab
+          </button>
+          <button mat-icon-button type="button" aria-label="Close receipt" (click)="closeReceiptModal()">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
       </div>
       <div class="receipt-modal__body">
-        <ng-container *ngIf="receiptModalHasFile; else receiptModalEmpty">
+        <ng-container *ngIf="receiptModalHasFile">
           <img
             *ngIf="receiptPreviewImageUrl"
             [src]="receiptPreviewImageUrl"
             class="receipt-modal__img"
-            alt="Receipt preview" />
+            alt="Receipt" />
           <iframe
             *ngIf="receiptPreviewFrameUrl && !receiptPreviewImageUrl"
             [src]="receiptPreviewFrameUrl"
             class="receipt-modal__frame"
-            title="Receipt preview"></iframe>
+            title="Receipt (PDF)"></iframe>
+          <p
+            *ngIf="!receiptPreviewImageUrl && !receiptPreviewFrameUrl"
+            class="dynamic-table__muted receipt-modal__empty">
+            Could not show preview for this file type.
+          </p>
         </ng-container>
-        <ng-template #receiptModalEmpty>
-          <p class="dynamic-table__muted receipt-modal__empty">No receipt was uploaded for this expense.</p>
-        </ng-template>
+        <p *ngIf="!receiptModalHasFile" class="dynamic-table__muted receipt-modal__empty">
+          No receipt was uploaded for this expense.
+        </p>
       </div>
     </div>
   </div>

@@ -1,5 +1,7 @@
 <div class="modal-header">
-  <h2>{{ expense ? 'Edit Expense' : 'Add Expense' }}</h2>
+  <h2>
+    {{ expense ? 'Edit Expense' : createAsExtra ? 'Add admin extra expense' : 'Add Expense' }}
+  </h2>
   <button type="button" class="close-btn" (click)="close()">✖</button>
 </div>
 
@@ -38,7 +40,7 @@
 <p class="receipt-existing" *ngIf="receiptPreviewHref && !receiptFile">
   <span>Saved receipt:</span>
   <a [href]="receiptPreviewHref" target="_blank" rel="noopener noreferrer">Open</a>
-  <span class="receipt-existing-hint" *ngIf="expense?.receipt_url"> — scan a new image to replace on save.</span>
+  <span class="receipt-existing-hint" *ngIf="expense?.receipt_path"> — scan a new image to replace on save.</span>
 </p>
 
 <form [formGroup]="form" (ngSubmit)="submit(); $event.preventDefault()">
@@ -58,8 +60,9 @@
   <mat-form-field appearance="outline" class="full">
     <mat-label>Date</mat-label>
     <input matInput type="date" formControlName="expense_date" />
+    <mat-hint *ngIf="expense">Cannot change after create (API).</mat-hint>
   </mat-form-field>
-  <small *ngIf="submitted && f['expense_date']?.errors?.['required']">Date is required</small>
+  <small *ngIf="!expense && submitted && f['expense_date']?.errors?.['required']">Date is required</small>
 
   <mat-form-field appearance="outline" class="full">
     <mat-label>Vendor Name</mat-label>
@@ -81,8 +84,8 @@
     <mat-label>Payment Mode</mat-label>
     <mat-select formControlName="payment_method">
       <mat-option value="Cash">Cash</mat-option>
-      <mat-option value="UPI">UPI</mat-option>
       <mat-option value="Card">Card</mat-option>
+      <mat-option value="UPI">UPI</mat-option>
       <mat-option value="Net Banking">Net Banking</mat-option>
       <mat-option value="Others">Others</mat-option>
     </mat-select>
@@ -100,6 +103,25 @@
     <mat-label>Notes</mat-label>
     <textarea matInput formControlName="description" rows="3"></textarea>
   </mat-form-field>
+
+  <div *ngIf="submitError && isBudgetMissingSubmitError()" class="form-budget-banner" role="alert">
+    <mat-icon class="form-budget-banner__icon" aria-hidden="true">account_balance_wallet</mat-icon>
+    <div class="form-budget-banner__body">
+      <p class="form-budget-banner__title">Budget required</p>
+      <p class="form-budget-banner__api-msg">{{ submitError }}</p>
+      <p class="form-budget-banner__hi">पहले उस category + period के लिए budget बनाएँ (Admin → Budgets), फिर दोबारा expense add करें।</p>
+      <p class="form-budget-banner__en">
+        Standard expenses need an existing category budget. Ask your admin to create the budget first, or pick a category that already has one.
+      </p>
+    </div>
+  </div>
+
+  <div *ngIf="submitError && !isBudgetMissingSubmitError()" class="form-submit-error" role="alert">
+    <mat-icon class="form-submit-error__icon" aria-hidden="true">error_outline</mat-icon>
+    <div class="form-submit-error__body">
+      <p class="form-submit-error__msg">{{ submitError }}</p>
+    </div>
+  </div>
 
   <div class="actions">
     <button mat-stroked-button type="button" (click)="close()">Cancel</button>

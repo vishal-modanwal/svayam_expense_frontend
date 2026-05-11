@@ -639,6 +639,68 @@ body.dark-theme .search-shell:focus-within {
   min-height: 36px;
 }
 
+.admin-expense-add-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/**
+ * Same toolbar row + `.action-btn` sizing as “Add expense”; lite green stroked treatment (no `color="primary"`).
+ */
+.admin-expense-add-actions .action-btn--lite-green-expense.mat-stroked-button {
+  border-radius: 10px;
+  min-height: 36px;
+  font-weight: 600;
+  color: #166534 !important;
+  border-color: color-mix(in srgb, #22c55e 42%, #bbf7d0) !important;
+  background: color-mix(in srgb, #ecfdf5 92%, var(--surface, #ffffff)) !important;
+}
+
+.admin-expense-add-actions .action-btn--lite-green-expense.mat-stroked-button mat-icon {
+  color: #22c55e !important;
+}
+
+.admin-expense-add-actions .action-btn--lite-green-expense.mat-stroked-button:hover:not([disabled]) {
+  color: #14532d !important;
+  border-color: color-mix(in srgb, #16a34a 55%, #86efac) !important;
+  background: color-mix(in srgb, #d1fae5 88%, var(--surface, #ffffff)) !important;
+}
+
+.admin-expense-add-actions .action-btn--lite-green-expense.mat-stroked-button:hover:not([disabled]) mat-icon {
+  color: #15803d !important;
+}
+
+.admin-expense-add-actions .action-btn--lite-green-expense.mat-stroked-button:focus-visible {
+  outline: 2px solid color-mix(in srgb, #22c55e 65%, transparent);
+  outline-offset: 2px;
+}
+
+body.dark-theme .admin-expense-add-actions .action-btn--lite-green-expense.mat-stroked-button {
+  color: #bbf7d0 !important;
+  border-color: color-mix(in srgb, #4ade80 38%, var(--border, #334155)) !important;
+  background: color-mix(in srgb, #14532d 35%, var(--surface-muted, #1e293b)) !important;
+}
+
+body.dark-theme .admin-expense-add-actions .action-btn--lite-green-expense.mat-stroked-button mat-icon {
+  color: #86efac !important;
+}
+
+body.dark-theme .admin-expense-add-actions .action-btn--lite-green-expense.mat-stroked-button:hover:not([disabled]) {
+  color: #dcfce7 !important;
+  border-color: color-mix(in srgb, #4ade80 55%, var(--border)) !important;
+  background: color-mix(in srgb, #166534 42%, var(--surface-muted)) !important;
+}
+
+body.dark-theme .admin-expense-add-actions .action-btn--lite-green-expense.mat-stroked-button:hover:not([disabled]) mat-icon {
+  color: #bbf7d0 !important;
+}
+
+body.dark-theme .admin-expense-add-actions .action-btn--lite-green-expense.mat-stroked-button:focus-visible {
+  outline-color: #4ade80;
+}
+
 .sort-wrapper {
   display: flex;
   align-items: center;
