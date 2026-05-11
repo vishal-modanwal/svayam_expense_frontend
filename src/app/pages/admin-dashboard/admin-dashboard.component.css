@@ -2274,8 +2274,8 @@ body.dark-theme .menu-icon-wrap {
 
 .admin-ai-chat-feed {
   flex: 1;
-  min-height: 100px;
-  max-height: min(220px, 32vh);
+  min-height: 120px;
+  max-height: min(320px, 42vh);
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
@@ -2316,8 +2316,6 @@ body.dark-theme .menu-icon-wrap {
   flex-direction: column;
   gap: 6px;
   margin-bottom: 10px;
-  /* Reserve space for 3 chip rows so the compose box stays put when rows are hidden */
-  min-height: calc(3 * 2.35rem + 12px);
   justify-content: flex-start;
 }
 

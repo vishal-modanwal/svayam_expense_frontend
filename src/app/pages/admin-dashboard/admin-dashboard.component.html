@@ -638,22 +638,6 @@
         </div>
       </div>
 
-      <div class="admin-ai-chat-chips" aria-label="Suggested questions">
-        <div
-          class="admin-ai-chat-chip-row"
-          *ngFor="let s of aiChatSuggestions"
-          [class.admin-ai-chat-chip-row--dismissed]="dismissedAiChatChipActions.has(s.action)">
-          <button type="button" class="admin-ai-chat-chip" (click)="onAiChatSuggestion(s)">{{ s.label }}</button>
-          <button
-            type="button"
-            class="admin-ai-chat-chip-dismiss"
-            [attr.aria-label]="'Remove suggestion: ' + s.label"
-            (click)="dismissAiChatChip(s.action, $event)">
-            <span aria-hidden="true">×</span>
-          </button>
-        </div>
-      </div>
-
       <div class="admin-ai-chat-compose">
         <input
           type="text"

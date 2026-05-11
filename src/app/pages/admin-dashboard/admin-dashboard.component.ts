@@ -79,8 +79,6 @@ interface BudgetGaugeSummary {
   usagePct: number | null;
 }
 
-type AiChatChipAction = 'reports' | 'budgets' | 'search_tip';
-
 Chart.register(...registerables);
 
 @Component({
@@ -175,22 +173,12 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   usersTableRows: Record<string, unknown>[] = [];
   usersTableLoading = false;
 
-  /** Chat-style assistant modal (opened from logo orb). */
+  /** Chat-style assistant modal (full conversation). */
   isAiChatModalOpen = false;
-  /** Chip actions removed via ✕ or after choosing that suggestion; cleared when chat reopens. */
-  dismissedAiChatChipActions = new Set<AiChatChipAction>();
   aiChatMessages: AiChatLine[] = [];
   aiChatDraft = '';
   /** True while POST /api/chat/message is in flight. */
   aiChatSending = false;
-  readonly aiChatSuggestions: ReadonlyArray<{
-    label: string;
-    action: AiChatChipAction;
-  }> = [
-    { label: 'How do I download reports?', action: 'reports' },
-    { label: 'What does budget vs spent mean?', action: 'budgets' },
-    { label: 'How do I search expenses by user?', action: 'search_tip' }
-  ];
 
   /** Server-side list query for the admin expense table (public for template bindings). */
   readonly expenseQuery: DynamicTableQuery = {
@@ -341,12 +329,11 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
   openAiChatModal(): void {
     this.isAiChatModalOpen = true;
-    this.dismissedAiChatChipActions.clear();
     this.aiChatDraft = '';
     this.aiChatMessages = [
       {
         role: 'assistant',
-        text: `Hi ${this.userName}. Ask below or use a suggestion.`
+        text: `Hi ${this.userName}. Ask me anything — or use “AI spending summary” below for a quick numbers overview.`
       }
     ];
     this.lockPageScrollForAiChat();
@@ -439,39 +426,6 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   openAiSummaryFromChat(): void {
     this.closeAiChatModal();
     this.isAiSummaryOpen = true;
-  }
-
-  dismissAiChatChip(action: AiChatChipAction, event: MouseEvent): void {
-    event.stopPropagation();
-    this.dismissedAiChatChipActions.add(action);
-  }
-
-  onAiChatSuggestion(s: { label: string; action: AiChatChipAction }): void {
-    this.dismissedAiChatChipActions.add(s.action);
-    this.aiChatMessages.push({ role: 'user', text: s.label });
-
-    if (s.action === 'reports') {
-      this.aiChatMessages.push({ role: 'assistant', text: 'Opening report download…' });
-      this.queueScrollAiChat();
-      setTimeout(() => {
-        this.closeAiChatModal();
-        this.isReportModalOpen = true;
-      }, 300);
-      return;
-    }
-
-    if (s.action === 'budgets') {
-      this.aiChatMessages.push({ role: 'assistant', text: 'Opening Budgets. Blue = budget, orange = spent.' });
-      void this.router.navigate(['/admin', 'budgets']);
-      this.toastService.info('Budgets: blue bars = budget, orange = spent per category.');
-      this.queueScrollAiChat();
-      return;
-    }
-
-    this.aiChatMessages.push({ role: 'assistant', text: 'Opening Expenses. Use the person search to filter by user.' });
-    void this.router.navigate(['/admin', 'expenses']);
-    this.toastService.info('Expenses: search by user name with the person icon, then submit.');
-    this.queueScrollAiChat();
   }
 
   getExpenseSortLabel(): string {
