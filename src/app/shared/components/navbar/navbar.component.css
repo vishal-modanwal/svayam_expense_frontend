@@ -366,6 +366,49 @@ body.dark-theme ::ng-deep .profile-mobile-line.muted {
   }
 }
 
+.lang-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-right: 4px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.lang-switch--mobile {
+  margin-right: 0;
+}
+
+.lang-switch__btn {
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 4px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.lang-switch__btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.lang-switch__btn--active {
+  color: #fff;
+  background: rgba(59, 130, 246, 0.45);
+}
+
+.lang-switch__sep {
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 0.7rem;
+  user-select: none;
+}
+
 @media (max-width: 768px) {
   .navbar-inner {
     max-width: 100%;

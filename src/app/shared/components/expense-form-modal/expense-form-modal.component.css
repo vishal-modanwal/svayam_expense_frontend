@@ -6,6 +6,9 @@
   flex: 1 1 auto;
   min-height: 0;
   max-height: min(82vh, 720px);
+  /* Hindi: top room so floated labels are not clipped by overflow-y on this host */
+  padding-top: 10px;
+  padding-bottom: 6px;
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -17,6 +20,24 @@
 
 :host ::ng-deep .mat-form-field.full .mat-form-field-wrapper {
   width: 100%;
+}
+
+/* Hindi only: extra headroom for mat-form-field labels (matras) inside this modal */
+:host-context(html[lang='hi']) ::ng-deep .mat-form-field-appearance-outline .mat-form-field-label-wrapper {
+  overflow: visible !important;
+}
+
+:host-context(html[lang='hi']) ::ng-deep .mat-form-field-appearance-outline .mat-form-field-label {
+  line-height: 1.65 !important;
+}
+
+:host-context(html[lang='hi']) ::ng-deep .mat-form-field-appearance-outline .mat-form-field-infix {
+  padding-top: 0.85em;
+  padding-bottom: 0.85em;
+}
+
+:host-context(html[lang='hi']) ::ng-deep .mat-form-field-appearance-outline .mat-input-element {
+  line-height: 1.55;
 }
 
 .modal-header {
@@ -31,6 +52,7 @@
 .modal-header h2 {
   margin: 0;
   font-size: 1.2rem;
+  line-height: 1.45;
   color: #0f172a;
 }
 

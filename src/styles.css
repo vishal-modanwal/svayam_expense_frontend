@@ -155,3 +155,60 @@ body.dark-theme app-landing .feature-card,
 body.dark-theme app-landing .step {
   background: var(--surface);
 }
+
+/**
+ * Hindi (Devanagari): matras above the line need extra line-height and visible overflow.
+ * Material outlined fields clip labels by default; Nirmala/Mangal are common system fallbacks.
+ */
+html[lang='hi'] {
+  --font-ui: 'Noto Sans Devanagari', 'Mukta', 'Nirmala UI', 'Mangal', 'Kohinoor Devanagari', system-ui, sans-serif;
+  --font-display: 'Noto Sans Devanagari', 'Mukta', 'Nirmala UI', 'Mangal', system-ui, sans-serif;
+}
+
+html[lang='hi'] body.mat-typography,
+html[lang='hi'] .mat-typography {
+  font-family: var(--font-ui);
+}
+
+html[lang='hi'] .mat-form-field-appearance-outline .mat-form-field-label-wrapper {
+  overflow: visible !important;
+}
+
+html[lang='hi'] .mat-form-field-appearance-outline .mat-form-field-label,
+html[lang='hi'] .mat-form-field-appearance-outline.mat-focused .mat-form-field-label,
+html[lang='hi'] .mat-form-field-appearance-outline.mat-form-field-invalid .mat-form-field-label {
+  line-height: 1.65 !important;
+}
+
+html[lang='hi'] .mat-form-field-appearance-outline .mat-form-field-infix {
+  padding-top: 0.85em;
+  padding-bottom: 0.85em;
+}
+
+html[lang='hi'] .mat-form-field-appearance-outline .mat-input-element,
+html[lang='hi'] .mat-form-field-appearance-outline textarea.mat-input-element {
+  line-height: 1.55;
+}
+
+html[lang='hi'] .mat-select-value-text,
+html[lang='hi'] .mat-select-placeholder {
+  line-height: 1.55;
+}
+
+html[lang='hi'] .mat-option {
+  line-height: 1.55 !important;
+  min-height: 3em !important;
+  height: auto !important;
+  white-space: normal;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+html[lang='hi'] .mat-step-label {
+  line-height: 1.55;
+  overflow: visible;
+}
+
+html[lang='hi'] .mat-horizontal-stepper-header .mat-step-label {
+  white-space: normal;
+}

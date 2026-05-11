@@ -1,126 +1,126 @@
 <div class="auth-page spendee-login">
   <div class="auth-card auth-card--wide">
-    <h1 class="auth-title">Create account</h1>
+    <h1 class="auth-title">{{ 'auth.registerTitle' | translate }}</h1>
     <p class="auth-lead auth-lead--narrow">
-      Already have an account?
-      <a routerLink="/login" class="link-accent">Login here</a>
+      {{ 'auth.registerLead' | translate }}
+      <a routerLink="/login" class="link-accent">{{ 'auth.registerLoginLink' | translate }}</a>
     </p>
 
     <mat-horizontal-stepper [linear]="true" class="register-stepper" animationDuration="280ms">
-      <mat-step [stepControl]="emailForm" label="Email">
+      <mat-step [stepControl]="emailForm" [label]="'auth.stepEmail' | translate">
         <form [formGroup]="emailForm" class="register-step-body">
           <div class="form-group">
-            <label class="field-label" for="register-email">Email</label>
+            <label class="field-label" for="register-email">{{ 'auth.emailLabel' | translate }}</label>
             <input
               id="register-email"
               type="email"
               autocomplete="email"
-              placeholder="Email address"
+              [placeholder]="'auth.emailPlaceholder' | translate"
               formControlName="email"
               [class.invalid]="emailForm.get('email')?.touched && emailForm.get('email')?.invalid"
             />
             <small *ngIf="emailForm.get('email')?.touched && emailForm.get('email')?.errors?.['required']">
-              Email is required
+              {{ 'auth.emailRequired' | translate }}
             </small>
             <small *ngIf="emailForm.get('email')?.touched && emailForm.get('email')?.errors?.['email']">
-              Enter a valid email
+              {{ 'auth.emailInvalid' | translate }}
             </small>
           </div>
-          <button type="button" class="btn-login" (click)="sendOtp()">Send OTP</button>
+          <button type="button" class="btn-login" (click)="sendOtp()">{{ 'auth.sendOtp' | translate }}</button>
         </form>
       </mat-step>
 
-      <mat-step [stepControl]="otpForm" [completed]="emailVerified" label="OTP">
+      <mat-step [stepControl]="otpForm" [completed]="emailVerified" [label]="'auth.stepOtp' | translate">
         <form [formGroup]="otpForm" class="register-step-body">
           <div class="form-group">
-            <label class="field-label" for="register-otp">OTP</label>
+            <label class="field-label" for="register-otp">{{ 'auth.otpLabel' | translate }}</label>
             <input
               id="register-otp"
               type="text"
               inputmode="numeric"
               autocomplete="one-time-code"
               maxlength="6"
-              placeholder="Enter OTP"
+              [placeholder]="'auth.otpPlaceholder' | translate"
               formControlName="otp"
               (input)="onOtpInput()"
               [class.invalid]="otpForm.get('otp')?.touched && otpForm.get('otp')?.invalid"
             />
-            <small *ngIf="otpForm.get('otp')?.touched && otpForm.get('otp')?.errors?.['required']">OTP is required</small>
+            <small *ngIf="otpForm.get('otp')?.touched && otpForm.get('otp')?.errors?.['required']">{{ 'auth.otpRequired' | translate }}</small>
             <small
               *ngIf="
                 otpForm.get('otp')?.touched &&
                 (otpForm.get('otp')?.errors?.['minlength'] || otpForm.get('otp')?.errors?.['maxlength'])
               "
             >
-              OTP should be 4 to 6 digits
+              {{ 'auth.otpLength' | translate }}
             </small>
           </div>
-          <button type="button" class="btn-login" (click)="verifyOtp()">Verify OTP</button>
-          <span class="status ok" *ngIf="emailVerified">Email verified</span>
+          <button type="button" class="btn-login" (click)="verifyOtp()">{{ 'auth.verifyOtp' | translate }}</button>
+          <span class="status ok" *ngIf="emailVerified">{{ 'auth.emailVerified' | translate }}</span>
           <div class="step-actions">
-            <button type="button" class="btn-login btn-login--ghost" matStepperPrevious>Back</button>
+            <button type="button" class="btn-login btn-login--ghost" matStepperPrevious>{{ 'auth.back' | translate }}</button>
           </div>
         </form>
       </mat-step>
 
-      <mat-step [stepControl]="profileForm" label="Profile">
+      <mat-step [stepControl]="profileForm" [label]="'auth.stepProfile' | translate">
         <form [formGroup]="profileForm" class="register-step-body">
           <div class="form-group">
-            <label class="field-label" for="register-name">Name</label>
+            <label class="field-label" for="register-name">{{ 'auth.nameLabel' | translate }}</label>
             <input
               id="register-name"
               type="text"
               autocomplete="name"
-              placeholder="Your name"
+              [placeholder]="'auth.namePlaceholder' | translate"
               formControlName="name"
               [class.invalid]="profileForm.get('name')?.touched && profileForm.get('name')?.invalid"
             />
             <small *ngIf="profileForm.get('name')?.touched && profileForm.get('name')?.errors?.['required']">
-              Name is required
+              {{ 'auth.nameRequired' | translate }}
             </small>
             <small *ngIf="profileForm.get('name')?.touched && profileForm.get('name')?.errors?.['minlength']">
-              At least 2 characters
+              {{ 'auth.nameMin' | translate }}
             </small>
           </div>
           <div class="form-group">
-            <label class="field-label" for="register-mobile">Mobile number</label>
+            <label class="field-label" for="register-mobile">{{ 'auth.mobileLabel' | translate }}</label>
             <input
               id="register-mobile"
               type="tel"
               autocomplete="tel"
               maxlength="10"
-              placeholder="10-digit mobile"
+              [placeholder]="'auth.mobilePlaceholder' | translate"
               formControlName="mobile_no"
               [class.invalid]="profileForm.get('mobile_no')?.touched && profileForm.get('mobile_no')?.invalid"
             />
             <small *ngIf="profileForm.get('mobile_no')?.touched && profileForm.get('mobile_no')?.invalid">
-              10 digit mobile required
+              {{ 'auth.mobileInvalid' | translate }}
             </small>
           </div>
           <div class="form-group">
-            <label class="field-label" for="register-password">Password</label>
+            <label class="field-label" for="register-password">{{ 'auth.passwordLabel' | translate }}</label>
             <input
               id="register-password"
               type="password"
               autocomplete="new-password"
-              placeholder="Password"
+              [placeholder]="'auth.passwordPlaceholder' | translate"
               formControlName="password"
               [class.invalid]="profileForm.get('password')?.touched && profileForm.get('password')?.invalid"
             />
             <small *ngIf="profileForm.get('password')?.touched && profileForm.get('password')?.errors?.['required']">
-              Password is required
+              {{ 'auth.passwordRequired' | translate }}
             </small>
             <small *ngIf="profileForm.get('password')?.touched && profileForm.get('password')?.errors?.['minlength']">
-              Minimum 6 characters required
+              {{ 'auth.passwordMin' | translate }}
             </small>
           </div>
           <div class="form-group">
-            <label class="field-label" for="register-confirm-password">Confirm password</label>
+            <label class="field-label" for="register-confirm-password">{{ 'auth.confirmPasswordLabel' | translate }}</label>
             <input
               id="register-confirm-password"
               type="password"
               autocomplete="new-password"
-              placeholder="Confirm password"
+              [placeholder]="'auth.confirmPasswordPlaceholder' | translate"
               formControlName="confirm_password"
               [class.invalid]="
                 (profileForm.get('confirm_password')?.touched && profileForm.get('confirm_password')?.invalid) ||
@@ -128,13 +128,13 @@
               "
             />
             <small *ngIf="profileForm.get('confirm_password')?.touched && profileForm.get('confirm_password')?.errors?.['required']">
-              Confirm password is required
+              {{ 'auth.confirmRequired' | translate }}
             </small>
             <small *ngIf="profileForm.get('confirm_password')?.touched && profileForm.hasError('passwordMismatch')">
-              Password and confirm password must match
+              {{ 'auth.passwordMismatch' | translate }}
             </small>
           </div>
-          <button type="button" class="btn-login" (click)="register()">Complete registration</button>
+          <button type="button" class="btn-login" (click)="register()">{{ 'auth.completeRegistration' | translate }}</button>
         </form>
       </mat-step>
     </mat-horizontal-stepper>

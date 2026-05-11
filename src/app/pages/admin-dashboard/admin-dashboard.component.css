@@ -2456,6 +2456,61 @@ body.dark-theme .admin-ai-chat-header__logo {
   }
 }
 
+.lang-switch--admin {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.06);
+}
+
+body.dark-theme .lang-switch--admin {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.lang-switch--admin .lang-switch__btn {
+  border: none;
+  background: transparent;
+  color: rgba(15, 23, 42, 0.65);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 4px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+body.dark-theme .lang-switch--admin .lang-switch__btn {
+  color: rgba(248, 250, 252, 0.75);
+}
+
+.lang-switch--admin .lang-switch__btn:hover {
+  color: #0f172a;
+  background: rgba(15, 23, 42, 0.06);
+}
+
+body.dark-theme .lang-switch--admin .lang-switch__btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.lang-switch--admin .lang-switch__btn--active {
+  color: #fff;
+  background: rgba(37, 99, 235, 0.95);
+}
+
+.lang-switch--admin .lang-switch__sep {
+  color: rgba(15, 23, 42, 0.35);
+  font-size: 0.7rem;
+  user-select: none;
+}
+
+body.dark-theme .lang-switch--admin .lang-switch__sep {
+  color: rgba(248, 250, 252, 0.35);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .admin-ai-chat-card {
     animation: none !important;
