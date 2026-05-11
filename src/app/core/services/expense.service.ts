@@ -14,12 +14,15 @@ interface ExpenseFilter {
   search?: string;
   /** When supported by the API, restricts the list to standard (employee) vs extra (admin) expenses. */
   expense_type?: 'standard' | 'extra';
-  /** Admin dashboard audience slice. */
-  view?: 'users' | 'admins' | 'admins-extra';
+  /**
+   * Admin dashboard list slice for `GET /admin/dashboard-expenses`:
+   * `users` (active employees), `users-inactive`, `admins`, `admins-extra`.
+   */
+  view?: 'users' | 'users-inactive' | 'admins' | 'admins-extra';
 }
 
 interface AdminDashboardExpenseFilter {
-  view: 'users' | 'admins' | 'admins-extra';
+  view: 'users' | 'users-inactive' | 'admins' | 'admins-extra';
   page?: number;
   limit?: number;
   sortBy?: 'expense_date' | 'amount' | 'created_at';
@@ -33,17 +36,20 @@ export class ExpenseService {
   constructor(private readonly http: HttpClient) {}
 
   /**
-   * Creates an expense. When `receiptFile` is set, sends `multipart/form-data` with field `receipt`
-   * (typical multer name); otherwise sends JSON.
+   * POST /api/expense — JSON or multipart/form-data.
+   * Body: title, category_id, amount, payment_method (Cash | Card | UPI | Net Banking | Others),
+   * optional vendor, description, expense_date; optional expense_type (omit for standard; `extra` admin-only).
+   * File field name when multipart: `receipt`. Standard expenses: budget check may return 400.
    */
   addExpense(payload: Partial<Expense>, receiptFile?: File | null): Observable<ApiMessage> {
+    const url = `${this.api}/expense`;
     if (receiptFile) {
       const fd = new FormData();
-      this.appendExpenseFieldsToFormData(fd, payload);
-      fd.append('receipt', receiptFile, receiptFile.name);
-      return this.http.post<ApiMessage>(`${this.api}/expense`, fd);
+      this.appendExpenseMultipartFields(fd, payload);
+      this.appendReceiptFile(fd, receiptFile);
+      return this.http.post<ApiMessage>(url, fd);
     }
-    return this.http.post<ApiMessage>(`${this.api}/expense`, payload);
+    return this.http.post<ApiMessage>(url, payload);
   }
 
   /**
@@ -73,7 +79,7 @@ export class ExpenseService {
     page = 1,
     limit?: number,
     expenseType?: 'standard' | 'extra',
-    view?: 'users' | 'admins' | 'admins-extra'
+    view?: 'users' | 'users-inactive' | 'admins' | 'admins-extra'
   ): Observable<PaginatedExpenses> {
     let params = new HttpParams().set('search', search).set('page', String(page));
     if (limit != null && limit > 0) {
@@ -89,13 +95,14 @@ export class ExpenseService {
   }
 
   /**
-   * Updates an expense. When `receiptFile` is set, sends `multipart/form-data` with field `receipt`.
+   * PUT /api/expense/:id — same fields as create except expense_date is not applied (backend limitation).
+   * Optional new receipt via multipart field `receipt`. Owner or admin.
    */
   updateExpense(id: number, payload: Partial<Expense>, receiptFile?: File | null): Observable<ApiMessage> {
     if (receiptFile) {
       const fd = new FormData();
-      this.appendExpenseFieldsToFormData(fd, payload);
-      fd.append('receipt', receiptFile, receiptFile.name);
+      this.appendExpenseMultipartFields(fd, payload);
+      this.appendReceiptFile(fd, receiptFile);
       return this.http.put<ApiMessage>(`${this.api}/expense/${id}`, fd);
     }
     return this.http.put<ApiMessage>(`${this.api}/expense/${id}`, payload);
@@ -119,13 +126,36 @@ export class ExpenseService {
     });
   }
 
-  private appendExpenseFieldsToFormData(fd: FormData, payload: Partial<Expense>): void {
-    for (const [key, value] of Object.entries(payload as Record<string, unknown>)) {
+  /**
+   * Only known scalar expense fields — avoids stray keys / nested objects breaking multer parsers.
+   */
+  private appendExpenseMultipartFields(fd: FormData, payload: Partial<Expense>): void {
+    const keys = [
+      'title',
+      'category_id',
+      'amount',
+      'payment_method',
+      'vendor',
+      'description',
+      'expense_date',
+      'expense_type'
+    ] as const;
+    const rec = payload as Record<string, unknown>;
+    for (const key of keys) {
+      const value = rec[key];
       if (value === null || value === undefined || value === '') {
+        continue;
+      }
+      if (typeof value === 'object') {
         continue;
       }
       fd.append(key, String(value));
     }
+  }
+
+  private appendReceiptFile(fd: FormData, receiptFile: File): void {
+    const filename = receiptFile.name?.trim() ? receiptFile.name.trim() : 'receipt';
+    fd.append('receipt', receiptFile, filename);
   }
 
   private toParams(source: object): HttpParams {

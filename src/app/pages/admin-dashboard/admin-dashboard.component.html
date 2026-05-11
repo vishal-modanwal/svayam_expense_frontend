@@ -183,10 +183,27 @@
               </mat-menu>
             </div>
 
+<<<<<<< hindi
             <button mat-stroked-button color="primary" type="button" class="action-btn" (click)="openAdminExpenseModal()">
               <mat-icon>add</mat-icon>
               {{ 'admin.addExpense' | translate }}
             </button>
+=======
+            <span class="admin-expense-add-actions">
+              <button mat-stroked-button color="primary" type="button" class="action-btn" (click)="openAdminExpenseModal()">
+                <mat-icon>add</mat-icon>
+                Add expense
+              </button>
+              <button
+                mat-stroked-button
+                type="button"
+                class="action-btn action-btn--lite-green-expense"
+                (click)="openAdminExtraExpenseModal()">
+                <mat-icon>bolt</mat-icon>
+                Add extra expense
+              </button>
+            </span>
+>>>>>>> master
 
           </div>
         </div>
@@ -201,13 +218,21 @@
               <div
                 class="expense-audience-chips"
                 role="group"
+<<<<<<< hindi
                 [attr.aria-label]="'admin.filterAudienceAria' | translate">
+=======
+                aria-label="Filter expenses by audience">
+>>>>>>> master
                 <button
                   type="button"
                   class="expense-audience-chip"
                   [class.expense-audience-chip--active]="expenseAudience === 'employee'"
                   (click)="setExpenseAudience('employee')">
+<<<<<<< hindi
                   {{ 'admin.employee' | translate }}
+=======
+                  Employees
+>>>>>>> master
                 </button>
                 <button
                   type="button"
@@ -222,6 +247,13 @@
                   [class.expense-audience-chip--active]="expenseAudience === 'admin-extra'"
                   (click)="setExpenseAudience('admin-extra')">
                   {{ 'admin.adminExtraChip' | translate }}
+                </button>
+                <button
+                  type="button"
+                  class="expense-audience-chip"
+                  [class.expense-audience-chip--active]="expenseAudience === 'inactive-users'"
+                  (click)="setExpenseAudience('inactive-users')">
+                  Inactive users
                 </button>
               </div>
             </div>
@@ -569,6 +601,7 @@
     <app-expense-form-modal
       [categories]="categories"
       [expense]="expenseForModal"
+      [createAsExtra]="adminExpenseModalCreateExtra"
       (dismiss)="closeExpenseFormModal()"
       (saved)="onExpenseFormModalSaved()">
     </app-expense-form-modal>

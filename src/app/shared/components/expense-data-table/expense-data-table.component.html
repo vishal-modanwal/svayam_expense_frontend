@@ -51,15 +51,12 @@
   <ng-container matColumnDef="receipt">
     <th mat-header-cell *matHeaderCellDef>Receipt</th>
     <td mat-cell *matCellDef="let e">
-      <a
-        *ngIf="e.receipt_url"
-        [href]="receiptHref(e.receipt_url)"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="cell-link edit-link">
-        View
-      </a>
-      <span *ngIf="!e.receipt_url" class="receipt-empty">—</span>
+      <ng-container *ngIf="receiptHref(e) as rh; else noReceiptCell">
+        <a [href]="rh" target="_blank" rel="noopener noreferrer" class="cell-link edit-link">View</a>
+      </ng-container>
+      <ng-template #noReceiptCell>
+        <span class="receipt-empty">—</span>
+      </ng-template>
     </td>
   </ng-container>
 

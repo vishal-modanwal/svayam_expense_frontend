@@ -56,7 +56,7 @@
                   col.cellControl !== 'adminBudgetEdit' &&
                   col.cellControl !== 'adminBudgetDelete'
                 "
-                [ngSwitch]="col.cellControl">
+                [ngSwitch]="effectiveCellSwitch(col)">
                 <ng-container *ngSwitchCase="'adminExpenseEdit'">
                   <button
                     mat-button
@@ -146,7 +146,8 @@
                   </button>
                 </ng-container>
                 <ng-container *ngSwitchCase="'expenseReceiptDownload'">
-                  <button
+                  <a
+                    *ngIf="receiptDirectAbs(row) as dl; else noReceiptDl"
                     mat-button
                     type="button"
                     class="dynamic-table__link dynamic-table__link--view"
@@ -202,7 +203,7 @@
         </button>
       </div>
       <div class="receipt-modal__body">
-        <ng-container *ngIf="receiptModalHasFile; else receiptModalEmpty">
+        <ng-container *ngIf="receiptModalHasFile">
           <img
             *ngIf="receiptPreviewImageUrl"
             [src]="receiptPreviewImageUrl"

@@ -3,7 +3,7 @@ import { PageEvent } from '@angular/material/paginator';
 import { MatTableDataSource } from '@angular/material/table';
 import { ExpenseTableRow } from 'src/app/core/models/app.models';
 import { environment } from 'src/environments/environment';
-import { resolveReceiptPublicUrl } from 'src/app/core/utils/receipt-url';
+import { buildReceiptUrlFromReceiptPath } from 'src/app/core/utils/receipt-url';
 
 @Component({
   selector: 'app-expense-data-table',
@@ -38,8 +38,8 @@ export class ExpenseDataTableComponent {
     this.pageChange.emit(e);
   }
 
-  receiptHref(url: string | null | undefined): string {
-    const resolved = resolveReceiptPublicUrl(url, environment.uploadsOrigin);
-    return resolved ?? '#';
+  /** View link from `receipt_path` only (`{apiBase}/uploads/...`). */
+  receiptHref(row: ExpenseTableRow): string | null {
+    return buildReceiptUrlFromReceiptPath(row.receipt_path ?? null, environment.apiBaseUrl);
   }
 }

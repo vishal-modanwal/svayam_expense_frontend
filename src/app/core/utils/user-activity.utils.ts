@@ -1,4 +1,4 @@
-import { AuthUser } from '../models/app.models';
+import { AuthUser, Expense } from '../models/app.models';
 
 const INACTIVE_TOKENS = new Set([
   'inactive',
@@ -165,4 +165,41 @@ export function isUserAccountInactive(u: AuthUser | null | undefined): boolean {
   }
 
   return false;
+}
+
+/**
+ * True when the expense row’s owner looks inactive (nested `user`, then flat row flags).
+ * Optional helper when an expense row embeds owner activity flags (admin list may omit them if `view` is used).
+ */
+export function isExpenseOwnerAccountInactive(e: Expense): boolean {
+  const ex = e as Expense & Record<string, unknown>;
+  const nested =
+    e.user && typeof e.user === 'object' ? (e.user as Record<string, unknown>) : null;
+
+  /** Prefer nested `user`, then flat row; skip empty string only (keep `0` / `false`). */
+  const first = (...keys: string[]): unknown => {
+    for (const k of keys) {
+      const a = nested?.[k];
+      if (a !== undefined && a !== null && a !== '') {
+        return a;
+      }
+      const b = ex[k];
+      if (b !== undefined && b !== null && b !== '') {
+        return b;
+      }
+    }
+    return undefined;
+  };
+
+  const synthetic: AuthUser = {
+    id: Number(e.user_id ?? nested?.['id'] ?? 0),
+    name: String(e.user_name ?? nested?.['name'] ?? ''),
+    email: String(first('email', 'user_email') ?? ''),
+    is_active: first('is_active', 'isActive') as boolean | number | undefined,
+    activity_status: first('activity_status', 'activityStatus') as string | undefined,
+    activityStatus: first('activityStatus', 'activity_status') as string | undefined,
+    status: first('status') as string | undefined
+  };
+
+  return isUserAccountInactive(synthetic);
 }

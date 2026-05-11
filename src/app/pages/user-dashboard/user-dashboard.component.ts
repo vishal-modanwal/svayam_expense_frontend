@@ -17,6 +17,7 @@ import {
   buildUserExpenseViewConfigFromTableMeta,
   clampMyExpenseApiSortColumns
 } from 'src/app/core/utils/table-meta.utils';
+import { listRowReceiptPath } from 'src/app/core/utils/receipt-url';
 import {
   DynamicTableQuery,
   DynamicTableViewConfig
@@ -232,7 +233,11 @@ export class UserDashboardComponent implements OnInit, OnDestroy {
       })
       .subscribe({
         next: (res) => {
-          this.expenses = (res.data || []).map((item) => ({ ...item, amount: Number(item.amount) }));
+          this.expenses = (res.data || []).map((item) => {
+            const row = { ...item, amount: Number(item.amount) } as unknown as Record<string, unknown>;
+            const rp = listRowReceiptPath(row) ?? item.receipt_path;
+            return { ...item, amount: Number(item.amount), receipt_path: rp ?? item.receipt_path };
+          });
           const p = res.pagination;
           this.totalPages = Math.max(1, p?.totalPages || 1);
           this.totalItems = p?.totalItems ?? p?.total_records ?? this.expenses.length;

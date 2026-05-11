@@ -79,6 +79,121 @@ small {
   margin-bottom: 10px;
 }
 
+.form-budget-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, #ca8a04 45%, transparent);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, #fef9c3 90%, transparent),
+    color-mix(in srgb, #fde68a 35%, transparent)
+  );
+  color: #713f12;
+}
+
+.form-budget-banner__icon {
+  flex-shrink: 0;
+  font-size: 28px;
+  width: 28px;
+  height: 28px;
+  color: #a16207;
+}
+
+.form-budget-banner__title {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.form-budget-banner__api-msg {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.form-budget-banner__hi {
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.form-budget-banner__en {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  opacity: 0.95;
+}
+
+body.dark-theme .form-budget-banner {
+  border-color: color-mix(in srgb, #facc15 40%, transparent);
+  background: linear-gradient(135deg, rgba(66, 32, 6, 0.55), rgba(113, 63, 18, 0.35));
+  color: #fef3c7;
+}
+
+body.dark-theme .form-budget-banner__icon {
+  color: #fde047;
+}
+
+body.dark-theme .form-budget-banner__title {
+  color: #fef9c3;
+}
+
+.form-submit-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, #dc2626 35%, transparent);
+  background: color-mix(in srgb, #dc2626 10%, transparent);
+  color: #7f1d1d;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.form-submit-error__icon {
+  flex-shrink: 0;
+  font-size: 22px;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  color: #b91c1c;
+}
+
+.form-submit-error__body {
+  min-width: 0;
+}
+
+.form-submit-error__msg {
+  margin: 0 0 6px;
+  font-weight: 600;
+}
+
+.form-submit-error__hint {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 400;
+  opacity: 0.95;
+}
+
+body.dark-theme .form-submit-error {
+  border-color: color-mix(in srgb, #f87171 40%, transparent);
+  background: color-mix(in srgb, #f87171 12%, transparent);
+  color: #fecaca;
+}
+
+body.dark-theme .form-submit-error__icon {
+  color: #fca5a5;
+}
+
 .actions {
   display: flex;
   justify-content: flex-end;

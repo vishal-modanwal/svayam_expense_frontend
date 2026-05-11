@@ -13,8 +13,9 @@ import { ExpenseService } from 'src/app/core/services/expense.service';
 import { ReceiptOcrService } from 'src/app/core/services/receipt-ocr.service';
 import { ToastService } from 'src/app/core/services/toast.service';
 import { environment } from 'src/environments/environment';
-import { resolveReceiptPublicUrl } from 'src/app/core/utils/receipt-url';
+import { buildReceiptUrlFromReceiptPath } from 'src/app/core/utils/receipt-url';
 import { parseReceiptTextHints } from 'src/app/core/utils/receipt-ocr-parser';
+import { readHttpErrorMessage } from 'src/app/core/utils/http-error.utils';
 
 @Component({
   selector: 'app-expense-form-modal',
@@ -24,6 +25,8 @@ import { parseReceiptTextHints } from 'src/app/core/utils/receipt-ocr-parser';
 export class ExpenseFormModalComponent implements OnChanges {
   @Input() categories: Category[] = [];
   @Input() expense: Expense | null = null;
+  /** Admin dashboard: new expense is created with `expense_type: extra` (same POST as standard). */
+  @Input() createAsExtra = false;
 
   @Output() dismiss = new EventEmitter<void>();
   @Output() saved = new EventEmitter<void>();
@@ -36,6 +39,9 @@ export class ExpenseFormModalComponent implements OnChanges {
   /** Receipt file sent with create/update as multipart field `receipt`. */
   receiptFile: File | null = null;
   receiptFileLabel: string | null = null;
+
+  /** Last API error on submit (e.g. budget missing); cleared on new submit or close. */
+  submitError: string | null = null;
 
   readonly form = this.fb.group({
     id: [null as number | null],
@@ -70,9 +76,13 @@ export class ExpenseFormModalComponent implements OnChanges {
     return Number(a) === Number(b);
   }
 
-  /** Link for an expense that already has `receipt_url` on the server. */
+  /** Saved receipt: list/detail contract uses `receipt_path` only → `{apiBase}/uploads/...`. */
   get receiptPreviewHref(): string | null {
-    return resolveReceiptPublicUrl(this.expense?.receipt_url, environment.uploadsOrigin);
+    const e = this.expense;
+    if (!e) {
+      return null;
+    }
+    return buildReceiptUrlFromReceiptPath(e.receipt_path, environment.apiBaseUrl);
   }
 
   /**
@@ -82,20 +92,27 @@ export class ExpenseFormModalComponent implements OnChanges {
    */
   ngOnChanges(changes: SimpleChanges): void {
     const expCh = changes['expense'];
-    if (!expCh) {
+    const extraCh = changes['createAsExtra'];
+    if (!expCh && !extraCh) {
       return;
     }
-    const prev = expCh.previousValue as Expense | null | undefined;
-    const curr = expCh.currentValue as Expense | null | undefined;
+    const prev = expCh?.previousValue as Expense | null | undefined;
+    const curr = expCh?.currentValue as Expense | null | undefined;
     const prevId = prev?.id ?? null;
     const currId = curr?.id ?? null;
-    if (expCh.firstChange || prevId !== currId) {
+    const expenseChanged =
+      !!expCh && (expCh.firstChange || prevId !== currId);
+    const extraChanged =
+      !!extraCh &&
+      (extraCh.firstChange || extraCh.previousValue !== extraCh.currentValue);
+    if (expenseChanged || extraChanged) {
       this.applyExpenseInput();
     }
   }
 
   close(): void {
     this.submitted = false;
+    this.submitError = null;
     this.scanning = false;
     this.scanStatusLabel = '';
     this.scanned = false;
@@ -137,38 +154,51 @@ export class ExpenseFormModalComponent implements OnChanges {
 
   submit(): void {
     this.submitted = true;
+    this.submitError = null;
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
 
     const v = this.form.getRawValue();
-    const payload: Partial<Expense> = {
+    const id = v.id;
+    const file = this.receiptFile;
+
+    const common: Partial<Expense> = {
       title: v.title,
       category_id: v.category_id!,
       amount: Number(v.amount),
       payment_method: v.payment_method,
       vendor: v.vendor?.trim() || undefined,
-      description: v.description?.trim() || undefined,
-      expense_date: v.expense_date,
-      expense_type: (v.expense_type as Expense['expense_type']) || 'standard'
+      description: v.description?.trim() || undefined
     };
+    if (v.expense_type === 'extra' || (this.createAsExtra && !id)) {
+      common.expense_type = 'extra';
+    }
 
-    const id = v.id;
-    const file = this.receiptFile;
     const request$ = id
-      ? this.expenseService.updateExpense(id, payload, file)
-      : this.expenseService.addExpense({ ...payload, expense_type: 'standard' }, file);
+      ? this.expenseService.updateExpense(id, { ...common }, file)
+      : this.expenseService.addExpense({ ...common, expense_date: v.expense_date }, file);
 
     request$.subscribe({
       next: (res) => {
+        this.submitError = null;
         this.toastService.success(res.message || (id ? 'Expense updated' : 'Expense created'));
         this.saved.emit();
         this.close();
       },
-      error: (err) =>
-        this.toastService.error(err?.error?.message || err?.error?.error || 'Expense action failed')
+      error: (err) => {
+        const msg = readHttpErrorMessage(err, 'Expense action failed');
+        this.submitError = msg;
+        this.toastService.error(msg);
+      }
     });
+  }
+
+  /** True when server rejected create/update for missing category budget (typical 400 copy). */
+  isBudgetMissingSubmitError(): boolean {
+    const s = (this.submitError || '').toLowerCase();
+    return /budget/.test(s) && (/not found|create|pehle|missing|na ho|nahi/i.test(s) || /budget record/i.test(s));
   }
 
   private async runReceiptScanOcr(file: File): Promise<void> {
@@ -277,12 +307,16 @@ export class ExpenseFormModalComponent implements OnChanges {
 
   private applyExpenseInput(): void {
     this.submitted = false;
+    this.submitError = null;
     this.scanning = false;
     this.scanStatusLabel = '';
     this.scanned = false;
     this.clearReceiptFile();
     const e = this.expense;
+    const dateCtl = this.form.get('expense_date');
     if (e) {
+      dateCtl?.disable({ emitEvent: false });
+      this.form.get('expense_type')?.enable({ emitEvent: false });
       this.form.patchValue({
         id: e.id,
         title: e.title,
@@ -296,11 +330,20 @@ export class ExpenseFormModalComponent implements OnChanges {
         currency: 'INR'
       });
     } else {
+      dateCtl?.enable({ emitEvent: false });
       this.resetFormValues();
+      const typeCtl = this.form.get('expense_type');
+      typeCtl?.enable({ emitEvent: false });
+      if (this.createAsExtra) {
+        typeCtl?.setValue('extra');
+        typeCtl?.disable({ emitEvent: false });
+      }
     }
   }
 
   private resetFormValues(): void {
+    this.form.get('expense_date')?.enable({ emitEvent: false });
+    this.form.get('expense_type')?.enable({ emitEvent: false });
     this.form.reset({
       id: null,
       title: '',

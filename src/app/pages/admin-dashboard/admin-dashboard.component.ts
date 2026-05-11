@@ -31,6 +31,7 @@ import {
   buildViewConfigFromEmbeddedColumns,
   buildViewConfigFromTableMeta
 } from 'src/app/core/utils/table-meta.utils';
+import { listRowReceiptPath } from 'src/app/core/utils/receipt-url';
 import {
   DynamicTableQuery,
   DynamicTableViewConfig
@@ -127,6 +128,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   adminExpensesCache: Expense[] = [];
   isExpenseFormModalOpen = false;
   expenseForModal: Expense | null = null;
+  /** When true, expense form opens for admin-only create with `expense_type: extra`. */
+  adminExpenseModalCreateExtra = false;
   /** Row pending delete confirmation (admin expense table). */
   selectedAdminDeleteExpense: Expense | null = null;
   employeeInsights: EmployeeInsight[] = [];
@@ -135,12 +138,13 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   selectedExpenseSort: 'latest' | 'high' | 'low' = 'latest';
 
   /**
-   * Expense table view chips.
-   * - employee => users
-   * - admin => admins (standard only)
-   * - admin-extra => admins-extra
+   * Expense table chips → `GET /admin/dashboard-expenses` query `view` (backend owns filtering):
+   * - employees => `users` (role=user, is_active=1)
+   * - inactive-users => `users-inactive` (role=user, is_active=0)
+   * - admin => `admins` (role=admin)
+   * - admin-extra => `admins-extra` (role=admin, expense_type=extra)
    */
-  expenseAudience: 'employee' | 'admin' | 'admin-extra' = 'employee';
+  expenseAudience: 'employee' | 'admin' | 'admin-extra' | 'inactive-users' = 'employee';
 
   reportMode: 'monthly' | 'user' = 'monthly';
   reportMonth = new Date().getMonth() + 1;
@@ -559,7 +563,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.loadExpenses();
   }
 
-  setExpenseAudience(audience: 'employee' | 'admin' | 'admin-extra'): void {
+  setExpenseAudience(audience: 'employee' | 'admin' | 'admin-extra' | 'inactive-users'): void {
     if (this.expenseAudience === audience) {
       return;
     }
@@ -657,6 +661,14 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
   openAdminExpenseModal(): void {
     this.loadCategories();
+    this.adminExpenseModalCreateExtra = false;
+    this.expenseForModal = null;
+    this.isExpenseFormModalOpen = true;
+  }
+
+  openAdminExtraExpenseModal(): void {
+    this.loadCategories();
+    this.adminExpenseModalCreateExtra = true;
     this.expenseForModal = null;
     this.isExpenseFormModalOpen = true;
   }
@@ -664,6 +676,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   closeExpenseFormModal(): void {
     this.isExpenseFormModalOpen = false;
     this.expenseForModal = null;
+    this.adminExpenseModalCreateExtra = false;
   }
 
   onExpenseFormModalSaved(): void {
@@ -1381,64 +1394,35 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       user?: { id?: number; name?: string; role?: 'user' | 'admin' };
       category?: { id?: number; name?: string };
     };
+    const rowLoose = item as unknown as Record<string, unknown>;
+    const coalescedPath = listRowReceiptPath(rowLoose) ?? item.receipt_path;
     return {
       ...item,
       user_id: item.user_id ?? anyItem.user?.id,
       user_name: item.user_name ?? anyItem.user?.name,
       user_role: item.user_role ?? anyItem.user?.role,
       category_id: item.category_id ?? anyItem.category?.id ?? item.category_id,
-      category_name: item.category_name ?? anyItem.category?.name
+      category_name: item.category_name ?? anyItem.category?.name,
+      receipt_path: coalescedPath ?? item.receipt_path
     };
   }
 
-  private getExpenseAudienceView(): 'users' | 'admins' | 'admins-extra' {
+  private getExpenseAudienceView(): 'users' | 'users-inactive' | 'admins' | 'admins-extra' {
     if (this.expenseAudience === 'admin-extra') {
       return 'admins-extra';
     }
     if (this.expenseAudience === 'admin') {
       return 'admins';
     }
+    if (this.expenseAudience === 'inactive-users') {
+      return 'users-inactive';
+    }
     return 'users';
   }
 
-  private getExpenseRole(expense: Expense): string {
-    const loose = expense as unknown as { role?: unknown };
-    const role = expense.user_role || expense.user?.role || loose.role || '';
-    return String(role).toLowerCase().trim();
-  }
-
-  private getExpenseType(expense: Expense): string {
-    return String(expense.expense_type || '').toLowerCase().trim();
-  }
-
-  private isAdminRole(role: string): boolean {
-    return role === 'admin' || role === 'administrator';
-  }
-
-  /** Safe client-side fallback in case API view filtering is unavailable. */
+  /** Backend filters by `view`; no client-side audience slicing. */
   private applyExpenseAudienceFilter(list: Expense[]): Expense[] {
-    const hasAnyRole = list.some((e) => this.getExpenseRole(e) !== '');
-
-    if (this.expenseAudience === 'employee') {
-      // Employee chip should show all non-admin roles (user / employee etc.).
-      if (hasAnyRole) {
-        return list.filter((e) => !this.isAdminRole(this.getExpenseRole(e)));
-      }
-      // Role missing from payload: fall back to non-extra as closest approximation.
-      return list.filter((e) => this.getExpenseType(e) !== 'extra');
-    }
-    if (this.expenseAudience === 'admin') {
-      if (hasAnyRole) {
-        return list.filter((e) => this.isAdminRole(this.getExpenseRole(e)) && this.getExpenseType(e) !== 'extra');
-      }
-      // Role missing from payload: fall back to standard slice.
-      return list.filter((e) => this.getExpenseType(e) !== 'extra');
-    }
-    if (hasAnyRole) {
-      return list.filter((e) => this.isAdminRole(this.getExpenseRole(e)) && this.getExpenseType(e) === 'extra');
-    }
-    // Role missing from payload: fall back to extra slice.
-    return list.filter((e) => this.getExpenseType(e) === 'extra');
+    return list;
   }
 
   private loadExpenses(): void {

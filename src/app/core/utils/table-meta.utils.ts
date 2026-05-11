@@ -57,7 +57,7 @@ export const USER_EXPENSE_RECEIPT_COLUMN: DynamicTableColumn = {
   cellControl: 'userExpenseReceipt'
 };
 
-/** Receipt file download (icon column); shared by user and admin expense tables. */
+/** Last column: receipt file download link per row. */
 export const EXPENSE_RECEIPT_DOWNLOAD_COLUMN: DynamicTableColumn = {
   key: '_download',
   label: 'Download',
@@ -91,14 +91,16 @@ function userExpenseLabelKeys(columnKey: string): string[] {
     case '_delete':
       return ['_delete', 'delete'];
     case '_receipt':
-      return ['_receipt', 'receipt', 'receipt_url'];
+      return ['_receipt', 'receipt', 'receipt_path', 'receiptPath', 'receipt_url'];
+    case '_download':
+      return ['_download', 'download'];
     default:
       return [columnKey];
   }
 }
 
 /**
- * User expense table: Title, Amount, Category, Date, Payment, Notes, Update, Delete, Receipt, Vendor (fixed set).
+ * User expense table: … Receipt (view), Vendor, Download (last column).
  * API meta may only override display labels for matching keys.
  */
 function cloneUserExpenseDashboardColumns(meta?: TableMetaResponse | null): DynamicTableColumn[] {
@@ -220,20 +222,20 @@ function adminExpenseLabelKeys(columnKey: string): string[] {
     case 'payment_method':
       return ['payment_method', 'payment'];
     case '_receipt':
-      return ['_receipt', 'receipt', 'receipt_url'];
+      return ['_receipt', 'receipt', 'receipt_path', 'receiptPath', 'receipt_url'];
+    case '_download':
+      return ['_download', 'download'];
     case '_edit':
       return ['_edit', 'update'];
     case '_delete':
       return ['_delete', 'delete'];
-    case '_download':
-      return ['_download', 'download'];
     default:
       return [columnKey];
   }
 }
 
 /**
- * Admin “All expenses” table: Title, Category, Amount, Pay method, Receipt, Employee name, Vendor, Expense date, Delete, Download.
+ * Admin “All expenses” table: … Receipt (view), … Delete, Download (last column).
  * Fixed columns; API meta may only override labels for matching keys.
  */
 function cloneAdminExpenseDashboardColumns(meta?: TableMetaResponse | null): DynamicTableColumn[] {

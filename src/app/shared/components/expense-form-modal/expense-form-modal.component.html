@@ -1,5 +1,11 @@
 <div class="modal-header">
+<<<<<<< hindi
   <h2>{{ expense ? ('expenseForm.editTitle' | translate) : ('expenseForm.addTitle' | translate) }}</h2>
+=======
+  <h2>
+    {{ expense ? 'Edit Expense' : createAsExtra ? 'Add admin extra expense' : 'Add Expense' }}
+  </h2>
+>>>>>>> master
   <button type="button" class="close-btn" (click)="close()">✖</button>
 </div>
 
@@ -36,9 +42,15 @@
 </div>
 
 <p class="receipt-existing" *ngIf="receiptPreviewHref && !receiptFile">
+<<<<<<< hindi
   <span>{{ 'expenseForm.savedReceipt' | translate }}</span>
   <a [href]="receiptPreviewHref" target="_blank" rel="noopener noreferrer">{{ 'expenseForm.open' | translate }}</a>
   <span class="receipt-existing-hint" *ngIf="expense?.receipt_url">{{ 'expenseForm.replaceHint' | translate }}</span>
+=======
+  <span>Saved receipt:</span>
+  <a [href]="receiptPreviewHref" target="_blank" rel="noopener noreferrer">Open</a>
+  <span class="receipt-existing-hint" *ngIf="expense?.receipt_path"> — scan a new image to replace on save.</span>
+>>>>>>> master
 </p>
 
 <form [formGroup]="form" (ngSubmit)="submit(); $event.preventDefault()">
@@ -58,8 +70,13 @@
   <mat-form-field appearance="outline" class="full">
     <mat-label>{{ 'expenseForm.date' | translate }}</mat-label>
     <input matInput type="date" formControlName="expense_date" />
+    <mat-hint *ngIf="expense">Cannot change after create (API).</mat-hint>
   </mat-form-field>
+<<<<<<< hindi
   <small *ngIf="submitted && f['expense_date']?.errors?.['required']">{{ 'expenseForm.dateRequired' | translate }}</small>
+=======
+  <small *ngIf="!expense && submitted && f['expense_date']?.errors?.['required']">Date is required</small>
+>>>>>>> master
 
   <mat-form-field appearance="outline" class="full">
     <mat-label>{{ 'expenseForm.vendor' | translate }}</mat-label>
@@ -80,11 +97,19 @@
   <mat-form-field appearance="outline" class="full">
     <mat-label>{{ 'expenseForm.paymentMode' | translate }}</mat-label>
     <mat-select formControlName="payment_method">
+<<<<<<< hindi
       <mat-option value="Cash">{{ 'expenseForm.cash' | translate }}</mat-option>
       <mat-option value="UPI">{{ 'expenseForm.upi' | translate }}</mat-option>
       <mat-option value="Card">{{ 'expenseForm.card' | translate }}</mat-option>
       <mat-option value="Net Banking">{{ 'expenseForm.netBanking' | translate }}</mat-option>
       <mat-option value="Others">{{ 'expenseForm.others' | translate }}</mat-option>
+=======
+      <mat-option value="Cash">Cash</mat-option>
+      <mat-option value="Card">Card</mat-option>
+      <mat-option value="UPI">UPI</mat-option>
+      <mat-option value="Net Banking">Net Banking</mat-option>
+      <mat-option value="Others">Others</mat-option>
+>>>>>>> master
     </mat-select>
   </mat-form-field>
 
@@ -100,6 +125,25 @@
     <mat-label>{{ 'expenseForm.notes' | translate }}</mat-label>
     <textarea matInput formControlName="description" rows="3"></textarea>
   </mat-form-field>
+
+  <div *ngIf="submitError && isBudgetMissingSubmitError()" class="form-budget-banner" role="alert">
+    <mat-icon class="form-budget-banner__icon" aria-hidden="true">account_balance_wallet</mat-icon>
+    <div class="form-budget-banner__body">
+      <p class="form-budget-banner__title">Budget required</p>
+      <p class="form-budget-banner__api-msg">{{ submitError }}</p>
+      <p class="form-budget-banner__hi">पहले उस category + period के लिए budget बनाएँ (Admin → Budgets), फिर दोबारा expense add करें।</p>
+      <p class="form-budget-banner__en">
+        Standard expenses need an existing category budget. Ask your admin to create the budget first, or pick a category that already has one.
+      </p>
+    </div>
+  </div>
+
+  <div *ngIf="submitError && !isBudgetMissingSubmitError()" class="form-submit-error" role="alert">
+    <mat-icon class="form-submit-error__icon" aria-hidden="true">error_outline</mat-icon>
+    <div class="form-submit-error__body">
+      <p class="form-submit-error__msg">{{ submitError }}</p>
+    </div>
+  </div>
 
   <div class="actions">
     <button mat-stroked-button type="button" (click)="close()">{{ 'expenseForm.cancel' | translate }}</button>
