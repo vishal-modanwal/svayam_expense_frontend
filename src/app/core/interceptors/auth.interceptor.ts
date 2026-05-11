@@ -14,6 +14,9 @@ export class AuthInterceptor implements HttpInterceptor {
   ) {}
 
   intercept(req: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
+    if (this.isStaticAssetRequest(req)) {
+      return next.handle(req);
+    }
     this.loaderService.show();
     const token = this.authService.getToken();
     const request = token
@@ -36,5 +39,10 @@ export class AuthInterceptor implements HttpInterceptor {
       }),
       finalize(() => this.loaderService.hide())
     );
+  }
+
+  private isStaticAssetRequest(req: HttpRequest<unknown>): boolean {
+    const u = req.url;
+    return u.includes('/assets/') || u.startsWith('assets/');
   }
 }

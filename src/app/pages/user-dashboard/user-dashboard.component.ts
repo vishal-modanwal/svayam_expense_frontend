@@ -8,6 +8,7 @@ import { AuthService } from 'src/app/core/services/auth.service';
 import { CategoryService } from 'src/app/core/services/category.service';
 import { ExpenseService } from 'src/app/core/services/expense.service';
 import { ToastService } from 'src/app/core/services/toast.service';
+import { I18nService } from 'src/app/core/services/i18n.service';
 import { ProfileService } from 'src/app/core/services/profile.service';
 import { mergeStoredProfileWithUser } from 'src/app/core/utils/stored-user-profile';
 import { isUserAccountInactive } from 'src/app/core/utils/user-activity.utils';
@@ -48,7 +49,6 @@ export class UserDashboardComponent implements OnInit, OnDestroy {
   order: 'ASC' | 'DESC' = 'DESC';
   selectedSort: 'latest' | 'high' | 'low' = 'latest';
   selectedCategory: number | null = null;
-  selectedCategoryLabel = 'All Categories';
 
   /** Client-side filter on the current expense page (title / vendor), reference-style search bar. */
   expenseSearchInput = '';
@@ -70,7 +70,8 @@ export class UserDashboardComponent implements OnInit, OnDestroy {
     private readonly metaService: MetaService,
     private readonly profileService: ProfileService,
     private readonly toastService: ToastService,
-    private readonly cdr: ChangeDetectorRef
+    private readonly cdr: ChangeDetectorRef,
+    private readonly i18n: I18nService
   ) {}
 
   ngOnInit(): void {
@@ -86,6 +87,7 @@ export class UserDashboardComponent implements OnInit, OnDestroy {
     this.loadExpenseTableMeta();
     this.loadCategories();
     this.loadExpenses();
+    this.subs.add(this.i18n.onLanguageChange.subscribe(() => this.cdr.detectChanges()));
   }
 
   ngOnDestroy(): void {
@@ -166,14 +168,22 @@ export class UserDashboardComponent implements OnInit, OnDestroy {
     ];
   }
 
+  get selectedCategoryLabel(): string {
+    if (this.selectedCategory === null) {
+      return this.i18n.instant('user.allCategories');
+    }
+    const cat = this.categories.find((c) => c.id === this.selectedCategory);
+    return cat?.name ?? this.i18n.instant('user.allCategories');
+  }
+
   getSortLabel(): string {
     switch (this.selectedSort) {
       case 'high':
-        return 'Amount: High to Low';
+        return this.i18n.instant('user.sortHigh');
       case 'low':
-        return 'Amount: Low to High';
+        return this.i18n.instant('user.sortLow');
       default:
-        return 'Latest first';
+        return this.i18n.instant('user.sortLatest');
     }
   }
 
@@ -297,10 +307,8 @@ export class UserDashboardComponent implements OnInit, OnDestroy {
   filterByCategory(cat: Category | null): void {
     if (!cat) {
       this.selectedCategory = null;
-      this.selectedCategoryLabel = 'All Categories';
     } else {
       this.selectedCategory = cat.id;
-      this.selectedCategoryLabel = cat.name;
     }
     this.page = 1;
     this.loadExpenses();

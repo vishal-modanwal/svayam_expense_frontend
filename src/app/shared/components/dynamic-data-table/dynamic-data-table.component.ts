@@ -6,6 +6,7 @@ import {
   Input,
   OnChanges,
   OnDestroy,
+  OnInit,
   Output,
   SimpleChanges,
   ViewChild
@@ -17,6 +18,7 @@ import { MatSort, Sort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { Observable, Subject, Subscription, merge } from 'rxjs';
 import { debounceTime, distinctUntilChanged, takeUntil, tap } from 'rxjs/operators';
+import { I18nService } from 'src/app/core/services/i18n.service';
 import { DynamicTableColumn, DynamicTableQuery, DynamicTableViewConfig } from './dynamic-data-table.models';
 import { resolveReceiptPublicUrl } from 'src/app/core/utils/receipt-url';
 import { environment } from 'src/environments/environment';
@@ -27,7 +29,7 @@ import { environment } from 'src/environments/environment';
   styleUrls: ['./dynamic-data-table.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class DynamicDataTableComponent implements OnChanges, OnDestroy {
+export class DynamicDataTableComponent implements OnChanges, OnDestroy, OnInit {
   @Input() config: DynamicTableViewConfig | null = null;
   @Input() rows: Record<string, unknown>[] = [];
   @Input() totalCount = 0;
@@ -102,8 +104,13 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy {
 
   constructor(
     private readonly cdr: ChangeDetectorRef,
-    private readonly sanitizer: DomSanitizer
+    private readonly sanitizer: DomSanitizer,
+    private readonly i18n: I18nService
   ) {}
+
+  ngOnInit(): void {
+    this.i18n.onLanguageChange.pipe(takeUntil(this.destroy$)).subscribe(() => this.cdr.markForCheck());
+  }
 
   get columns(): DynamicTableColumn[] {
     return this.config?.columns ?? [];
@@ -178,7 +185,7 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy {
       return '—';
     }
     if (typeof v === 'boolean') {
-      return v ? 'Yes' : 'No';
+      return v ? this.i18n.instant('table.yes') : this.i18n.instant('table.no');
     }
     const fmt = col.valueFormat;
     if (fmt === 'inr') {

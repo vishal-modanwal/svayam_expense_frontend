@@ -4,20 +4,25 @@
       mat-icon-button
       type="button"
       class="admin-topbar__menu"
-      aria-label="Open menu"
+      [attr.aria-label]="'nav.ariaOpenAdminMenu' | translate"
       (click)="navDrawerOpen = !navDrawerOpen">
       <mat-icon>menu</mat-icon>
     </button>
-    <a routerLink="/admin/expenses" class="admin-topbar__brand" aria-label="SvayamExpense admin home">
+    <a routerLink="/admin/expenses" class="admin-topbar__brand" [attr.aria-label]="'admin.adminHomeAria' | translate">
       <img class="admin-topbar__brand-logo" src="assets/svayam-tracker-logo.png" width="28" height="28" alt="" />
-      <span class="admin-topbar__brand-text">SvayamExpense</span>
+      <span class="admin-topbar__brand-text">{{ 'nav.brand' | translate }}</span>
     </a>
     <span class="admin-topbar__spacer"></span>
+    <div class="lang-switch lang-switch--admin" role="group" [attr.aria-label]="'nav.language' | translate">
+      <button type="button" class="lang-switch__btn" [class.lang-switch__btn--active]="i18n.currentLang() === 'en'" (click)="setLang('en')">EN</button>
+      <span class="lang-switch__sep" aria-hidden="true">|</span>
+      <button type="button" class="lang-switch__btn" [class.lang-switch__btn--active]="i18n.currentLang() === 'hi'" (click)="setLang('hi')">HI</button>
+    </div>
     <button
       mat-icon-button
       type="button"
       class="admin-topbar__icon"
-      aria-label="Notifications"
+      [attr.aria-label]="'nav.ariaNotifications' | translate"
       [matBadge]="adminNotificationCount"
       [matBadgeHidden]="adminNotificationCount < 1"
       matBadgeSize="small"
@@ -31,7 +36,7 @@
     (openChange)="navDrawerOpen = $event"
     [activeWorkspace]="activeSection"
     [userName]="userName"
-    [userRole]="adminRoleLabel"
+    [userRole]="'role.administrator' | translate"
     [notificationCount]="adminNotificationCount"
     [alertBadgeCount]="adminAlertBadgeCount"
     (toolAction)="onSidebarToolAction($event)"
@@ -45,25 +50,25 @@
         <header class="dashboard-hero">
           <div class="greet">
             <div class="title-wrap">
-              <h2 id="name">Good day, <span>{{ userName }}</span></h2>
+              <h2 id="name">{{ 'user.greet' | translate }} <span>{{ userName }}</span></h2>
               <p class="subtitle">{{ sectionSubtitle }}</p>
             </div>
             <button mat-stroked-button color="primary" type="button" class="action-btn" (click)="loadAll()">
               <mat-icon>refresh</mat-icon>
-              Refresh
+              {{ 'admin.refresh' | translate }}
             </button>
           </div>
         </header>
 
-        <section class="stat-cards cards stat-cards--admin" aria-label="Budget summary">
+        <section class="stat-cards cards stat-cards--admin" [attr.aria-label]="'admin.budget' | translate">
           <mat-card class="card budget">
             <div class="card-left">
               <div class="icon-box">
                 <mat-icon>account_balance_wallet</mat-icon>
               </div>
               <div class="text">
-                <h3>Budget</h3>
-                <p>Across categories</p>
+                <h3>{{ 'admin.budget' | translate }}</h3>
+                <p>{{ 'admin.acrossCategories' | translate }}</p>
               </div>
             </div>
             <div class="card-right">₹{{ adminAllocated | number: '1.0-0' }}</div>
@@ -75,8 +80,8 @@
                 <mat-icon>trending_down</mat-icon>
               </div>
               <div class="text">
-                <h3>Expense</h3>
-                <p>All users</p>
+                <h3>{{ 'admin.expense' | translate }}</h3>
+                <p>{{ 'admin.allUsers' | translate }}</p>
               </div>
             </div>
             <div class="card-right">₹{{ adminSpent | number: '1.0-0' }}</div>
@@ -88,8 +93,8 @@
                 <mat-icon>savings</mat-icon>
               </div>
               <div class="text">
-                <h3>Remaining</h3>
-                <p>Headroom vs allocated</p>
+                <h3>{{ 'admin.remaining' | translate }}</h3>
+                <p>{{ 'admin.headroom' | translate }}</p>
               </div>
             </div>
             <div class="card-right">₹{{ adminRemaining | number: '1.0-0' }}</div>
@@ -101,8 +106,8 @@
                 <mat-icon>percent</mat-icon>
               </div>
               <div class="text">
-                <h3>Usage</h3>
-                <p>Overall consumption</p>
+                <h3>{{ 'admin.usage' | translate }}</h3>
+                <p>{{ 'admin.overallConsumption' | translate }}</p>
               </div>
             </div>
             <div class="card-right">{{ adminUsagePct | number: '1.0-0' }}%</div>
@@ -114,8 +119,8 @@
                 <mat-icon>bolt</mat-icon>
               </div>
               <div class="text">
-                <h3>Admin extra</h3>
-                <p>Extra-type admin expenses</p>
+                <h3>{{ 'admin.adminExtra' | translate }}</h3>
+                <p>{{ 'admin.adminExtraDesc' | translate }}</p>
               </div>
             </div>
             <div class="card-right">₹{{ adminExtraExpenseTotal | number: '1.0-0' }}</div>
@@ -131,14 +136,14 @@
                 class="search-shell__input"
                 [(ngModel)]="expenseSearchInput"
                 (keyup.enter)="applyExpenseSearch()"
-                placeholder="Search by user name…"
+                [placeholder]="'admin.searchUserPlaceholder' | translate"
                 autocomplete="off"
-                aria-label="Search expenses by user name" />
+                [attr.aria-label]="'admin.searchUserAria' | translate" />
               <button
                 mat-icon-button
                 type="button"
                 class="search-shell__submit"
-                aria-label="Run search"
+                [attr.aria-label]="'admin.runSearchAria' | translate"
                 (click)="applyExpenseSearch()">
                 <mat-icon>arrow_forward</mat-icon>
               </button>
@@ -150,7 +155,7 @@
               *ngIf="expenseQuery.filter"
               (click)="clearExpenseSearch()">
               <mat-icon>close</mat-icon>
-              Clear
+              {{ 'user.clear' | translate }}
             </button>
 
             <div class="sort-wrapper">
@@ -162,17 +167,17 @@
               <mat-menu #sortMenu="matMenu" class="sort-menu">
                 <button mat-menu-item type="button" (click)="applyExpenseSort('latest')">
                   <mat-icon>schedule</mat-icon>
-                  <span>Latest first</span>
+                  <span>{{ 'admin.sortLatest' | translate }}</span>
                   <mat-icon *ngIf="selectedExpenseSort === 'latest'" class="check">check</mat-icon>
                 </button>
                 <button mat-menu-item type="button" (click)="applyExpenseSort('high')">
                   <mat-icon>trending_down</mat-icon>
-                  <span>Amount: High to Low</span>
+                  <span>{{ 'admin.sortHigh' | translate }}</span>
                   <mat-icon *ngIf="selectedExpenseSort === 'high'" class="check">check</mat-icon>
                 </button>
                 <button mat-menu-item type="button" (click)="applyExpenseSort('low')">
                   <mat-icon>trending_up</mat-icon>
-                  <span>Amount: Low to High</span>
+                  <span>{{ 'admin.sortLow' | translate }}</span>
                   <mat-icon *ngIf="selectedExpenseSort === 'low'" class="check">check</mat-icon>
                 </button>
               </mat-menu>
@@ -180,7 +185,7 @@
 
             <button mat-stroked-button color="primary" type="button" class="action-btn" (click)="openAdminExpenseModal()">
               <mat-icon>add</mat-icon>
-              Add expense
+              {{ 'admin.addExpense' | translate }}
             </button>
 
           </div>
@@ -190,33 +195,33 @@
           <mat-card class="table-card">
             <div class="section-head section-head--table section-head--all-expenses">
               <div class="section-head__title-row">
-                <h3>All expenses</h3>
-                <span class="section-hint section-hint--page-scope">This page</span>
+                <h3>{{ 'admin.allExpenses' | translate }}</h3>
+                <span class="section-hint section-hint--page-scope">{{ 'admin.thisPage' | translate }}</span>
               </div>
               <div
                 class="expense-audience-chips"
                 role="group"
-                aria-label="Filter expenses by type">
+                [attr.aria-label]="'admin.filterAudienceAria' | translate">
                 <button
                   type="button"
                   class="expense-audience-chip"
                   [class.expense-audience-chip--active]="expenseAudience === 'employee'"
                   (click)="setExpenseAudience('employee')">
-                  Employee
+                  {{ 'admin.employee' | translate }}
                 </button>
                 <button
                   type="button"
                   class="expense-audience-chip"
                   [class.expense-audience-chip--active]="expenseAudience === 'admin'"
                   (click)="setExpenseAudience('admin')">
-                  Admin
+                  {{ 'admin.adminChip' | translate }}
                 </button>
                 <button
                   type="button"
                   class="expense-audience-chip"
                   [class.expense-audience-chip--active]="expenseAudience === 'admin-extra'"
                   (click)="setExpenseAudience('admin-extra')">
-                  Admin-Extra
+                  {{ 'admin.adminExtraChip' | translate }}
                 </button>
               </div>
             </div>
@@ -237,18 +242,16 @@
           <div class="charts-stack">
             <mat-card class="chart-card chart-card--analysis">
               <div class="chart-card-header">
-                <h3>Budget vs expense</h3>
+                <h3>{{ 'admin.budgetVsExpense' | translate }}</h3>
                 <p class="chart-caption">
-                  Outer ring: expense (spent) vs remaining budget. Inner ring: spend by category (from budget
-                  overview, or from the current expense page if budgets are unavailable). Centre shows share of
-                  allocated budget used.
+                  {{ 'admin.chartCaption' | translate }}
                 </p>
               </div>
               <div class="chart-canvas-well donut-chart-wrap admin-summary-donut">
                 <canvas #adminSummaryDonut></canvas>
               </div>
               <div class="admin-donut-legend" *ngIf="summaryDonutInnerLegend.length">
-                <span class="admin-donut-legend__title">Inner ring</span>
+                <span class="admin-donut-legend__title">{{ 'admin.innerRing' | translate }}</span>
                 <span
                   *ngFor="let li of summaryDonutInnerLegend"
                   class="admin-donut-legend__chip"
@@ -273,7 +276,7 @@
             </div>
             <button mat-stroked-button color="primary" type="button" (click)="loadAll()">
               <mat-icon>refresh</mat-icon>
-              Refresh
+              {{ 'admin.refresh' | translate }}
             </button>
           </div>
         </header>
@@ -287,14 +290,14 @@
                 class="search-shell__input"
                 [(ngModel)]="budgetSearchInput"
                 (keyup.enter)="applyBudgetSearch()"
-                placeholder="Search by category name…"
+                [placeholder]="'admin.searchCategoryPlaceholder' | translate"
                 autocomplete="off"
-                aria-label="Search budgets by category name" />
+                [attr.aria-label]="'admin.searchCategoryAria' | translate" />
               <button
                 mat-icon-button
                 type="button"
                 class="search-shell__submit"
-                aria-label="Run search"
+                [attr.aria-label]="'admin.runSearchAria' | translate"
                 (click)="applyBudgetSearch()">
                 <mat-icon>arrow_forward</mat-icon>
               </button>
@@ -306,7 +309,7 @@
               *ngIf="budgetQuery.filter"
               (click)="clearBudgetSearch()">
               <mat-icon>close</mat-icon>
-              Clear
+              {{ 'user.clear' | translate }}
             </button>
 
             <div class="sort-wrapper">
@@ -318,17 +321,17 @@
               <mat-menu #budgetSortMenu="matMenu" class="sort-menu">
                 <button mat-menu-item type="button" (click)="applyBudgetListSort('latest')">
                   <mat-icon>schedule</mat-icon>
-                  <span>Latest first</span>
+                  <span>{{ 'admin.sortLatest' | translate }}</span>
                   <mat-icon *ngIf="selectedBudgetListSort === 'latest'" class="check">check</mat-icon>
                 </button>
                 <button mat-menu-item type="button" (click)="applyBudgetListSort('high')">
                   <mat-icon>trending_down</mat-icon>
-                  <span>Amount: High to Low</span>
+                  <span>{{ 'admin.sortHigh' | translate }}</span>
                   <mat-icon *ngIf="selectedBudgetListSort === 'high'" class="check">check</mat-icon>
                 </button>
                 <button mat-menu-item type="button" (click)="applyBudgetListSort('low')">
                   <mat-icon>trending_up</mat-icon>
-                  <span>Amount: Low to High</span>
+                  <span>{{ 'admin.sortLow' | translate }}</span>
                   <mat-icon *ngIf="selectedBudgetListSort === 'low'" class="check">check</mat-icon>
                 </button>
               </mat-menu>
@@ -337,15 +340,15 @@
 
           <button mat-raised-button color="primary" type="button" class="action-btn" (click)="openAddBudgetModal()">
             <mat-icon>add</mat-icon>
-            Add budget
+            {{ 'admin.addBudget' | translate }}
           </button>
         </div>
 
         <div class="main-section main-section--budgets">
           <mat-card class="table-card" *ngIf="budgetTableConfig">
             <div class="section-head section-head--table">
-              <h3>Budget overview</h3>
-              <span class="section-hint section-hint--page-scope">This page</span>
+              <h3>{{ 'admin.budgetOverview' | translate }}</h3>
+              <span class="section-hint section-hint--page-scope">{{ 'admin.thisPage' | translate }}</span>
             </div>
             <app-dynamic-data-table
               [config]="budgetTableConfig"
@@ -364,53 +367,50 @@
 
           <mat-card class="chart-card chart-card--budgets-chart">
             <div class="chart-card-header">
-              <h3>Budget vs spent</h3>
+              <h3>{{ 'admin.budgetVsSpent' | translate }}</h3>
             </div>
             <div class="chart-wrap-budget chart-wrap-budget--gauge">
-              <p *ngIf="budgetTableLoading" class="budget-gauge__loading">Loading chart…</p>
+              <p *ngIf="budgetTableLoading" class="budget-gauge__loading">{{ 'admin.loadingChart' | translate }}</p>
               <ng-container *ngIf="!budgetTableLoading && budgetGaugeRows.length">
                 <p class="budget-gauge__intro">
-                  Har category ke liye column ki height <strong>100% = us row ka budget</strong> (allocate). Neeche se
-                  <strong>yellow</strong> sirf <strong>spent ÷ budget</strong> hissa bharta hai — jitna expense, utna
-                  yellow. Baaki sky = unused. Spend &gt; budget ho to upar cap line <strong>100%</strong> budget limit
-                  dikhati hai. Axis <strong>0–100%</strong> allocation hai; ₹ neeche labels / tooltip mein.
+                  {{ 'admin.budgetGaugeIntro' | translate }}
                 </p>
-                <h4 class="budget-gauge__subtitle">Budget vs spent (stacked gauge)</h4>
+                <h4 class="budget-gauge__subtitle">{{ 'admin.budgetGaugeSubtitle' | translate }}</h4>
                 <div class="budget-gauge__kpi" *ngIf="budgetGaugeSummary as g">
                   <span class="budget-gauge__kpi-chip">
-                    Allocated <strong>{{ formatBudgetGaugeInr(g.allocated) }}</strong>
+                    {{ 'admin.allocated' | translate }} <strong>{{ formatBudgetGaugeInr(g.allocated) }}</strong>
                   </span>
                   <span class="budget-gauge__kpi-chip">
-                    Spent <strong>{{ formatBudgetGaugeInr(g.spent) }}</strong>
+                    {{ 'admin.spent' | translate }} <strong>{{ formatBudgetGaugeInr(g.spent) }}</strong>
                   </span>
                   <span class="budget-gauge__kpi-chip budget-gauge__kpi-chip--muted">
-                    Unused headroom <strong>{{ formatBudgetGaugeInr(g.headroom) }}</strong>
+                    {{ 'admin.unusedHeadroom' | translate }} <strong>{{ formatBudgetGaugeInr(g.headroom) }}</strong>
                   </span>
                   <span class="budget-gauge__kpi-chip budget-gauge__kpi-chip--warn" *ngIf="g.overAmount > 0">
-                    Over budget <strong>{{ formatBudgetGaugeInr(g.overAmount) }}</strong>
+                    {{ 'admin.overBudget' | translate }} <strong>{{ formatBudgetGaugeInr(g.overAmount) }}</strong>
                   </span>
                   <span class="budget-gauge__kpi-chip budget-gauge__kpi-chip--accent" *ngIf="g.usagePct !== null">
-                    Overall <strong>{{ g.usagePct }}%</strong> of allocated
+                    {{ 'admin.overallOfAllocated' | translate: { pct: g.usagePct } }}
                   </span>
                 </div>
                 <div class="budget-gauge">
-                  <aside class="budget-gauge__legend" aria-label="Chart legend">
+                  <aside class="budget-gauge__legend" [attr.aria-label]="'admin.chartLegendAria' | translate">
                     <ul class="budget-gauge__legend-list">
                       <li *ngFor="let row of budgetGaugeRows; let i = index" class="budget-gauge__legend-item">
                         <span class="budget-gauge__swatch budget-gauge__swatch--spent" aria-hidden="true"></span>
-                        <span class="budget-gauge__legend-text">{{ i + 1 }} {{ row.label }}</span>
+                        <span class="budget-gauge__legend-text">{{ 'admin.legendCategory' | translate: { n: i + 1, name: row.label } }}</span>
                       </li>
                       <li class="budget-gauge__legend-item">
                         <span class="budget-gauge__swatch budget-gauge__swatch--sky" aria-hidden="true"></span>
-                        <span class="budget-gauge__legend-text">Budget (sky column / unused)</span>
+                        <span class="budget-gauge__legend-text">{{ 'admin.legendBudgetSky' | translate }}</span>
                       </li>
                       <li class="budget-gauge__legend-item">
                         <span class="budget-gauge__swatch budget-gauge__swatch--spent" aria-hidden="true"></span>
-                        <span class="budget-gauge__legend-text">Spent — expense (yellow)</span>
+                        <span class="budget-gauge__legend-text">{{ 'admin.legendSpentYellow' | translate }}</span>
                       </li>
                       <li class="budget-gauge__legend-item">
                         <span class="budget-gauge__swatch budget-gauge__swatch--cap" aria-hidden="true"></span>
-                        <span class="budget-gauge__legend-text">100% cap line (when spent &gt; budget)</span>
+                        <span class="budget-gauge__legend-text">{{ 'admin.legendCap' | translate }}</span>
                       </li>
                     </ul>
                   </aside>
@@ -474,12 +474,11 @@
                 </div>
               </ng-container>
               <p *ngIf="!budgetTableLoading && !budgetGaugeRows.length" class="budget-gauge__empty">
-                No budget rows to chart yet. Load succeeds when budget details are available.
+                {{ 'admin.budgetGaugeEmpty' | translate }}
               </p>
             </div>
             <p class="budget-list-hint">
-              Same rows as the budget table. Each bar uses its own budget as 100% height; yellow = spent share of that
-              budget.
+              {{ 'admin.budgetListHint' | translate }}
             </p>
           </mat-card>
         </div>
@@ -497,7 +496,7 @@
             </div>
             <button mat-stroked-button color="primary" type="button" (click)="loadAll()">
               <mat-icon>refresh</mat-icon>
-              Refresh
+              {{ 'admin.refresh' | translate }}
             </button>
           </div>
         </header>
@@ -505,12 +504,11 @@
         <div class="main-section">
           <mat-card class="table-card" *ngIf="usersTableConfig">
             <div class="section-head section-head--table">
-              <h3>Users</h3>
-              <span class="section-hint section-hint--page-scope">This page</span>
+              <h3>{{ 'admin.users' | translate }}</h3>
+              <span class="section-hint section-hint--page-scope">{{ 'admin.thisPage' | translate }}</span>
             </div>
             <p class="users-meta-hint">
-              Columns from GET /api/admin/users-details (embedded metadata). Prefer this over /api/meta/tables/users for
-              this screen.
+              {{ 'admin.usersMetaHint' | translate }}
             </p>
             <app-dynamic-data-table
               [config]="usersTableConfig"
@@ -531,7 +529,7 @@
                 </div>
                 <div class="text">
                   <h3>{{ emp.name }}</h3>
-                  <p>{{ emp.entries }} entries on this page</p>
+                  <p>{{ 'admin.entriesOnPage' | translate: { n: emp.entries } }}</p>
                 </div>
               </div>
               <div class="card-right">₹{{ emp.spent | number: '1.0-0' }}</div>
@@ -539,13 +537,13 @@
           </div>
 
           <mat-card class="panel-card">
-            <h3>User status toggle</h3>
+            <h3>{{ 'admin.userStatusToggle' | translate }}</h3>
             <form [formGroup]="userToggleForm" (ngSubmit)="toggleUser()" class="toggle-form">
               <mat-form-field appearance="outline">
-                <mat-label>User ID</mat-label>
+                <mat-label>{{ 'admin.userId' | translate }}</mat-label>
                 <input matInput type="number" formControlName="userId" />
               </mat-form-field>
-              <button mat-raised-button color="primary" type="submit">Toggle active / inactive</button>
+              <button mat-raised-button color="primary" type="submit">{{ 'admin.toggleActive' | translate }}</button>
             </form>
           </mat-card>
         </div>
@@ -557,11 +555,11 @@
 <div class="overlay" *ngIf="selectedAdminDeleteExpense !== null" (click)="closeAdminDeleteDialog()">
   <mat-card class="modal-card" (click)="$event.stopPropagation()">
     <button type="button" class="close-btn" (click)="closeAdminDeleteDialog()">✖</button>
-    <h3>Delete expense</h3>
-    <p>Are you sure you want to delete this expense?</p>
+    <h3>{{ 'admin.deleteExpense' | translate }}</h3>
+    <p>{{ 'admin.deleteConfirm' | translate }}</p>
     <div class="modal-actions">
-      <button mat-stroked-button type="button" (click)="closeAdminDeleteDialog()">Cancel</button>
-      <button mat-raised-button color="warn" type="button" (click)="confirmAdminDeleteSelected()">Delete</button>
+      <button mat-stroked-button type="button" (click)="closeAdminDeleteDialog()">{{ 'admin.cancel' | translate }}</button>
+      <button mat-raised-button color="warn" type="button" (click)="confirmAdminDeleteSelected()">{{ 'admin.delete' | translate }}</button>
     </div>
   </mat-card>
 </div>
@@ -578,11 +576,11 @@
 </div>
 
 <!-- SvayamTracker AI Assistant: orb opens chat modal -->
-<div class="admin-ai-fab" aria-label="SvayamTracker AI Assistant">
+<div class="admin-ai-fab" [attr.aria-label]="'admin.aiFabAria' | translate">
   <button
     type="button"
     class="admin-ai-fab__orb"
-    aria-label="Open SvayamTracker AI Assistant"
+    [attr.aria-label]="'admin.aiOpenAria' | translate"
     aria-haspopup="dialog"
     [attr.aria-expanded]="isAiChatModalOpen"
     (click)="openAiChatModal()">
@@ -596,7 +594,7 @@
 <div class="overlay admin-ai-chat-overlay" *ngIf="isAiChatModalOpen" (click)="closeAiChatModal()">
   <mat-card class="admin-ai-chat-card" role="dialog" aria-labelledby="ai-chat-title" (click)="$event.stopPropagation()">
     <div class="admin-ai-chat-accent" aria-hidden="true"></div>
-    <button type="button" class="close-btn admin-ai-chat-close" aria-label="Close chat" (click)="closeAiChatModal()">✖</button>
+    <button type="button" class="close-btn admin-ai-chat-close" [attr.aria-label]="'admin.aiCloseChatAria' | translate" (click)="closeAiChatModal()">✖</button>
 
     <div class="admin-ai-chat-card__inner">
       <div class="admin-ai-chat-header">
@@ -604,9 +602,9 @@
           <img src="assets/svayam-tracker-logo.png" width="40" height="40" alt="" />
         </div>
         <div class="admin-ai-chat-header__text">
-          <p class="admin-ai-chat-brand">SvayamTracker</p>
-          <h2 id="ai-chat-title" class="admin-ai-chat-heading">AI Assistant</h2>
-          <p class="admin-ai-chat-welcome">Hi, <strong>{{ userName }}</strong></p>
+          <p class="admin-ai-chat-brand">{{ 'admin.aiBrand' | translate }}</p>
+          <h2 id="ai-chat-title" class="admin-ai-chat-heading">{{ 'admin.aiHeading' | translate }}</h2>
+          <p class="admin-ai-chat-welcome">{{ 'admin.aiWelcome' | translate }} <strong>{{ userName }}</strong></p>
         </div>
       </div>
 
@@ -620,16 +618,16 @@
         </div>
       </div>
 
-      <div class="admin-ai-chat-chips" aria-label="Suggested questions">
+      <div class="admin-ai-chat-chips" [attr.aria-label]="'admin.aiSuggested' | translate">
         <div
           class="admin-ai-chat-chip-row"
           *ngFor="let s of aiChatSuggestions"
           [class.admin-ai-chat-chip-row--dismissed]="dismissedAiChatChipActions.has(s.action)">
-          <button type="button" class="admin-ai-chat-chip" (click)="onAiChatSuggestion(s)">{{ s.label }}</button>
+          <button type="button" class="admin-ai-chat-chip" (click)="onAiChatSuggestion(s)">{{ s.labelKey | translate }}</button>
           <button
             type="button"
             class="admin-ai-chat-chip-dismiss"
-            [attr.aria-label]="'Remove suggestion: ' + s.label"
+            [attr.aria-label]="chipDismissAria(s)"
             (click)="dismissAiChatChip(s.action, $event)">
             <span aria-hidden="true">×</span>
           </button>
@@ -644,20 +642,20 @@
           [ngModelOptions]="{ standalone: true }"
           [disabled]="aiChatSending"
           (keydown.enter)="sendAiChatMessage(); $event.preventDefault()"
-          placeholder="Type a question…"
+          [placeholder]="'admin.chatPlaceholder' | translate"
           autocomplete="off"
-          aria-label="Chat message" />
+          [attr.aria-label]="'admin.chatMessageAria' | translate" />
         <button
           type="button"
           class="admin-ai-chat-compose__send"
           [disabled]="aiChatSending"
           (click)="sendAiChatMessage()">
-          {{ aiChatSending ? 'Sending…' : 'Send' }}
+          {{ aiChatSending ? ('admin.sending' | translate) : ('admin.send' | translate) }}
         </button>
       </div>
 
       <div class="admin-ai-chat-footer">
-        <button mat-stroked-button color="primary" type="button" (click)="openAiSummaryFromChat()">AI spending summary</button>
+        <button mat-stroked-button color="primary" type="button" (click)="openAiSummaryFromChat()">{{ 'admin.aiSpendingSummary' | translate }}</button>
       </div>
     </div>
   </mat-card>
@@ -666,7 +664,7 @@
 <div class="overlay" *ngIf="isAiSummaryOpen" (click)="closeAiSummary()">
   <mat-card class="modal-card modal-card--wide" (click)="$event.stopPropagation()">
     <button type="button" class="close-btn" (click)="closeAiSummary()">✖</button>
-    <h3>AI Summary</h3>
+    <h3>{{ 'admin.aiSummary' | translate }}</h3>
     <ul class="ai-list">
       <li *ngFor="let point of aiHighlights">{{ point }}</li>
     </ul>
@@ -676,33 +674,33 @@
 <div class="overlay" *ngIf="isReportModalOpen" (click)="closeReportModal()">
   <mat-card class="modal-card modal-card--wide" (click)="$event.stopPropagation()">
     <button type="button" class="close-btn" (click)="closeReportModal()">✖</button>
-    <h3>Download report</h3>
+    <h3>{{ 'admin.downloadReport' | translate }}</h3>
 
     <div class="report-switch">
-      <button type="button" [class.active]="reportMode === 'monthly'" (click)="switchReportMode('monthly')">Monthly PDF</button>
-      <button type="button" [class.active]="reportMode === 'user'" (click)="switchReportMode('user')">User-wise CSV</button>
+      <button type="button" [class.active]="reportMode === 'monthly'" (click)="switchReportMode('monthly')">{{ 'admin.monthlyPdf' | translate }}</button>
+      <button type="button" [class.active]="reportMode === 'user'" (click)="switchReportMode('user')">{{ 'admin.userWiseCsv' | translate }}</button>
     </div>
 
     <div *ngIf="reportMode === 'monthly'" class="report-block">
       <div class="mini-grid">
         <mat-form-field appearance="outline">
-          <mat-label>Month</mat-label>
+          <mat-label>{{ 'admin.month' | translate }}</mat-label>
           <input matInput type="number" [(ngModel)]="reportMonth" [ngModelOptions]="{ standalone: true }" />
         </mat-form-field>
         <mat-form-field appearance="outline">
-          <mat-label>Year</mat-label>
+          <mat-label>{{ 'admin.year' | translate }}</mat-label>
           <input matInput type="number" [(ngModel)]="reportYear" [ngModelOptions]="{ standalone: true }" />
         </mat-form-field>
       </div>
-      <button mat-raised-button color="primary" type="button" (click)="downloadMonthlyReport()">Download monthly PDF</button>
+      <button mat-raised-button color="primary" type="button" (click)="downloadMonthlyReport()">{{ 'admin.downloadMonthlyPdf' | translate }}</button>
     </div>
 
     <div *ngIf="reportMode === 'user'" class="report-block">
       <mat-form-field appearance="outline" class="full">
-        <mat-label>User name</mat-label>
+        <mat-label>{{ 'admin.userName' | translate }}</mat-label>
         <input matInput [(ngModel)]="reportUserName" [ngModelOptions]="{ standalone: true }" />
       </mat-form-field>
-      <button mat-raised-button color="primary" type="button" (click)="downloadUserWiseReport()">Download user-wise CSV</button>
+      <button mat-raised-button color="primary" type="button" (click)="downloadUserWiseReport()">{{ 'admin.downloadUserCsv' | translate }}</button>
     </div>
   </mat-card>
 </div>
@@ -714,43 +712,43 @@
     aria-modal="true"
     aria-labelledby="add-budget-modal-title"
     (click)="$event.stopPropagation()">
-    <button type="button" class="close-btn" aria-label="Close" (click)="closeAddBudgetModal()">✖</button>
+    <button type="button" class="close-btn" [attr.aria-label]="'admin.closeAria' | translate" (click)="closeAddBudgetModal()">✖</button>
 
     <header class="add-budget-modal-card__header">
-      <p class="add-budget-modal-card__eyebrow">Budgets</p>
-      <h2 id="add-budget-modal-title" class="add-budget-modal-card__title">Add budget</h2>
-      <p class="add-budget-modal-card__subtitle">New category and how much to allocate for the month you pick.</p>
+      <p class="add-budget-modal-card__eyebrow">{{ 'admin.addBudgetEyebrow' | translate }}</p>
+      <h2 id="add-budget-modal-title" class="add-budget-modal-card__title">{{ 'admin.addBudgetTitle' | translate }}</h2>
+      <p class="add-budget-modal-card__subtitle">{{ 'admin.addBudgetSubtitle' | translate }}</p>
     </header>
 
     <form class="add-budget-modal-card__form" [formGroup]="categoryBudgetForm" (ngSubmit)="createCategoryBudget()">
-      <p class="add-budget-modal-card__section-label">Category</p>
+      <p class="add-budget-modal-card__section-label">{{ 'admin.categorySection' | translate }}</p>
       <mat-form-field appearance="outline" class="full">
-        <mat-label>Category name</mat-label>
+        <mat-label>{{ 'admin.categoryName' | translate }}</mat-label>
         <input matInput formControlName="name" />
       </mat-form-field>
       <mat-form-field appearance="outline" class="full">
-        <mat-label>Description</mat-label>
+        <mat-label>{{ 'admin.description' | translate }}</mat-label>
         <input matInput formControlName="description" />
       </mat-form-field>
 
-      <p class="add-budget-modal-card__section-label">Period &amp; amount</p>
+      <p class="add-budget-modal-card__section-label">{{ 'admin.periodAmount' | translate }}</p>
       <div class="mini-grid">
         <mat-form-field appearance="outline">
-          <mat-label>Month</mat-label>
+          <mat-label>{{ 'admin.month' | translate }}</mat-label>
           <input matInput type="number" formControlName="month" />
         </mat-form-field>
         <mat-form-field appearance="outline">
-          <mat-label>Year</mat-label>
+          <mat-label>{{ 'admin.year' | translate }}</mat-label>
           <input matInput type="number" formControlName="year" />
         </mat-form-field>
       </div>
       <mat-form-field appearance="outline" class="full">
-        <mat-label>Allocated amount</mat-label>
+        <mat-label>{{ 'admin.allocatedAmount' | translate }}</mat-label>
         <input matInput type="number" formControlName="allocated_amount" />
       </mat-form-field>
       <div class="modal-actions modal-actions--start">
-        <button mat-stroked-button type="button" (click)="closeAddBudgetModal()">Cancel</button>
-        <button mat-raised-button color="primary" type="submit">Create</button>
+        <button mat-stroked-button type="button" (click)="closeAddBudgetModal()">{{ 'admin.cancel' | translate }}</button>
+        <button mat-raised-button color="primary" type="submit">{{ 'admin.create' | translate }}</button>
       </div>
     </form>
   </mat-card>
@@ -758,40 +756,40 @@
 
 <div class="overlay" *ngIf="isEditBudgetModalOpen" (click)="closeEditBudgetModal()">
   <mat-card class="modal-card modal-card--wide form-modal add-budget-modal-card" (click)="$event.stopPropagation()">
-    <button type="button" class="close-btn" aria-label="Close" (click)="closeEditBudgetModal()">✖</button>
+    <button type="button" class="close-btn" [attr.aria-label]="'admin.closeAria' | translate" (click)="closeEditBudgetModal()">✖</button>
     <header class="add-budget-modal-card__header">
-      <p class="add-budget-modal-card__eyebrow">Budgets</p>
-      <h2 class="add-budget-modal-card__title">Update budget</h2>
-      <p class="add-budget-modal-card__subtitle">Change category name, period, or allocated amount for this row.</p>
+      <p class="add-budget-modal-card__eyebrow">{{ 'admin.addBudgetEyebrow' | translate }}</p>
+      <h2 class="add-budget-modal-card__title">{{ 'admin.updateBudgetTitle' | translate }}</h2>
+      <p class="add-budget-modal-card__subtitle">{{ 'admin.updateBudgetSubtitle' | translate }}</p>
     </header>
     <form class="add-budget-modal-card__form" [formGroup]="budgetEditForm" (ngSubmit)="submitBudgetEdit()">
-      <p class="add-budget-modal-card__section-label">Category</p>
+      <p class="add-budget-modal-card__section-label">{{ 'admin.categorySection' | translate }}</p>
       <mat-form-field appearance="outline" class="full">
-        <mat-label>Category name</mat-label>
+        <mat-label>{{ 'admin.categoryName' | translate }}</mat-label>
         <input matInput formControlName="name" />
       </mat-form-field>
       <mat-form-field appearance="outline" class="full">
-        <mat-label>Description</mat-label>
+        <mat-label>{{ 'admin.description' | translate }}</mat-label>
         <input matInput formControlName="description" />
       </mat-form-field>
-      <p class="add-budget-modal-card__section-label">Period &amp; amount</p>
+      <p class="add-budget-modal-card__section-label">{{ 'admin.periodAmount' | translate }}</p>
       <div class="mini-grid">
         <mat-form-field appearance="outline">
-          <mat-label>Month</mat-label>
+          <mat-label>{{ 'admin.month' | translate }}</mat-label>
           <input matInput type="number" formControlName="month" />
         </mat-form-field>
         <mat-form-field appearance="outline">
-          <mat-label>Year</mat-label>
+          <mat-label>{{ 'admin.year' | translate }}</mat-label>
           <input matInput type="number" formControlName="year" />
         </mat-form-field>
       </div>
       <mat-form-field appearance="outline" class="full">
-        <mat-label>Allocated amount</mat-label>
+        <mat-label>{{ 'admin.allocatedAmount' | translate }}</mat-label>
         <input matInput type="number" formControlName="allocated_amount" />
       </mat-form-field>
       <div class="modal-actions modal-actions--start">
-        <button mat-stroked-button type="button" (click)="closeEditBudgetModal()">Cancel</button>
-        <button mat-raised-button color="primary" type="submit">Save changes</button>
+        <button mat-stroked-button type="button" (click)="closeEditBudgetModal()">{{ 'admin.cancel' | translate }}</button>
+        <button mat-raised-button color="primary" type="submit">{{ 'admin.saveChanges' | translate }}</button>
       </div>
     </form>
   </mat-card>
@@ -800,27 +798,23 @@
 <div class="overlay" *ngIf="selectedBudgetDeleteRow !== null" (click)="closeBudgetDeleteDialog()">
   <mat-card class="modal-card" (click)="$event.stopPropagation()">
     <button type="button" class="close-btn" (click)="closeBudgetDeleteDialog()">✖</button>
-    <h3>Delete budget</h3>
-    <p>
-      Remove this budget row for
-      <strong>{{ selectedBudgetDeleteRow?.['category'] }}</strong>
-      ({{ selectedBudgetDeleteRow?.['month'] }} / {{ selectedBudgetDeleteRow?.['year'] }})? This cannot be undone.
-    </p>
+    <h3>{{ 'admin.deleteBudget' | translate }}</h3>
+    <p>{{ budgetDeleteConfirmText() }}</p>
     <div class="modal-actions">
-      <button mat-stroked-button type="button" (click)="closeBudgetDeleteDialog()">Cancel</button>
-      <button mat-raised-button color="warn" type="button" (click)="confirmBudgetDelete()">Delete</button>
+      <button mat-stroked-button type="button" (click)="closeBudgetDeleteDialog()">{{ 'admin.cancel' | translate }}</button>
+      <button mat-raised-button color="warn" type="button" (click)="confirmBudgetDelete()">{{ 'admin.delete' | translate }}</button>
     </div>
   </mat-card>
 </div>
 
 <div class="overlay" *ngIf="isBudgetDescriptionModalOpen" (click)="closeBudgetDescriptionModal()">
   <mat-card class="modal-card modal-card--wide" (click)="$event.stopPropagation()">
-    <button type="button" class="close-btn" aria-label="Close" (click)="closeBudgetDescriptionModal()">✖</button>
-    <h3>Description</h3>
+    <button type="button" class="close-btn" [attr.aria-label]="'admin.closeAria' | translate" (click)="closeBudgetDescriptionModal()">✖</button>
+    <h3>{{ 'admin.descriptionModalTitle' | translate }}</h3>
     <p class="budget-description-modal__category" *ngIf="budgetDescriptionModalTitle">{{ budgetDescriptionModalTitle }}</p>
     <div class="budget-description-modal__body">{{ budgetDescriptionModalText }}</div>
     <div class="modal-actions">
-      <button mat-stroked-button type="button" (click)="closeBudgetDescriptionModal()">Close</button>
+      <button mat-stroked-button type="button" (click)="closeBudgetDescriptionModal()">{{ 'admin.close' | translate }}</button>
     </div>
   </mat-card>
 </div>

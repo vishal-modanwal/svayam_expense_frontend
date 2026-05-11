@@ -1,19 +1,19 @@
 <div class="page">
   <mat-card>
-    <h2>My Profile</h2>
-    <p>Email: {{ email }}</p>
-    <p>Role: {{ role }}</p>
+    <h2>{{ 'profile.title' | translate }}</h2>
+    <p>{{ 'profile.email' | translate }}: {{ email }}</p>
+    <p>{{ 'profile.role' | translate }}: {{ role }}</p>
     <form [formGroup]="profileForm" (ngSubmit)="updateProfile()">
       <mat-form-field appearance="outline" class="full">
-        <mat-label>Name</mat-label>
+        <mat-label>{{ 'profile.name' | translate }}</mat-label>
         <input matInput formControlName="name" />
       </mat-form-field>
       <mat-form-field appearance="outline" class="full">
-        <mat-label>Mobile Number</mat-label>
+        <mat-label>{{ 'profile.mobile' | translate }}</mat-label>
         <input matInput formControlName="mobile_no" />
-        <mat-error *ngIf="profileForm.get('mobile_no')?.touched && profileForm.get('mobile_no')?.invalid">10 digit mobile required</mat-error>
+        <mat-error *ngIf="profileForm.get('mobile_no')?.touched && profileForm.get('mobile_no')?.invalid">{{ 'profile.mobileError' | translate }}</mat-error>
       </mat-form-field>
-      <button mat-raised-button color="primary" type="submit">Update Profile</button>
+      <button mat-raised-button color="primary" type="submit">{{ 'profile.update' | translate }}</button>
     </form>
   </mat-card>
 </div>

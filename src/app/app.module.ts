@@ -1,4 +1,4 @@
-import { NgModule } from '@angular/core';
+import { APP_INITIALIZER, NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -39,9 +39,15 @@ import { DynamicDataTableComponent } from './shared/components/dynamic-data-tabl
 import { ExpenseFormModalComponent } from './shared/components/expense-form-modal/expense-form-modal.component';
 import { ExpenseDataTableComponent } from './shared/components/expense-data-table/expense-data-table.component';
 import { AdminExpenseDataTableComponent } from './shared/components/admin-expense-data-table/admin-expense-data-table.component';
+import { TranslatePipe } from './shared/pipes/translate.pipe';
+import { I18nService } from './core/services/i18n.service';
 
 export function lottiePlayerFactory(): typeof player {
   return player;
+}
+
+export function initAppI18n(i18n: I18nService): () => Promise<void> {
+  return () => i18n.init();
 }
 
 @NgModule({
@@ -61,7 +67,8 @@ export function lottiePlayerFactory(): typeof player {
     DynamicDataTableComponent,
     ExpenseFormModalComponent,
     ExpenseDataTableComponent,
-    AdminExpenseDataTableComponent
+    AdminExpenseDataTableComponent,
+    TranslatePipe
   ],
   imports: [
     BrowserModule,
@@ -91,6 +98,12 @@ export function lottiePlayerFactory(): typeof player {
     {
       provide: HTTP_INTERCEPTORS,
       useClass: AuthInterceptor,
+      multi: true
+    },
+    {
+      provide: APP_INITIALIZER,
+      useFactory: initAppI18n,
+      deps: [I18nService],
       multi: true
     }
   ],
