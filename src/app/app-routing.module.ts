@@ -18,7 +18,8 @@ const routes: Routes = [
   { path: 'register', component: RegisterComponent },
   { path: 'dashboard', component: UserDashboardComponent, canActivate: [AuthGuard] },
   { path: 'profile', component: ProfileComponent, canActivate: [AuthGuard] },
-  { path: 'admin', component: AdminDashboardComponent, canActivate: [AuthGuard, AdminGuard] },
+  { path: 'admin', redirectTo: 'admin/expenses', pathMatch: 'full' },
+  { path: 'admin/:section', component: AdminDashboardComponent, canActivate: [AuthGuard, AdminGuard] },
   { path: '**', redirectTo: '' }
 ];
 

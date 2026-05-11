@@ -16,6 +16,7 @@ import { MatStepperModule } from '@angular/material/stepper';
 import { MatTableModule } from '@angular/material/table';
 import { MatSortModule } from '@angular/material/sort';
 import { MatPaginatorModule } from '@angular/material/paginator';
+import { MatBadgeModule } from '@angular/material/badge';
 import { LottieModule } from 'ngx-lottie';
 import player from 'lottie-web';
 
@@ -31,10 +32,13 @@ import { LoginComponent } from './pages/auth/login/login.component';
 import { RegisterComponent } from './pages/auth/register/register.component';
 import { UserDashboardComponent } from './pages/user-dashboard/user-dashboard.component';
 import { AdminDashboardComponent } from './pages/admin-dashboard/admin-dashboard.component';
+import { SidebarComponent } from './pages/admin-dashboard/sidebar/sidebar.component';
 import { ProfileComponent } from './pages/profile/profile.component';
 import { AuthInterceptor } from './core/interceptors/auth.interceptor';
 import { DynamicDataTableComponent } from './shared/components/dynamic-data-table/dynamic-data-table.component';
 import { ExpenseFormModalComponent } from './shared/components/expense-form-modal/expense-form-modal.component';
+import { ExpenseDataTableComponent } from './shared/components/expense-data-table/expense-data-table.component';
+import { AdminExpenseDataTableComponent } from './shared/components/admin-expense-data-table/admin-expense-data-table.component';
 
 export function lottiePlayerFactory(): typeof player {
   return player;
@@ -52,9 +56,12 @@ export function lottiePlayerFactory(): typeof player {
     RegisterComponent,
     UserDashboardComponent,
     AdminDashboardComponent,
+    SidebarComponent,
     ProfileComponent,
     DynamicDataTableComponent,
-    ExpenseFormModalComponent
+    ExpenseFormModalComponent,
+    ExpenseDataTableComponent,
+    AdminExpenseDataTableComponent
   ],
   imports: [
     BrowserModule,
@@ -77,6 +84,7 @@ export function lottiePlayerFactory(): typeof player {
     MatTableModule,
     MatSortModule,
     MatPaginatorModule,
+    MatBadgeModule,
     LottieModule.forRoot({ player: lottiePlayerFactory })
   ],
   providers: [

@@ -87,10 +87,25 @@ export interface PaginatedExpenses {
   status: string;
   data: Expense[];
   pagination: {
-    totalItems: number;
+    totalItems?: number;
+    /** Some list APIs use snake_case for the total count. */
+    total_records?: number;
     currentPage: number;
     totalPages: number;
     /** When the API returns page size, the dashboard syncs the items-per-page control. */
+    itemsPerPage?: number;
+  };
+}
+
+/** `GET /admin/budget-details` when the backend supports list query params (page, limit, sort, search). */
+export interface PaginatedBudgetDetails {
+  status?: string;
+  data: Record<string, unknown>[];
+  pagination?: {
+    totalItems?: number;
+    total_records?: number;
+    currentPage?: number;
+    totalPages?: number;
     itemsPerPage?: number;
   };
 }

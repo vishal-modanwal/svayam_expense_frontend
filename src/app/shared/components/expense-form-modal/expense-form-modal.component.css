@@ -72,7 +72,15 @@ small {
   flex-wrap: wrap;
 }
 
-.scan-btn {
+.receipt-scanner__primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.receipt-pick-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -83,10 +91,23 @@ small {
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
+  flex-shrink: 0;
 }
 
-.scan-btn:hover {
+.receipt-pick-btn:hover {
   opacity: 0.9;
+}
+
+.receipt-scanner__hint {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--text-muted, #64748b);
+  max-width: min(20rem, 100%);
+}
+
+body.dark-theme .receipt-scanner__hint {
+  color: var(--text-muted);
 }
 
 .receipt-file-name {
@@ -172,10 +193,20 @@ body.dark-theme .close-btn {
     align-items: stretch;
   }
 
-  .scan-btn {
+  .receipt-scanner__primary {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .receipt-pick-btn {
     justify-content: center;
     width: 100%;
     box-sizing: border-box;
+  }
+
+  .receipt-scanner__hint {
+    max-width: none;
   }
 
   .actions {

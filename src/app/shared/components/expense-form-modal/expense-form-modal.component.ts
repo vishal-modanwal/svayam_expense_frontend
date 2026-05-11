@@ -105,15 +105,30 @@ export class ExpenseFormModalComponent implements OnChanges {
   }
 
   /**
-   * Pick receipt image → OCR → fill empty form fields → keep `File` for submit
-   * (`addExpense` / `updateExpense` send multipart: fields + `receipt`).
+   * One control: image → OCR + attach file for save; PDF → attach only (no OCR).
+   * Same multipart `receipt` on create/update.
    */
-  onReceiptScanChange(event: Event): void {
+  onReceiptPickChange(event: Event): void {
     const file = this.readFileFromEvent(event);
     if (!file) {
       return;
     }
-    void this.runReceiptScanOcr(file);
+    if (this.isLikelyReceiptImage(file)) {
+      void this.runReceiptScanOcr(file);
+      return;
+    }
+    if (this.isLikelyPdfReceipt(file)) {
+      this.ngZone.run(() => {
+        this.scanning = false;
+        this.scanStatusLabel = '';
+        this.scanned = false;
+        this.setReceiptFile(file);
+      });
+      return;
+    }
+    this.ngZone.run(() => {
+      this.toastService.info('Use a receipt image (JPG, PNG, HEIC…) or a PDF file.');
+    });
   }
 
   clearPendingReceipt(): void {
@@ -165,15 +180,6 @@ export class ExpenseFormModalComponent implements OnChanges {
       this.scanStatusLabel = 'Reading receipt (OCR)…';
     });
 
-    if (!this.isLikelyReceiptImage(file)) {
-      this.ngZone.run(() => {
-        this.toastService.info('Please choose an image file (JPG, PNG, etc.) for scan + OCR.');
-        this.scanning = false;
-        this.scanStatusLabel = '';
-      });
-      return;
-    }
-
     let ocrHadText = false;
     try {
       const text = await this.receiptOcrService.recognizeReceiptImage(file);
@@ -217,6 +223,13 @@ export class ExpenseFormModalComponent implements OnChanges {
     }
     const n = file.name.toLowerCase();
     return /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/i.test(n);
+  }
+
+  private isLikelyPdfReceipt(file: File): boolean {
+    if (file.type === 'application/pdf') {
+      return true;
+    }
+    return /\.pdf$/i.test(file.name);
   }
 
   private mergeReceiptHints(hints: {

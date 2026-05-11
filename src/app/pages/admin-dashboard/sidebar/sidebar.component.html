@@ -1,0 +1,87 @@
+<div class="sidebar-root">
+  <div
+    class="sidebar-overlay"
+    [class.sidebar-overlay--visible]="open"
+    role="presentation"
+    (click)="onOverlayPointerDown()"></div>
+
+  <aside
+    class="sidebar-drawer"
+    [class.sidebar-drawer--open]="open"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-hidden]="!open"
+    aria-label="Admin navigation">
+    <header class="sidebar-header">
+      <div class="sidebar-header__brand">
+        <div class="sidebar-header__logo">
+          <img src="assets/svayam-tracker-logo.png" alt="" width="32" height="32" />
+        </div>
+        <div class="sidebar-header__titles">
+          <span class="sidebar-header__app">SvayamExpense</span>
+          <span class="sidebar-header__sub">Admin</span>
+        </div>
+      </div>
+      <button
+        mat-icon-button
+        type="button"
+        class="sidebar-header__close"
+        aria-label="Close menu"
+        (click)="close()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </header>
+
+    <nav class="sidebar-nav" role="navigation" aria-label="Workspace">
+      <ul class="sidebar-nav__list">
+        <li *ngFor="let link of workspaceLinks" class="sidebar-nav__item">
+          <a
+            class="sidebar-nav__link"
+            [class.sidebar-nav__link--active]="isWorkspaceActive(link.path)"
+            [attr.href]="'/admin/' + link.path"
+            (click)="onWorkspaceNav($event, link.path)">
+            <mat-icon class="sidebar-nav__icon" aria-hidden="true">{{ link.icon }}</mat-icon>
+            <span class="sidebar-nav__label">{{ link.label }}</span>
+            <span
+              class="sidebar-nav__badge"
+              *ngIf="link.badge != null && link.badge > 0"
+              [attr.aria-label]="link.badge + ' alerts'">
+              {{ link.badge }}
+            </span>
+          </a>
+        </li>
+      </ul>
+
+      <div class="sidebar-nav__divider" role="separator"></div>
+
+      <ul class="sidebar-nav__list">
+        <li *ngFor="let t of toolLinks" class="sidebar-nav__item">
+          <button type="button" class="sidebar-nav__link sidebar-nav__link--button" (click)="onTool(t.action)">
+            <mat-icon class="sidebar-nav__icon" aria-hidden="true">{{ t.icon }}</mat-icon>
+            <span class="sidebar-nav__label">{{ t.label }}</span>
+            <span
+              class="sidebar-nav__badge sidebar-nav__badge--alert"
+              *ngIf="t.action === 'ai-summary' && alertBadgeCount > 0"
+              [attr.aria-label]="alertBadgeCount + ' alerts'">
+              {{ alertBadgeCount }}
+            </span>
+          </button>
+        </li>
+      </ul>
+    </nav>
+
+    <footer class="sidebar-footer">
+      <div class="sidebar-footer__user">
+        <div class="sidebar-footer__avatar" aria-hidden="true">{{ initials }}</div>
+        <div class="sidebar-footer__meta">
+          <span class="sidebar-footer__name">{{ userName || 'Admin' }}</span>
+          <span class="sidebar-footer__role">{{ userRole }}</span>
+        </div>
+      </div>
+      <button type="button" class="sidebar-footer__logout" (click)="onLogout()">
+        <mat-icon aria-hidden="true">logout</mat-icon>
+        <span>Log out</span>
+      </button>
+    </footer>
+  </aside>
+</div>

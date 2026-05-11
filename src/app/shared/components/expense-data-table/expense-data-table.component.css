@@ -48,8 +48,8 @@
 }
 
 .modern-table .mat-column-title {
-  min-width: 140px;
-  max-width: 220px;
+  min-width: 96px;
+  max-width: 160px;
   padding-left: 4px;
 }
 

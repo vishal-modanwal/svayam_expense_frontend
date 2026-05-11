@@ -4,16 +4,19 @@
 </div>
 
 <div class="receipt-scanner">
-  <label for="receiptScan" class="scan-btn">
-    <mat-icon>receipt_long</mat-icon>
-    Scan Receipt
-  </label>
-  <input
-    type="file"
-    id="receiptScan"
-    accept="image/*,.heic,.heif"
-    style="display: none"
-    (change)="onReceiptScanChange($event)" />
+  <div class="receipt-scanner__primary">
+    <label for="receiptPick" class="receipt-pick-btn">
+      <mat-icon>receipt_long</mat-icon>
+      Choose receipt
+    </label>
+    <input
+      type="file"
+      id="receiptPick"
+      accept="image/*,.pdf,application/pdf,.heic,.heif"
+      style="display: none"
+      (change)="onReceiptPickChange($event)" />
+    <span class="receipt-scanner__hint">Images: OCR + attach on save · PDF: attach on save</span>
+  </div>
 
   <span *ngIf="scanning" class="scanning-text">
     <mat-icon>hourglass_empty</mat-icon>

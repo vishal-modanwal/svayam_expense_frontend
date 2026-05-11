@@ -75,7 +75,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
     if (!this.auth.isLoggedIn()) {
       return '/dashboard';
     }
-    return this.auth.getRole() === 'admin' ? '/admin' : '/dashboard';
+    return this.auth.getRole() === 'admin' ? '/admin/expenses' : '/dashboard';
   }
 
   dashboardLabel(): string {

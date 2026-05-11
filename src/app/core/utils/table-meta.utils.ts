@@ -318,11 +318,21 @@ export function clampMyExpenseApiSortColumns(config: DynamicTableViewConfig): Dy
   };
 }
 
-export function buildFallbackBudgetMetaConfig(pagination: DynamicTablePaginationConfig): DynamicTableViewConfig {
+/** Admin budget overview — fixed columns aligned with mapped `budgetTableRows` in `AdminDashboardComponent`. */
+export function buildAdminBudgetOverviewTableConfig(pagination: DynamicTablePaginationConfig): DynamicTableViewConfig {
   const columns: DynamicTableColumn[] = [
-    { key: 'category_name', label: 'Category', sortable: false },
-    { key: 'total_spent', label: 'Spent', sortable: true, valueFormat: 'inr' },
-    { key: 'budget_limit', label: 'Budget', sortable: true, valueFormat: 'inr' }
+    { key: 'category', label: 'Category', sortable: true },
+    { key: 'description_action', label: 'Description', sortable: false, cellControl: 'adminBudgetDescription' },
+    { key: 'month', label: 'Month', sortable: true },
+    { key: 'year', label: 'Year', sortable: true },
+    { key: 'amount', label: 'Amount', sortable: true, valueFormat: 'inr' },
+    { key: 'spent', label: 'Spent', sortable: true, valueFormat: 'inr' },
+    { key: 'remaining', label: 'Remaining', sortable: true, valueFormat: 'inr' },
+    { key: 'usage_pct', label: 'Usage %', sortable: true },
+    /** Same category + month/year as row — from GET /admin/budget-details when backend sends this field. */
+    { key: 'standard_txn_count', label: 'Standard txns', sortable: true },
+    { key: 'actionBudgetEdit', label: 'Edit', sortable: false, cellControl: 'adminBudgetEdit' },
+    { key: 'actionBudgetDelete', label: 'Delete', sortable: false, cellControl: 'adminBudgetDelete' }
   ];
   return {
     columns,

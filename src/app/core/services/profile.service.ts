@@ -142,19 +142,29 @@ export class ProfileService {
     private readonly authService: AuthService
   ) {}
 
+  /**
+   * Merges profile/status API JSON into the current session user (same envelope handling as `getMe`).
+   */
+  private mergeProfilePayloadIntoSessionUser(raw: unknown): { user: AuthUser } {
+    const shallow = extractProfileUserPayload(raw) ?? {};
+    const deep = deepExtractProfileSignals(raw);
+    const patch = { ...shallow, ...deep } as Partial<AuthUser>;
+    const current = this.authService.getCurrentUser();
+    const user = (current || Object.keys(patch).length
+      ? ({ ...(current || {}), ...patch } as AuthUser)
+      : ({} as AuthUser)) as AuthUser;
+    return { user };
+  }
+
   getMe(): Observable<{ user: AuthUser }> {
-    return this.http.get<unknown>(`${this.api}/profile`).pipe(
-      map((raw) => {
-        const shallow = extractProfileUserPayload(raw) ?? {};
-        const deep = deepExtractProfileSignals(raw);
-        const patch = { ...shallow, ...deep } as Partial<AuthUser>;
-        const current = this.authService.getCurrentUser();
-        const user = (current || Object.keys(patch).length
-          ? ({ ...(current || {}), ...patch } as AuthUser)
-          : ({} as AuthUser)) as AuthUser;
-        return { user };
-      })
-    );
+    return this.http.get<unknown>(`${this.api}/profile`).pipe(map((raw) => this.mergeProfilePayloadIntoSessionUser(raw)));
+  }
+
+  /** Account / activity flags from `GET /api/profile/status` (authoritative for dashboard active state when used). */
+  getProfileStatus(): Observable<{ user: AuthUser }> {
+    return this.http
+      .get<unknown>(`${this.api}/profile/status`)
+      .pipe(map((raw) => this.mergeProfilePayloadIntoSessionUser(raw)));
   }
 
   updateProfile(payload: { name?: string; mobile_no?: string }): Observable<ApiMessage> {

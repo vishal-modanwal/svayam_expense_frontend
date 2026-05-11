@@ -48,9 +48,38 @@
   </div>
 
   <div class="main-section">
-    <mat-card class="table-card table-card--recent-expenses table-card--sole">
-      <div class="toolbar-panel toolbar-panel--in-card toolbar-panel--card-top">
-        <div class="toolbar-pair toolbar-pair--add-expense">
+    <mat-card class="table-card table-card--sole">
+      <div class="toolbar-panel toolbar-panel--in-card toolbar-panel--card-top toolbar-panel--table-toolbar">
+        <div class="search-shell search-shell--expense" role="search">
+          <mat-icon class="search-shell__icon" aria-hidden="true">search</mat-icon>
+          <input
+            type="search"
+            class="search-shell__input"
+            [(ngModel)]="expenseSearchInput"
+            (ngModelChange)="onExpenseSearchInput()"
+            placeholder="Search title or vendor (all results)…"
+            autocomplete="off"
+            aria-label="Search your expenses" />
+          <button
+            mat-icon-button
+            type="button"
+            class="search-shell__submit"
+            aria-label="Apply search"
+            (click)="applyExpenseSearchFromToolbar()">
+            <mat-icon>arrow_forward</mat-icon>
+          </button>
+        </div>
+        <button
+          mat-stroked-button
+          type="button"
+          class="search-clear-btn"
+          *ngIf="expenseSearchInput?.trim()"
+          (click)="clearExpenseSearch()">
+          <mat-icon>close</mat-icon>
+          Clear
+        </button>
+
+        <div class="toolbar-pair toolbar-pair--table-actions">
           <div class="add-expense-wrap">
             <button
               mat-raised-button
@@ -113,7 +142,7 @@
 
       <div class="section-head section-head--table section-head--after-toolbar">
         <h3>Recent expenses</h3>
-        <span class="section-hint section-hint--page-scope">This page</span>
+        <span class="section-hint section-hint--page-scope">Paged from server</span>
       </div>
 
       <app-dynamic-data-table
@@ -125,7 +154,6 @@
         [sortState]="userExpenseSortState"
         [pageIndex]="page - 1"
         [embedded]="true"
-        embeddedVariant="user"
         (queryChange)="onUserExpenseDynamicQuery($event)"
         (userExpenseAction)="onUserExpenseAction($event)">
       </app-dynamic-data-table>

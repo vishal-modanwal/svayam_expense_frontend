@@ -1,12 +1,22 @@
 import { DOCUMENT } from '@angular/common';
-import { Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  HostListener,
+  Inject,
+  OnDestroy,
+  OnInit,
+  ViewChild
+} from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, Validators } from '@angular/forms';
 import { Sort } from '@angular/material/sort';
 import { Chart, registerables } from 'chart.js';
 import type { ChartConfiguration } from 'chart.js';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Subscription } from 'rxjs';
 import { Category, Expense } from 'src/app/core/models/app.models';
-import { AdminService } from 'src/app/core/services/admin.service';
+import { AdminBudgetDetailsFilter, AdminService } from 'src/app/core/services/admin.service';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { CategoryService } from 'src/app/core/services/category.service';
 import { ExpenseService } from 'src/app/core/services/expense.service';
@@ -15,7 +25,7 @@ import { MetaService } from 'src/app/core/services/meta.service';
 import { ToastService } from 'src/app/core/services/toast.service';
 import {
   buildAdminExpenseViewConfigFromTableMeta,
-  buildFallbackBudgetMetaConfig,
+  buildAdminBudgetOverviewTableConfig,
   buildFallbackExpenseMetaConfig,
   buildViewConfigFromEmbeddedColumns,
   buildViewConfigFromTableMeta
@@ -24,9 +34,9 @@ import {
   DynamicTableQuery,
   DynamicTableViewConfig
 } from 'src/app/shared/components/dynamic-data-table/dynamic-data-table.models';
+import { AdminSidebarToolAction } from './sidebar/sidebar.component';
 
 type AdminSection = 'expenses' | 'budgets' | 'employees';
-type SidebarAction = AdminSection | 'ai-summary' | 'download-report';
 
 interface EmployeeInsight {
   name: string;
@@ -39,6 +49,35 @@ interface AiChatLine {
   text: string;
 }
 
+/**
+ * Budget gauge row: each column height = 100% of that row's budget (normalized).
+ * Sky = full budget track; yellow from bottom = spent/budget of column height (capped at 100% visually).
+ */
+interface BudgetGaugeRow {
+  label: string;
+  /** Month/year line under the category when present (e.g. `4 / 2026`). */
+  period: string;
+  /** Native tooltip: budget, spent, headroom / overage. */
+  barTitle: string;
+  /** One-line spent vs budget (INR) under the column. */
+  amountsLine: string;
+  pctLabel: string;
+  /** Yellow fill height as % of column = min(100, spent/budget×100). */
+  yellowPct: number;
+  /** Top cap when spent > budget (100% allocation line). */
+  showBudgetCap: boolean;
+}
+
+/** Totals across visible budget-detail rows (same basis as the gauge). */
+interface BudgetGaugeSummary {
+  allocated: number;
+  spent: number;
+  headroom: number;
+  overAmount: number;
+  /** null when no allocated baseline. */
+  usagePct: number | null;
+}
+
 type AiChatChipAction = 'reports' | 'budgets' | 'search_tip';
 
 Chart.register(...registerables);
@@ -49,7 +88,6 @@ Chart.register(...registerables);
   styleUrls: ['./admin-dashboard.component.css']
 })
 export class AdminDashboardComponent implements OnInit, OnDestroy {
-  @ViewChild('budgetChart') budgetChartRef?: ElementRef<HTMLCanvasElement>;
   @ViewChild('adminSummaryDonut') adminSummaryDonutRef?: ElementRef<HTMLCanvasElement>;
   @ViewChild('aiChatScroll') aiChatScroll?: ElementRef<HTMLDivElement>;
 
@@ -60,6 +98,22 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   activeSection: AdminSection = 'expenses';
   isAiSummaryOpen = false;
   isReportModalOpen = false;
+  /** Add category + budget (budgets section). */
+  isAddBudgetModalOpen = false;
+  /** Update budget row (budgets table). */
+  isEditBudgetModalOpen = false;
+  /** Budget table row pending delete confirmation. */
+  selectedBudgetDeleteRow: Record<string, unknown> | null = null;
+  /** Full description text for budget table View modal. */
+  isBudgetDescriptionModalOpen = false;
+  budgetDescriptionModalTitle = '';
+  budgetDescriptionModalText = '';
+
+  /** Mobile / drawer navigation */
+  navDrawerOpen = false;
+  adminNotificationCount = 0;
+  adminAlertBadgeCount = 0;
+  readonly adminRoleLabel = 'Administrator';
 
   userName = 'Admin';
 
@@ -68,6 +122,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   adminExpenseTableRows: Record<string, unknown>[] = [];
   adminExpenseSortState: Sort | null = { active: 'expense_date', direction: 'desc' };
   expenseTotalCount = 0;
+  /** Sum of amounts for admin **extra** expenses (`view: admins-extra`), all pages (stat card). */
+  adminExtraExpenseTotal = 0;
   /** Raw rows from the last expense list load (for edit). */
   adminExpensesCache: Expense[] = [];
   isExpenseFormModalOpen = false;
@@ -93,9 +149,21 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   reportUserName = '';
 
   budgetTableConfig: DynamicTableViewConfig | null = null;
+  /** Current page rows from `GET /admin/budget-details` (server sort / filter / pagination). */
   budgetTableRows: Record<string, unknown>[] = [];
+  budgetTableTotalCount = 0;
   budgetTableLoading = false;
-  budgetTableSortState: Sort | null = null;
+  budgetSearchInput = '';
+  /** Toolbar presets: latest = newest year first (align with backend); null if column sort differs. */
+  selectedBudgetListSort: 'latest' | 'high' | 'low' | null = 'latest';
+  readonly budgetQuery: DynamicTableQuery = {
+    pageIndex: 0,
+    pageSize: 10,
+    sortActive: 'year',
+    sortDirection: 'desc',
+    filter: ''
+  };
+  budgetTableSortState: Sort | null = { active: 'year', direction: 'desc' };
 
   usersTableSortState: Sort | null = null;
 
@@ -120,14 +188,6 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     { label: 'How do I search expenses by user?', action: 'search_tip' }
   ];
 
-  readonly sidebarItems: Array<{ key: SidebarAction; label: string; icon: string }> = [
-    { key: 'expenses', label: 'Expenses', icon: 'receipt_long' },
-    { key: 'budgets', label: 'Budgets', icon: 'account_balance_wallet' },
-    { key: 'employees', label: 'Employees', icon: 'groups' },
-    { key: 'ai-summary', label: 'AI Summary', icon: 'auto_awesome' },
-    { key: 'download-report', label: 'Download Report', icon: 'download' }
-  ];
-
   /** Server-side list query for the admin expense table (public for template bindings). */
   readonly expenseQuery: DynamicTableQuery = {
     pageIndex: 0,
@@ -137,14 +197,20 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     filter: ''
   };
 
-  private budgetChart?: Chart;
   private summaryDonut?: Chart;
+  /** Stacked gauge model for budgets chart (derived from `budgetDetails`). */
+  budgetGaugeRows: BudgetGaugeRow[] = [];
+  budgetGaugeTicks: number[] = [];
+  /** For normalized gauge this is always `100` (percent of row budget). */
+  budgetGaugeAxisMax = 0;
+  budgetGaugeSummary: BudgetGaugeSummary | null = null;
   /** Swatches for the dual-ring chart inner band (updated when the chart redraws). */
   summaryDonutInnerLegend: Array<{ name: string; color: string }> = [];
 
   /** Restores window scroll after chat modal used `position: fixed` on `body`. */
   private aiChatPageScrollY = 0;
   private aiChatScrollLocked = false;
+  private sectionRouteSub?: Subscription;
 
   readonly categoryBudgetForm = this.fb.group({
     name: ['', [Validators.required]],
@@ -154,10 +220,13 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     allocated_amount: [0, [Validators.required, Validators.min(1)]]
   });
 
-  readonly categoryUpdateForm = this.fb.group({
-    id: [null as number | null, [Validators.required]],
+  readonly budgetEditForm = this.fb.group({
+    budget_id: [null as number | null, [Validators.required]],
     name: ['', [Validators.required]],
-    description: ['']
+    description: [''],
+    month: [new Date().getMonth() + 1, [Validators.required, Validators.min(1), Validators.max(12)]],
+    year: [new Date().getFullYear(), [Validators.required, Validators.min(2000)]],
+    allocated_amount: [0, [Validators.required, Validators.min(1)]]
   });
 
   readonly userToggleForm = this.fb.group({
@@ -173,6 +242,9 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     private readonly metaService: MetaService,
     private readonly chatService: ChatService,
     private readonly toastService: ToastService,
+    private readonly router: Router,
+    private readonly route: ActivatedRoute,
+    private readonly cdr: ChangeDetectorRef,
     @Inject(DOCUMENT) private readonly documentRef: Document
   ) {}
 
@@ -238,18 +310,27 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.userName = this.authService.getCurrentUser()?.name || 'Admin';
     this.bootstrapTableMetaDefaults();
+    this.sectionRouteSub = this.route.paramMap.subscribe(() => {
+      const raw = this.route.snapshot.paramMap.get('section');
+      const next = this.normalizeAdminSectionParam(raw);
+      if (raw !== next) {
+        void this.router.navigate(['/admin', next], { replaceUrl: true });
+        return;
+      }
+      this.applyWorkspaceSection(next);
+    });
     this.loadAll();
   }
 
   private bootstrapTableMetaDefaults(): void {
     const expPag = { pageSizeOptions: [5, 10, 20, 50], defaultPageSize: this.expenseQuery.pageSize };
     this.adminExpenseTableConfig = buildFallbackExpenseMetaConfig(expPag);
-    const budPag = { pageSizeOptions: [10, 25, 50], defaultPageSize: 25 };
-    this.budgetTableConfig = buildFallbackBudgetMetaConfig(budPag);
+    const budPag = { pageSizeOptions: [5, 10, 20, 50], defaultPageSize: this.budgetQuery.pageSize };
+    this.budgetTableConfig = buildAdminBudgetOverviewTableConfig(budPag);
   }
 
   ngOnDestroy(): void {
-    this.budgetChart?.destroy();
+    this.sectionRouteSub?.unsubscribe();
     this.summaryDonut?.destroy();
     this.unlockPageScrollForAiChat();
   }
@@ -377,14 +458,14 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
     if (s.action === 'budgets') {
       this.aiChatMessages.push({ role: 'assistant', text: 'Opening Budgets. Blue = budget, orange = spent.' });
-      this.onSidebarItemClick('budgets');
+      void this.router.navigate(['/admin', 'budgets']);
       this.toastService.info('Budgets: blue bars = budget, orange = spent per category.');
       this.queueScrollAiChat();
       return;
     }
 
     this.aiChatMessages.push({ role: 'assistant', text: 'Opening Expenses. Use the person search to filter by user.' });
-    this.onSidebarItemClick('expenses');
+    void this.router.navigate(['/admin', 'expenses']);
     this.toastService.info('Expenses: search by user name with the person icon, then submit.');
     this.queueScrollAiChat();
   }
@@ -493,13 +574,6 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  isSidebarSectionActive(key: SidebarAction): boolean {
-    if (key === 'expenses' || key === 'budgets' || key === 'employees') {
-      return this.activeSection === key;
-    }
-    return false;
-  }
-
   loadAll(): void {
     this.loadSummary();
     this.loadBudgetDetails();
@@ -509,23 +583,33 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.loadBudgetTableMeta();
   }
 
-  onSidebarItemClick(item: SidebarAction): void {
-    if (item === 'ai-summary') {
+  onSidebarToolAction(action: AdminSidebarToolAction): void {
+    if (action === 'ai-summary') {
       this.isAiSummaryOpen = true;
       return;
     }
-    if (item === 'download-report') {
-      this.isReportModalOpen = true;
-      return;
+    this.isReportModalOpen = true;
+  }
+
+  private normalizeAdminSectionParam(raw: string | null): AdminSection {
+    if (raw === 'budgets' || raw === 'employees' || raw === 'expenses') {
+      return raw;
     }
-    this.activeSection = item;
-    if (item === 'budgets') {
-      setTimeout(() => this.renderBudgetChart(), 0);
+    return 'expenses';
+  }
+
+  private applyWorkspaceSection(section: AdminSection): void {
+    this.activeSection = section;
+    if (section === 'budgets') {
+      setTimeout(() => {
+        this.rebuildBudgetGaugeModel();
+        this.cdr.markForCheck();
+      }, 0);
     }
-    if (item === 'expenses') {
+    if (section === 'expenses') {
       setTimeout(() => this.renderSummaryDonut(), 0);
     }
-    if (item === 'employees') {
+    if (section === 'employees') {
       this.loadUsersDetailsForEmployees();
     }
   }
@@ -533,6 +617,10 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   logoutAdmin(): void {
     this.closeAiChatModal();
     this.closeExpenseFormModal();
+    this.closeAddBudgetModal();
+    this.closeEditBudgetModal();
+    this.closeBudgetDeleteDialog();
+    this.closeBudgetDescriptionModal();
     this.authService.logout(true);
   }
 
@@ -566,6 +654,143 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.isReportModalOpen = true;
   }
 
+  openAddBudgetModal(): void {
+    this.loadCategories();
+    this.isAddBudgetModalOpen = true;
+  }
+
+  closeAddBudgetModal(): void {
+    this.isAddBudgetModalOpen = false;
+  }
+
+  openEditBudgetModal(row: Record<string, unknown>): void {
+    const src = (row['__budgetSource'] as Record<string, unknown>) ?? row;
+    const id = this.resolveBudgetRowId(row);
+    if (!Number.isFinite(id) || id <= 0) {
+      this.toastService.error(
+        'This row has no budget id. Ensure GET /admin/budget-details includes id (or budget_id / categoryBudgetId), including inside nested objects.'
+      );
+      return;
+    }
+    const name = String(src['category_name'] ?? src['category'] ?? row['category'] ?? '').trim();
+    const desc = String(src['description'] ?? '').trim();
+    const monthCell = row['month'];
+    const yearCell = row['year'];
+    let m =
+      typeof monthCell === 'number' && monthCell >= 1 && monthCell <= 12
+        ? monthCell
+        : Number(src['month'] ?? src['budget_month']);
+    let y =
+      typeof yearCell === 'number' && yearCell >= 2000 && yearCell <= 2100
+        ? yearCell
+        : Number(src['year'] ?? src['budget_year']);
+    if (!Number.isFinite(m) || m < 1 || m > 12) {
+      m = new Date().getMonth() + 1;
+    }
+    if (!Number.isFinite(y) || y < 2000) {
+      y = new Date().getFullYear();
+    }
+    const amt = Number(row['amount'] ?? src['budget_limit'] ?? src['allocated_amount'] ?? 0);
+    this.budgetEditForm.reset({
+      budget_id: id,
+      name: name || 'Category',
+      description: desc,
+      month: m,
+      year: y,
+      allocated_amount: amt > 0 ? amt : 1
+    });
+    this.isEditBudgetModalOpen = true;
+    this.cdr.detectChanges();
+  }
+
+  closeEditBudgetModal(): void {
+    this.isEditBudgetModalOpen = false;
+  }
+
+  submitBudgetEdit(): void {
+    if (this.budgetEditForm.invalid) {
+      this.budgetEditForm.markAllAsTouched();
+      return;
+    }
+    const v = this.budgetEditForm.getRawValue();
+    const id = Number(v.budget_id);
+    this.adminService
+      .updateCategoryBudget(id, {
+        name: String(v.name).trim(),
+        description: String(v.description || '').trim(),
+        month: Number(v.month),
+        year: Number(v.year),
+        allocated_amount: Number(v.allocated_amount),
+        currency: 'INR'
+      })
+      .subscribe({
+        next: (res) => {
+          this.toastService.success(res.message || 'Budget updated');
+          this.closeEditBudgetModal();
+          this.loadBudgetDetails();
+          this.loadCategories();
+        },
+        error: (err) => this.toastService.error(err?.error?.message || 'Update budget failed')
+      });
+  }
+
+  onAdminBudgetDynamicDelete(row: Record<string, unknown>): void {
+    this.selectedBudgetDeleteRow = row;
+    this.cdr.detectChanges();
+  }
+
+  openBudgetDescriptionModal(row: Record<string, unknown>): void {
+    const src = (row['__budgetSource'] as Record<string, unknown>) ?? row;
+    const d = this.readBudgetScalar(src, [
+      'description',
+      'category_description',
+      'categoryDescription',
+      'budget_description',
+      'budgetDescription'
+    ]);
+    const text =
+      d !== undefined && d !== null
+        ? String(d).trim()
+        : String(row['description'] ?? src['description'] ?? '').trim();
+    this.budgetDescriptionModalTitle = String(row['category'] ?? src['category_name'] ?? 'Description').trim();
+    this.budgetDescriptionModalText = text || 'No description was provided for this budget.';
+    this.isBudgetDescriptionModalOpen = true;
+    this.cdr.detectChanges();
+  }
+
+  closeBudgetDescriptionModal(): void {
+    this.isBudgetDescriptionModalOpen = false;
+    this.budgetDescriptionModalTitle = '';
+    this.budgetDescriptionModalText = '';
+    this.cdr.detectChanges();
+  }
+
+  closeBudgetDeleteDialog(): void {
+    this.selectedBudgetDeleteRow = null;
+  }
+
+  confirmBudgetDelete(): void {
+    const row = this.selectedBudgetDeleteRow;
+    if (!row) {
+      return;
+    }
+    const id = this.resolveBudgetRowId(row);
+    if (!Number.isFinite(id) || id <= 0) {
+      this.toastService.error('Cannot delete: missing budget id on this row.');
+      this.closeBudgetDeleteDialog();
+      return;
+    }
+    this.adminService.deleteCategoryBudget(id).subscribe({
+      next: (res) => {
+        this.toastService.success(res.message || 'Budget deleted');
+        this.closeBudgetDeleteDialog();
+        this.loadBudgetDetails();
+        this.loadCategories();
+      },
+      error: (err) => this.toastService.error(err?.error?.message || 'Delete budget failed')
+    });
+  }
+
   switchReportMode(mode: 'monthly' | 'user'): void {
     this.reportMode = mode;
   }
@@ -597,53 +822,12 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             year: new Date().getFullYear(),
             allocated_amount: 0
           });
+          this.closeAddBudgetModal();
           this.loadBudgetDetails();
           this.loadCategories();
         },
         error: (err) => this.toastService.error(err?.error?.message || 'Create category budget failed')
       });
-  }
-
-  loadCategoryForEdit(id: number): void {
-    this.categoryService.getById(id).subscribe({
-      next: (res) => {
-        this.categoryUpdateForm.patchValue({
-          id: res.data.id,
-          name: res.data.name,
-          description: res.data.description || ''
-        });
-      },
-      error: (err) => this.toastService.error(err?.error?.message || 'Category fetch failed')
-    });
-  }
-
-  updateCategory(): void {
-    if (this.categoryUpdateForm.invalid) {
-      this.categoryUpdateForm.markAllAsTouched();
-      return;
-    }
-    const value = this.categoryUpdateForm.value;
-    this.categoryService
-      .updateCategory(value.id as number, { name: value.name as string, description: value.description || '' })
-      .subscribe({
-        next: (res) => {
-          this.toastService.success(res.message || 'Category updated');
-          this.loadCategories();
-          this.loadBudgetDetails();
-        },
-        error: (err) => this.toastService.error(err?.error?.message || 'Category update failed')
-      });
-  }
-
-  deleteCategory(id: number): void {
-    this.categoryService.deleteCategory(id).subscribe({
-      next: (res) => {
-        this.toastService.success(res.message || 'Category deleted');
-        this.loadCategories();
-        this.loadBudgetDetails();
-      },
-      error: (err) => this.toastService.error(err?.error?.message || 'Category delete failed')
-    });
   }
 
   toggleUser(): void {
@@ -722,25 +906,407 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Reads a transaction/expense count from API rows. Handles arrays (e.g. `transactions: []` length),
+   * and avoids `Number([])` → 0.
+   */
+  private coerceBudgetTxnCount(v: unknown): number | null {
+    if (v === null || v === undefined) {
+      return null;
+    }
+    if (Array.isArray(v)) {
+      return v.length;
+    }
+    if (typeof v === 'object') {
+      const o = v as Record<string, unknown>;
+      const inner = o['count'] ?? o['total'] ?? o['length'];
+      if (inner === undefined) {
+        return null;
+      }
+      return this.coerceBudgetTxnCount(inner);
+    }
+    const s = String(v).trim();
+    if (s === '') {
+      return null;
+    }
+    const n = Number(s);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  /** BFS nested objects for the first matching key (exact). */
+  private readBudgetScalar(root: unknown, keys: string[]): unknown {
+    if (!root || typeof root !== 'object') {
+      return undefined;
+    }
+    const queue: unknown[] = [root];
+    const seen = new Set<unknown>();
+    while (queue.length) {
+      const cur = queue.shift();
+      if (!cur || typeof cur !== 'object' || seen.has(cur)) {
+        continue;
+      }
+      seen.add(cur);
+      const o = cur as Record<string, unknown>;
+      for (const k of keys) {
+        if (Object.prototype.hasOwnProperty.call(o, k)) {
+          const v = o[k];
+          if (v !== undefined && v !== null) {
+            return v;
+          }
+        }
+      }
+      for (const v of Object.values(o)) {
+        if (v && typeof v === 'object') {
+          queue.push(v);
+        }
+      }
+    }
+    return undefined;
+  }
+
+  /**
+   * Reads optional non-negative integer count from budget-details row (supports nested objects).
+   * Returns `null` when the field is absent so the table shows an em dash.
+   */
+  private readOptionalBudgetCount(raw: Record<string, unknown>, keys: string[]): number | null {
+    const v = this.readBudgetScalar(raw, keys);
+    if (v === undefined || v === null || (typeof v === 'string' && v.trim() === '')) {
+      return null;
+    }
+    const n = this.coerceBudgetTxnCount(v);
+    if (n === null || n < 0) {
+      return null;
+    }
+    return Math.floor(n);
+  }
+
+  /** Budget row id for PATCH/DELETE (top-level or nested). */
+  private resolveBudgetRowId(row: Record<string, unknown>): number {
+    const direct = Number(row['budget_id']);
+    if (Number.isFinite(direct) && direct > 0) {
+      return direct;
+    }
+    const src = (row['__budgetSource'] as Record<string, unknown>) ?? row;
+    const v = this.readBudgetScalar(src, [
+      'id',
+      'budget_id',
+      'category_budget_id',
+      'categoryBudgetId',
+      'budgetId',
+      'CategoryBudgetId'
+    ]);
+    const n = Number(v);
+    return Number.isFinite(n) && n > 0 ? n : NaN;
+  }
+
+  /**
+   * Maps GET /admin/budget-details row into the fixed budget overview table shape.
+   * Txn column: `standard_transaction_count` (same category + month/year), snake or camelCase, nested OK.
+   */
+  private mapBudgetDetailToTableRow(raw: Record<string, unknown>): Record<string, unknown> {
+    const budgetLimit = Number(raw['budget_limit'] ?? raw['allocated_amount'] ?? 0);
+    const spent = Number(raw['total_spent'] ?? raw['spent'] ?? 0);
+    const remaining = Math.max(0, budgetLimit - spent);
+    const usageNum = budgetLimit > 0 ? (spent / budgetLimit) * 100 : 0;
+    const usage_pct = `${Math.round(usageNum * 10) / 10}%`;
+    const category = String(raw['category_name'] ?? raw['category'] ?? '—');
+    const monthRaw = raw['month'] ?? raw['budget_month'];
+    const yearRaw = raw['year'] ?? raw['budget_year'];
+    const monthNum = monthRaw !== undefined && monthRaw !== null && String(monthRaw).trim() !== '' ? Number(monthRaw) : NaN;
+    const yearNum = yearRaw !== undefined && yearRaw !== null && String(yearRaw).trim() !== '' ? Number(yearRaw) : NaN;
+    const monthOk = Number.isFinite(monthNum) && monthNum >= 1 && monthNum <= 12;
+    const yearOk = Number.isFinite(yearNum) && yearNum >= 2000 && yearNum <= 2100;
+    const standard_txn_count = this.readOptionalBudgetCount(raw, [
+      'standard_transaction_count',
+      'standardTransactionCount'
+    ]);
+    const description = (() => {
+      const d = this.readBudgetScalar(raw, [
+        'description',
+        'category_description',
+        'categoryDescription',
+        'budget_description',
+        'budgetDescription'
+      ]);
+      const s =
+        d !== undefined && d !== null ? String(d).trim() : String(raw['description'] ?? '').trim();
+      return s || null;
+    })();
+    const budget_id = (() => {
+      const v = this.readBudgetScalar(raw, [
+        'id',
+        'budget_id',
+        'category_budget_id',
+        'categoryBudgetId',
+        'budgetId',
+        'CategoryBudgetId'
+      ]);
+      const n = Number(v);
+      return Number.isFinite(n) && n > 0 ? n : null;
+    })();
+    return {
+      category,
+      description,
+      month: monthOk ? monthNum : '—',
+      year: yearOk ? yearNum : '—',
+      amount: budgetLimit,
+      spent,
+      remaining,
+      usage_pct,
+      standard_txn_count,
+      budget_id,
+      __budgetSource: { ...raw }
+    };
+  }
+
+  /**
+   * Refreshes chart/AI data from the full budget-details payload (no list query params)
+   * and reloads the budgets table with server-side page / sort / search.
+   */
   private loadBudgetDetails(): void {
-    this.budgetTableLoading = true;
+    this.refreshBudgetGaugeData();
+    this.loadBudgetTableFromServer();
+  }
+
+  private refreshBudgetGaugeData(): void {
     this.adminService.getBudgetDetails().subscribe({
       next: (res) => {
         this.budgetDetails = res.data || [];
-        this.budgetTableRows = (this.budgetDetails as Record<string, unknown>[]).map((r) => ({ ...r }));
-        this.budgetTableLoading = false;
-        this.renderBudgetChart();
+        this.rebuildBudgetGaugeModel();
         if (this.activeSection === 'expenses') {
           setTimeout(() => this.renderSummaryDonut(), 0);
         }
       },
       error: () => {
         this.budgetDetails = [];
-        this.budgetTableRows = [];
-        this.budgetTableLoading = false;
+        this.rebuildBudgetGaugeModel();
         this.toastService.info('budget-details endpoint unavailable on current backend build');
       }
     });
+  }
+
+  private loadBudgetTableFromServer(): void {
+    this.budgetTableLoading = true;
+    const filter = this.buildBudgetTableApiFilter();
+    this.adminService.getBudgetDetails(filter).subscribe({
+      next: (res) => {
+        const data = (res.data || []) as Record<string, unknown>[];
+        const mapped = data.map((r) => this.mapBudgetDetailToTableRow(r));
+        this.budgetTableRows = this.sortBudgetRowsForDisplay(mapped);
+        const p = res.pagination;
+        this.budgetTableTotalCount =
+          typeof p?.totalItems === 'number'
+            ? p.totalItems
+            : typeof p?.total_records === 'number'
+              ? p.total_records
+              : this.budgetTableRows.length;
+        this.budgetTableLoading = false;
+        if (this.activeSection === 'expenses') {
+          setTimeout(() => this.renderSummaryDonut(), 0);
+        }
+      },
+      error: (err) => {
+        this.budgetTableRows = [];
+        this.budgetTableTotalCount = 0;
+        this.budgetTableLoading = false;
+        this.toastService.error(err?.error?.message || 'Budget list load failed');
+      }
+    });
+  }
+
+  private buildBudgetTableApiFilter(): AdminBudgetDetailsFilter {
+    const page = this.budgetQuery.pageIndex + 1;
+    const limit = this.budgetQuery.pageSize;
+    const search = this.budgetQuery.filter.trim();
+    const sortActive = this.budgetQuery.sortActive || 'year';
+    const sortBy = this.mapBudgetSortToApiKey(sortActive);
+    const order: 'ASC' | 'DESC' = this.budgetQuery.sortDirection === 'asc' ? 'ASC' : 'DESC';
+    return {
+      page,
+      limit,
+      sortBy,
+      order,
+      ...(search ? { search } : {})
+    };
+  }
+
+  /** Maps dynamic-table column keys to backend `sortBy` values (adjust if API differs). */
+  private mapBudgetSortToApiKey(columnKey: string): string {
+    switch (columnKey) {
+      case 'amount':
+        return 'allocated_amount';
+      case 'spent':
+        return 'total_spent';
+      case 'category':
+        return 'category_name';
+      case 'month':
+        return 'month';
+      case 'year':
+        return 'year';
+      case 'remaining':
+        return 'remaining';
+      case 'usage_pct':
+        return 'usage_pct';
+      case 'standard_txn_count':
+        return 'standard_transaction_count';
+      default:
+        return 'year';
+    }
+  }
+
+  /** Ensures visible row order matches toolbar/column sort (covers APIs that ignore sort params). */
+  private sortBudgetRowsForDisplay(rows: Record<string, unknown>[]): Record<string, unknown>[] {
+    const key = this.budgetQuery.sortActive || 'year';
+    const dir = this.budgetQuery.sortDirection === 'asc' ? 'asc' : 'desc';
+    return [...rows].sort((a, b) => {
+      const c = this.compareBudgetDisplayRows(a, b, key);
+      return dir === 'desc' ? -c : c;
+    });
+  }
+
+  private compareBudgetDisplayRows(a: Record<string, unknown>, b: Record<string, unknown>, key: string): number {
+    const va = this.budgetDisplaySortValue(a, key);
+    const vb = this.budgetDisplaySortValue(b, key);
+    if (typeof va === 'string' && typeof vb === 'string') {
+      return va.localeCompare(vb);
+    }
+    const na = Number(va);
+    const nb = Number(vb);
+    if (na < nb) {
+      return -1;
+    }
+    if (na > nb) {
+      return 1;
+    }
+    return 0;
+  }
+
+  private budgetDisplaySortValue(row: Record<string, unknown>, key: string): string | number {
+    switch (key) {
+      case 'category':
+        return String(row['category'] ?? '').toLowerCase();
+      case 'month':
+      case 'year':
+      case 'amount':
+      case 'spent':
+      case 'remaining':
+      case 'standard_txn_count': {
+        const raw = row[key];
+        if (raw === '—' || raw === null || raw === undefined || raw === '') {
+          return Number.NEGATIVE_INFINITY;
+        }
+        const n = Number(raw);
+        return Number.isFinite(n) ? n : Number.NEGATIVE_INFINITY;
+      }
+      case 'usage_pct': {
+        const s = String(row['usage_pct'] ?? '').replace(/%/g, '').trim();
+        const n = Number(s);
+        return Number.isFinite(n) ? n : Number.NEGATIVE_INFINITY;
+      }
+      default:
+        return 0;
+    }
+  }
+
+  getBudgetSortLabel(): string {
+    if (this.selectedBudgetListSort === 'latest') {
+      return 'Latest first';
+    }
+    if (this.selectedBudgetListSort === 'high') {
+      return 'Amount: High to Low';
+    }
+    if (this.selectedBudgetListSort === 'low') {
+      return 'Amount: Low to High';
+    }
+    const a = this.budgetQuery.sortActive || 'year';
+    const d = this.budgetQuery.sortDirection || 'desc';
+    if (a === 'amount') {
+      return d === 'desc' ? 'Amount: High to Low' : 'Amount: Low to High';
+    }
+    if (a === 'category') {
+      return d === 'desc' ? 'Category: Z to A' : 'Category: A to Z';
+    }
+    if (a === 'year') {
+      return d === 'desc' ? 'Year: Newest first' : 'Year: Oldest first';
+    }
+    const label = this.budgetTableConfig?.columns.find((c) => c.key === a)?.label ?? a;
+    return `${label} (${d === 'desc' ? 'high first' : 'low first'})`;
+  }
+
+  applyBudgetListSort(mode: 'latest' | 'high' | 'low'): void {
+    this.selectedBudgetListSort = mode;
+    switch (mode) {
+      case 'latest':
+        this.budgetQuery.sortActive = 'year';
+        this.budgetQuery.sortDirection = 'desc';
+        break;
+      case 'high':
+        this.budgetQuery.sortActive = 'amount';
+        this.budgetQuery.sortDirection = 'desc';
+        break;
+      case 'low':
+        this.budgetQuery.sortActive = 'amount';
+        this.budgetQuery.sortDirection = 'asc';
+        break;
+    }
+    this.budgetQuery.pageIndex = 0;
+    this.budgetTableSortState = {
+      active: this.budgetQuery.sortActive,
+      direction: this.budgetQuery.sortDirection
+    };
+    this.loadBudgetTableFromServer();
+    this.cdr.detectChanges();
+  }
+
+  applyBudgetSearch(): void {
+    this.budgetQuery.filter = this.budgetSearchInput.trim();
+    this.budgetQuery.pageIndex = 0;
+    this.loadBudgetTableFromServer();
+    this.cdr.detectChanges();
+  }
+
+  clearBudgetSearch(): void {
+    this.budgetSearchInput = '';
+    this.budgetQuery.filter = '';
+    this.budgetQuery.pageIndex = 0;
+    this.loadBudgetTableFromServer();
+    this.cdr.detectChanges();
+  }
+
+  onBudgetTableQuery(q: DynamicTableQuery): void {
+    const allowed = new Set([
+      'category',
+      'month',
+      'year',
+      'amount',
+      'spent',
+      'remaining',
+      'usage_pct',
+      'standard_txn_count'
+    ]);
+    const sortActive = q.sortActive && allowed.has(q.sortActive) ? q.sortActive : 'year';
+    const sortDirection = q.sortDirection === 'asc' || q.sortDirection === 'desc' ? q.sortDirection : 'desc';
+    const pageSize = Math.max(1, q.pageSize);
+
+    this.budgetQuery.sortActive = sortActive;
+    this.budgetQuery.sortDirection = sortDirection;
+    this.budgetQuery.pageSize = pageSize;
+    this.budgetQuery.pageIndex = q.pageIndex;
+    /* Search comes from toolbar (`budgetSearchInput` / `applyBudgetSearch`), not table filter. */
+
+    if (sortActive === 'amount' && sortDirection === 'desc') {
+      this.selectedBudgetListSort = 'high';
+    } else if (sortActive === 'amount' && sortDirection === 'asc') {
+      this.selectedBudgetListSort = 'low';
+    } else if (sortActive === 'year' && sortDirection === 'desc') {
+      this.selectedBudgetListSort = 'latest';
+    } else {
+      this.selectedBudgetListSort = null;
+    }
+
+    this.budgetTableSortState = { active: sortActive, direction: sortDirection };
+    this.loadBudgetTableFromServer();
+    this.cdr.detectChanges();
   }
 
   private loadExpenseTableMeta(): void {
@@ -758,17 +1324,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   }
 
   private loadBudgetTableMeta(): void {
-    const pagination = { pageSizeOptions: [10, 25, 50], defaultPageSize: 25 };
-    this.metaService.getTableBudgets().subscribe({
-      next: (meta) => {
-        if (meta?.columns?.length) {
-          this.budgetTableConfig = buildViewConfigFromTableMeta(meta, pagination, []);
-        }
-      },
-      error: () => {
-        /* keep bootstrap fallback */
-      }
-    });
+    const pagination = { pageSizeOptions: [5, 10, 20, 50], defaultPageSize: this.budgetQuery.pageSize };
+    this.budgetTableConfig = buildAdminBudgetOverviewTableConfig(pagination);
   }
 
   loadUsersDetailsForEmployees(): void {
@@ -876,12 +1433,61 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     const view = this.getExpenseAudienceView();
 
     this.expenseService.getDashboardExpenses({ page, limit, sortBy, order, view }).subscribe({
-      next: (res) => this.applyExpenseResponse(res, search),
+      next: (res) => {
+        this.applyExpenseResponse(res, search);
+        this.loadAdminExtraExpenseTotal();
+      },
       error: (err) => {
         this.expenseLoading = false;
+        this.adminExtraExpenseTotal = 0;
         this.toastService.error(err?.error?.message || 'Expense load failed');
       }
     });
+  }
+
+  /**
+   * Loads all admin-extra dashboard expenses and sums `amount` for the stat card
+   * (same slice as the “Admin extra” table chip: `view: admins-extra`).
+   */
+  private loadAdminExtraExpenseTotal(): void {
+    const limit = 200;
+    const maxPages = 40;
+    this.expenseService.getDashboardExpenses({ view: 'admins-extra', page: 1, limit }).subscribe({
+      next: (first) => {
+        let sum = this.sumExpenseAmountsFromPayload(first.data as Expense[]);
+        const totalPages = Math.min(Math.max(1, first.pagination?.totalPages || 1), maxPages);
+        if (totalPages <= 1) {
+          this.adminExtraExpenseTotal = sum;
+          this.cdr.markForCheck();
+          return;
+        }
+        const reqs = [];
+        for (let p = 2; p <= totalPages; p += 1) {
+          reqs.push(this.expenseService.getDashboardExpenses({ view: 'admins-extra', page: p, limit }));
+        }
+        forkJoin(reqs).subscribe({
+          next: (pages) => {
+            pages.forEach((r) => {
+              sum += this.sumExpenseAmountsFromPayload(r.data as Expense[]);
+            });
+            this.adminExtraExpenseTotal = sum;
+            this.cdr.markForCheck();
+          },
+          error: () => {
+            this.adminExtraExpenseTotal = sum;
+            this.cdr.markForCheck();
+          }
+        });
+      },
+      error: () => {
+        this.adminExtraExpenseTotal = 0;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  private sumExpenseAmountsFromPayload(data: Expense[] | undefined): number {
+    return (data ?? []).reduce((s, raw) => s + Number(this.normalizeExpense(raw).amount || 0), 0);
   }
 
   private applyExpenseResponse(
@@ -932,43 +1538,167 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     return [...employeeMap.values()].sort((a, b) => b.spent - a.spent);
   }
 
-  private renderBudgetChart(): void {
-    if (!this.budgetChartRef || this.activeSection !== 'budgets') {
-      return;
+  formatBudgetGaugeTick(n: number): string {
+    return `₹${n.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+  }
+
+  /** Y-axis labels: INR ticks elsewhere; for budget gauge use 0–100% of row budget. */
+  formatBudgetGaugeYAxis(n: number): string {
+    if (this.budgetGaugeAxisMax === 100) {
+      return `${Math.round(n)}%`;
     }
-    this.budgetChart?.destroy();
-    const tick = document.body.classList.contains('dark-theme') ? '#94a3b8' : '#64748b';
-    const grid = document.body.classList.contains('dark-theme') ? '#334155' : '#e2e8f0';
-    this.budgetChart = new Chart(this.budgetChartRef.nativeElement, {
-      type: 'bar',
-      data: {
-        labels: this.budgetDetails.map((item) => item.category_name),
-        datasets: [
-          {
-            label: 'Budget',
-            data: this.budgetDetails.map((item) => Number(item.budget_limit || 0)),
-            backgroundColor: '#3b82f6'
-          },
-          {
-            label: 'Spent',
-            data: this.budgetDetails.map((item) => Number(item.total_spent || 0)),
-            backgroundColor: '#f97316'
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            labels: { color: tick }
-          }
-        },
-        scales: {
-          x: { grid: { color: grid }, ticks: { color: tick } },
-          y: { grid: { color: grid }, ticks: { color: tick } }
+    return this.formatBudgetGaugeTick(n);
+  }
+
+  formatBudgetGaugeInr(value: number): string {
+    const n = Number.isFinite(value) ? value : 0;
+    return `₹${n.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+  }
+
+  private readBudgetGaugeMoney(root: Record<string, unknown>, keys: string[]): number {
+    for (const key of keys) {
+      const v = this.readBudgetScalar(root, [key]);
+      if (v !== undefined && v !== null && `${v}`.trim() !== '') {
+        const n = Number(v);
+        if (Number.isFinite(n) && n >= 0) {
+          return n;
         }
       }
+    }
+    return 0;
+  }
+
+  private formatGaugeUsagePct(spent: number, budget: number): string {
+    if (budget > 0) {
+      const p = (spent / budget) * 100;
+      const capped = Math.min(9999, p);
+      const rounded =
+        capped >= 100 || Math.abs(capped - Math.round(capped)) < 0.04
+          ? Math.min(999, Math.round(capped))
+          : Math.round(capped * 10) / 10;
+      return `${rounded}%`;
+    }
+    return spent > 0 ? '—' : '0%';
+  }
+
+  /**
+   * Budget vs spent gauge: each column = 100% of that row's budget; yellow from bottom = spent share.
+   * Y-axis is 0–100% of allocation; INR amounts are in tooltips and under labels.
+   */
+  private rebuildBudgetGaugeModel(): void {
+    const raw = Array.isArray(this.budgetDetails) ? this.budgetDetails : [];
+    if (!raw.length) {
+      this.budgetGaugeRows = [];
+      this.budgetGaugeTicks = [0];
+      this.budgetGaugeAxisMax = 0;
+      this.budgetGaugeSummary = null;
+      return;
+    }
+
+    type Pre = {
+      label: string;
+      period: string;
+      budget: number;
+      spent: number;
+    };
+
+    const pre: Pre[] = (raw as Record<string, unknown>[]).map((item) => {
+      const nameRaw = this.readBudgetScalar(item, ['category_name', 'category', 'CategoryName', 'categoryName']);
+      const label = String(nameRaw ?? '—').trim() || '—';
+      const budget = this.readBudgetGaugeMoney(item, [
+        'budget_limit',
+        'allocated_amount',
+        'budgetLimit',
+        'allocatedAmount',
+        'BudgetLimit'
+      ]);
+      const spent = this.readBudgetGaugeMoney(item, [
+        'total_spent',
+        'spent',
+        'TotalSpent',
+        'totalSpent',
+        'expense_total',
+        'expenseTotal'
+      ]);
+      const monthRaw = this.readBudgetScalar(item, ['month', 'budget_month', 'budgetMonth', 'Month']);
+      const yearRaw = this.readBudgetScalar(item, ['year', 'budget_year', 'budgetYear', 'Year']);
+      const monthNum =
+        monthRaw !== undefined && monthRaw !== null && String(monthRaw).trim() !== '' ? Number(monthRaw) : NaN;
+      const yearNum =
+        yearRaw !== undefined && yearRaw !== null && String(yearRaw).trim() !== '' ? Number(yearRaw) : NaN;
+      const monthOk = Number.isFinite(monthNum) && monthNum >= 1 && monthNum <= 12;
+      const yearOk = Number.isFinite(yearNum) && yearNum >= 2000 && yearNum <= 2100;
+      const period = monthOk && yearOk ? `${monthNum} / ${yearNum}` : '';
+      return { label, period, budget, spent };
+    });
+
+    const allocatedSum = pre.reduce((s, p) => s + p.budget, 0);
+    const spentSum = pre.reduce((s, p) => s + p.spent, 0);
+    const headroomSum = pre.reduce((s, p) => s + Math.max(0, p.budget - p.spent), 0);
+    const overSum = pre.reduce((s, p) => s + Math.max(0, p.spent - p.budget), 0);
+    this.budgetGaugeSummary = {
+      allocated: allocatedSum,
+      spent: spentSum,
+      headroom: headroomSum,
+      overAmount: overSum,
+      usagePct: allocatedSum > 0 ? Math.min(999, Math.round((spentSum / allocatedSum) * 1000) / 10) : null
+    };
+
+    pre.sort((a, b) => {
+      const overA = Math.max(0, a.spent - a.budget);
+      const overB = Math.max(0, b.spent - b.budget);
+      if (overB !== overA) {
+        return overB - overA;
+      }
+      if (b.spent !== a.spent) {
+        return b.spent - a.spent;
+      }
+      return a.label.localeCompare(b.label);
+    });
+
+    this.budgetGaugeAxisMax = 100;
+    this.budgetGaugeTicks = [0, 25, 50, 75, 100];
+
+    this.budgetGaugeRows = pre.map((p) => {
+      const { label, period, budget, spent } = p;
+      let yellowPct = 0;
+      if (budget > 0) {
+        yellowPct = Math.min(100, Math.round((spent / budget) * 10000) / 100);
+      } else if (spent > 0) {
+        yellowPct = 100;
+      }
+      const showBudgetCap = budget > 0 && spent > budget + 1e-6;
+
+      const pctLabel = this.formatGaugeUsagePct(spent, budget);
+      const headroomInr = Math.max(0, budget - spent);
+      const overInr = Math.max(0, spent - budget);
+      const amountsLine =
+        budget > 0
+          ? `${this.formatBudgetGaugeInr(spent)} / ${this.formatBudgetGaugeInr(budget)}`
+          : spent > 0
+            ? `${this.formatBudgetGaugeInr(spent)} · no budget`
+            : '—';
+      const barTitleParts = [
+        `Column height = 100% of budget (${this.formatBudgetGaugeInr(budget)})`,
+        `Spent ${this.formatBudgetGaugeInr(spent)} (${pctLabel} of this row's budget)`,
+        spent <= budget
+          ? `Unused (sky) ${this.formatBudgetGaugeInr(headroomInr)}`
+          : `Over budget ${this.formatBudgetGaugeInr(overInr)}`
+      ];
+      if (period) {
+        barTitleParts.unshift(`Period ${period}`);
+      }
+      const barTitle = barTitleParts.join(' · ');
+
+      return {
+        label,
+        period,
+        barTitle,
+        amountsLine,
+        pctLabel,
+        yellowPct,
+        showBudgetCap
+      };
     });
   }
 

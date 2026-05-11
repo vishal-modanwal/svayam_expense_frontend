@@ -10,6 +10,8 @@ interface ExpenseFilter {
   category_id?: number | null;
   sortBy?: 'amount' | 'expense_date' | 'created_at';
   order?: 'ASC' | 'DESC';
+  /** Text search on my-expenses list (title / vendor / etc.) — sent as `search` query param when non-empty. */
+  search?: string;
   /** When supported by the API, restricts the list to standard (employee) vs extra (admin) expenses. */
   expense_type?: 'standard' | 'extra';
   /** Admin dashboard audience slice. */
@@ -44,6 +46,10 @@ export class ExpenseService {
     return this.http.post<ApiMessage>(`${this.api}/expense`, payload);
   }
 
+  /**
+   * GET /expense/my-expenses — sends `page`, `limit`, optional `category_id`, `sortBy`, `order`,
+   * and optional `search` (non-empty) for server-side list filtering.
+   */
   getMyExpenses(filter: ExpenseFilter): Observable<PaginatedExpenses> {
     return this.http.get<PaginatedExpenses>(`${this.api}/expense/my-expenses`, {
       params: this.toParams(filter)

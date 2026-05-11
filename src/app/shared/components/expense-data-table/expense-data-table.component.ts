@@ -38,7 +38,7 @@ export class ExpenseDataTableComponent {
     this.pageChange.emit(e);
   }
 
-  receiptHref(url: string): string {
+  receiptHref(url: string | null | undefined): string {
     const resolved = resolveReceiptPublicUrl(url, environment.uploadsOrigin);
     return resolved ?? '#';
   }

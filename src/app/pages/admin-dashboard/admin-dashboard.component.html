@@ -1,37 +1,42 @@
 <div class="admin-shell">
-  <aside class="admin-sidebar" aria-label="Admin workspace navigation">
-    <div class="sidebar-brand">
-      <div class="brand-mark">
-        <img src="assets/svayam-tracker-logo.png" alt="" width="40" height="40" />
-      </div>
-      <div class="brand-text">
-        <h2 class="brand-title">SvayamExpense</h2>
-        <p class="brand-eyebrow">Admin console</p>
-      </div>
-    </div>
+  <header class="admin-topbar">
+    <button
+      mat-icon-button
+      type="button"
+      class="admin-topbar__menu"
+      aria-label="Open menu"
+      (click)="navDrawerOpen = !navDrawerOpen">
+      <mat-icon>menu</mat-icon>
+    </button>
+    <a routerLink="/admin/expenses" class="admin-topbar__brand" aria-label="SvayamExpense admin home">
+      <img class="admin-topbar__brand-logo" src="assets/svayam-tracker-logo.png" width="28" height="28" alt="" />
+      <span class="admin-topbar__brand-text">SvayamExpense</span>
+    </a>
+    <span class="admin-topbar__spacer"></span>
+    <button
+      mat-icon-button
+      type="button"
+      class="admin-topbar__icon"
+      aria-label="Notifications"
+      [matBadge]="adminNotificationCount"
+      [matBadgeHidden]="adminNotificationCount < 1"
+      matBadgeSize="small"
+      matBadgeColor="warn">
+      <mat-icon>notifications_none</mat-icon>
+    </button>
+  </header>
 
-    <p class="sidebar-section-label">Workspace</p>
-    <nav class="menu-list sidebar-menu-grow" role="navigation">
-      <button
-        type="button"
-        class="menu-item"
-        *ngFor="let item of sidebarItems"
-        [class.active]="isSidebarSectionActive(item.key)"
-        (click)="onSidebarItemClick(item.key)">
-        <span class="menu-icon-wrap" aria-hidden="true">
-          <mat-icon>{{ item.icon }}</mat-icon>
-        </span>
-        <span class="menu-label">{{ item.label }}</span>
-      </button>
-    </nav>
-
-    <div class="sidebar-footer">
-      <button type="button" class="sidebar-logout" (click)="logoutAdmin()">
-        <span class="sidebar-logout-emoji" aria-hidden="true">➡️</span>
-        <span class="sidebar-logout-text">Logout</span>
-      </button>
-    </div>
-  </aside>
+  <app-sidebar
+    [open]="navDrawerOpen"
+    (openChange)="navDrawerOpen = $event"
+    [activeWorkspace]="activeSection"
+    [userName]="userName"
+    [userRole]="adminRoleLabel"
+    [notificationCount]="adminNotificationCount"
+    [alertBadgeCount]="adminAlertBadgeCount"
+    (toolAction)="onSidebarToolAction($event)"
+    (logoutClick)="logoutAdmin()">
+  </app-sidebar>
 
   <section class="admin-main">
     <!-- EXPENSES — same shell as user dashboard -->
@@ -96,11 +101,24 @@
                 <mat-icon>percent</mat-icon>
               </div>
               <div class="text">
-                <h3>Extra</h3>
+                <h3>Usage</h3>
                 <p>Overall consumption</p>
               </div>
             </div>
             <div class="card-right">{{ adminUsagePct | number: '1.0-0' }}%</div>
+          </mat-card>
+
+          <mat-card class="card extra-admin">
+            <div class="card-left">
+              <div class="icon-box extra-admin-icon">
+                <mat-icon>bolt</mat-icon>
+              </div>
+              <div class="text">
+                <h3>Admin extra</h3>
+                <p>Extra-type admin expenses</p>
+              </div>
+            </div>
+            <div class="card-right">₹{{ adminExtraExpenseTotal | number: '1.0-0' }}</div>
           </mat-card>
         </section>
 
@@ -169,7 +187,7 @@
         </div>
 
         <div class="main-section">
-          <mat-card class="table-card table-card--recent-expenses">
+          <mat-card class="table-card">
             <div class="section-head section-head--table section-head--all-expenses">
               <div class="section-head__title-row">
                 <h3>All expenses</h3>
@@ -211,7 +229,6 @@
               [sortState]="adminExpenseSortState"
               [pageIndex]="expenseQuery.pageIndex"
               [embedded]="true"
-              embeddedVariant="admin-expenses"
               (queryChange)="onAdminExpenseDynamicQuery($event)"
               (adminExpenseDelete)="onAdminExpenseDynamicDelete($event)">
             </app-dynamic-data-table>
@@ -261,89 +278,209 @@
           </div>
         </header>
 
-        <div class="main-section">
-          <div class="split-grid">
-            <mat-card class="chart-card">
-              <div class="chart-card-header">
-                <h3>Budget vs spent</h3>
-              </div>
-              <div class="chart-canvas-well chart-wrap-budget">
-                <canvas #budgetChart></canvas>
-              </div>
-              <div class="budget-list-hint">Rows below use GET /api/meta/tables/budgets (fallback columns if meta fails).</div>
-            </mat-card>
-
-            <mat-card class="table-card table-card--recent-expenses" *ngIf="budgetTableConfig">
-              <div class="section-head section-head--table">
-                <h3>Budget overview</h3>
-                <span class="section-hint section-hint--page-scope">This page</span>
-              </div>
-              <app-dynamic-data-table
-                [config]="budgetTableConfig"
-                [rows]="budgetTableRows"
-                [totalCount]="budgetTableRows.length"
-                [loading]="budgetTableLoading"
-                [hidePaginator]="true"
-                [sortState]="budgetTableSortState"
-                [embedded]="true"
-                embeddedVariant="admin-budget">
-              </app-dynamic-data-table>
-            </mat-card>
-
-            <mat-card class="panel-card">
-              <h3>Create category + budget</h3>
-              <form [formGroup]="categoryBudgetForm" (ngSubmit)="createCategoryBudget()">
-                <mat-form-field appearance="outline" class="full">
-                  <mat-label>Category name</mat-label>
-                  <input matInput formControlName="name" />
-                </mat-form-field>
-                <mat-form-field appearance="outline" class="full">
-                  <mat-label>Description</mat-label>
-                  <input matInput formControlName="description" />
-                </mat-form-field>
-                <div class="mini-grid">
-                  <mat-form-field appearance="outline">
-                    <mat-label>Month</mat-label>
-                    <input matInput type="number" formControlName="month" />
-                  </mat-form-field>
-                  <mat-form-field appearance="outline">
-                    <mat-label>Year</mat-label>
-                    <input matInput type="number" formControlName="year" />
-                  </mat-form-field>
-                </div>
-                <mat-form-field appearance="outline" class="full">
-                  <mat-label>Allocated amount</mat-label>
-                  <input matInput type="number" formControlName="allocated_amount" />
-                </mat-form-field>
-                <button mat-raised-button color="primary" type="submit">Create</button>
-              </form>
-            </mat-card>
-          </div>
-
-          <mat-card class="panel-card">
-            <h3>Category actions</h3>
-            <mat-form-field appearance="outline" class="full">
-              <mat-label>Select category</mat-label>
-              <mat-select (selectionChange)="loadCategoryForEdit($event.value)">
-                <mat-option *ngFor="let category of categories" [value]="category.id">{{ category.name }}</mat-option>
-              </mat-select>
-            </mat-form-field>
-            <form [formGroup]="categoryUpdateForm" (ngSubmit)="updateCategory()" class="category-edit-form">
-              <mat-form-field appearance="outline" class="full">
-                <mat-label>Name</mat-label>
-                <input matInput formControlName="name" />
-              </mat-form-field>
-              <mat-form-field appearance="outline" class="full">
-                <mat-label>Description</mat-label>
-                <input matInput formControlName="description" />
-              </mat-form-field>
-              <button mat-raised-button color="accent" type="submit">Update category</button>
-            </form>
-            <div class="category-list">
-              <button mat-stroked-button color="warn" type="button" *ngFor="let c of categories" (click)="deleteCategory(c.id)">
-                Delete {{ c.name }}
+        <div class="toolbar-panel">
+          <div class="toolbar-pair toolbar-pair--grow">
+            <div class="search-shell" role="search">
+              <mat-icon class="search-shell__icon" aria-hidden="true">category</mat-icon>
+              <input
+                type="search"
+                class="search-shell__input"
+                [(ngModel)]="budgetSearchInput"
+                (keyup.enter)="applyBudgetSearch()"
+                placeholder="Search by category name…"
+                autocomplete="off"
+                aria-label="Search budgets by category name" />
+              <button
+                mat-icon-button
+                type="button"
+                class="search-shell__submit"
+                aria-label="Run search"
+                (click)="applyBudgetSearch()">
+                <mat-icon>arrow_forward</mat-icon>
               </button>
             </div>
+            <button
+              mat-stroked-button
+              type="button"
+              class="search-clear-btn"
+              *ngIf="budgetQuery.filter"
+              (click)="clearBudgetSearch()">
+              <mat-icon>close</mat-icon>
+              Clear
+            </button>
+
+            <div class="sort-wrapper">
+              <button mat-button type="button" [matMenuTriggerFor]="budgetSortMenu" class="sort-btn action-btn">
+                <mat-icon>tune</mat-icon>
+                {{ getBudgetSortLabel() }}
+                <mat-icon class="arrow">expand_more</mat-icon>
+              </button>
+              <mat-menu #budgetSortMenu="matMenu" class="sort-menu">
+                <button mat-menu-item type="button" (click)="applyBudgetListSort('latest')">
+                  <mat-icon>schedule</mat-icon>
+                  <span>Latest first</span>
+                  <mat-icon *ngIf="selectedBudgetListSort === 'latest'" class="check">check</mat-icon>
+                </button>
+                <button mat-menu-item type="button" (click)="applyBudgetListSort('high')">
+                  <mat-icon>trending_down</mat-icon>
+                  <span>Amount: High to Low</span>
+                  <mat-icon *ngIf="selectedBudgetListSort === 'high'" class="check">check</mat-icon>
+                </button>
+                <button mat-menu-item type="button" (click)="applyBudgetListSort('low')">
+                  <mat-icon>trending_up</mat-icon>
+                  <span>Amount: Low to High</span>
+                  <mat-icon *ngIf="selectedBudgetListSort === 'low'" class="check">check</mat-icon>
+                </button>
+              </mat-menu>
+            </div>
+          </div>
+
+          <button mat-raised-button color="primary" type="button" class="action-btn" (click)="openAddBudgetModal()">
+            <mat-icon>add</mat-icon>
+            Add budget
+          </button>
+        </div>
+
+        <div class="main-section main-section--budgets">
+          <mat-card class="table-card" *ngIf="budgetTableConfig">
+            <div class="section-head section-head--table">
+              <h3>Budget overview</h3>
+              <span class="section-hint section-hint--page-scope">This page</span>
+            </div>
+            <app-dynamic-data-table
+              [config]="budgetTableConfig"
+              [rows]="budgetTableRows"
+              [totalCount]="budgetTableTotalCount"
+              [loading]="budgetTableLoading"
+              [sortState]="budgetTableSortState"
+              [pageIndex]="budgetQuery.pageIndex"
+              [embedded]="true"
+              (queryChange)="onBudgetTableQuery($event)"
+              (adminBudgetDescription)="openBudgetDescriptionModal($event)"
+              (adminBudgetEdit)="openEditBudgetModal($event)"
+              (adminBudgetDelete)="onAdminBudgetDynamicDelete($event)">
+            </app-dynamic-data-table>
+          </mat-card>
+
+          <mat-card class="chart-card chart-card--budgets-chart">
+            <div class="chart-card-header">
+              <h3>Budget vs spent</h3>
+            </div>
+            <div class="chart-wrap-budget chart-wrap-budget--gauge">
+              <p *ngIf="budgetTableLoading" class="budget-gauge__loading">Loading chart…</p>
+              <ng-container *ngIf="!budgetTableLoading && budgetGaugeRows.length">
+                <p class="budget-gauge__intro">
+                  Har category ke liye column ki height <strong>100% = us row ka budget</strong> (allocate). Neeche se
+                  <strong>yellow</strong> sirf <strong>spent ÷ budget</strong> hissa bharta hai — jitna expense, utna
+                  yellow. Baaki sky = unused. Spend &gt; budget ho to upar cap line <strong>100%</strong> budget limit
+                  dikhati hai. Axis <strong>0–100%</strong> allocation hai; ₹ neeche labels / tooltip mein.
+                </p>
+                <h4 class="budget-gauge__subtitle">Budget vs spent (stacked gauge)</h4>
+                <div class="budget-gauge__kpi" *ngIf="budgetGaugeSummary as g">
+                  <span class="budget-gauge__kpi-chip">
+                    Allocated <strong>{{ formatBudgetGaugeInr(g.allocated) }}</strong>
+                  </span>
+                  <span class="budget-gauge__kpi-chip">
+                    Spent <strong>{{ formatBudgetGaugeInr(g.spent) }}</strong>
+                  </span>
+                  <span class="budget-gauge__kpi-chip budget-gauge__kpi-chip--muted">
+                    Unused headroom <strong>{{ formatBudgetGaugeInr(g.headroom) }}</strong>
+                  </span>
+                  <span class="budget-gauge__kpi-chip budget-gauge__kpi-chip--warn" *ngIf="g.overAmount > 0">
+                    Over budget <strong>{{ formatBudgetGaugeInr(g.overAmount) }}</strong>
+                  </span>
+                  <span class="budget-gauge__kpi-chip budget-gauge__kpi-chip--accent" *ngIf="g.usagePct !== null">
+                    Overall <strong>{{ g.usagePct }}%</strong> of allocated
+                  </span>
+                </div>
+                <div class="budget-gauge">
+                  <aside class="budget-gauge__legend" aria-label="Chart legend">
+                    <ul class="budget-gauge__legend-list">
+                      <li *ngFor="let row of budgetGaugeRows; let i = index" class="budget-gauge__legend-item">
+                        <span class="budget-gauge__swatch budget-gauge__swatch--spent" aria-hidden="true"></span>
+                        <span class="budget-gauge__legend-text">{{ i + 1 }} {{ row.label }}</span>
+                      </li>
+                      <li class="budget-gauge__legend-item">
+                        <span class="budget-gauge__swatch budget-gauge__swatch--sky" aria-hidden="true"></span>
+                        <span class="budget-gauge__legend-text">Budget (sky column / unused)</span>
+                      </li>
+                      <li class="budget-gauge__legend-item">
+                        <span class="budget-gauge__swatch budget-gauge__swatch--spent" aria-hidden="true"></span>
+                        <span class="budget-gauge__legend-text">Spent — expense (yellow)</span>
+                      </li>
+                      <li class="budget-gauge__legend-item">
+                        <span class="budget-gauge__swatch budget-gauge__swatch--cap" aria-hidden="true"></span>
+                        <span class="budget-gauge__legend-text">100% cap line (when spent &gt; budget)</span>
+                      </li>
+                    </ul>
+                  </aside>
+                  <div class="budget-gauge__chart">
+                    <div class="budget-gauge__y-rail" *ngIf="budgetGaugeAxisMax > 0">
+                      <div class="budget-gauge__chart-main">
+                        <div class="budget-gauge__y-axis">
+                          <span
+                            *ngFor="let t of budgetGaugeTicks"
+                            class="budget-gauge__y-tick"
+                            [style.bottom.%]="(t / budgetGaugeAxisMax) * 100">
+                            {{ formatBudgetGaugeYAxis(t) }}
+                          </span>
+                        </div>
+                        <div class="budget-gauge__plot-surface">
+                          <div class="budget-gauge__grid" aria-hidden="true">
+                            <div
+                              *ngFor="let t of budgetGaugeTicks"
+                              class="budget-gauge__grid-line"
+                              [style.bottom.%]="(t / budgetGaugeAxisMax) * 100"></div>
+                          </div>
+                          <div class="budget-gauge__bars">
+                            <div
+                              *ngFor="let row of budgetGaugeRows"
+                              class="budget-gauge__col"
+                              [attr.title]="row.barTitle"
+                              [attr.aria-label]="row.barTitle">
+                              <div class="budget-gauge__bar-slot">
+                                <div class="budget-gauge__bar budget-gauge__bar--normalized">
+                                  <div class="budget-gauge__bar-base" aria-hidden="true"></div>
+                                  <div
+                                    *ngIf="row.yellowPct > 0.05"
+                                    class="budget-gauge__bar-spent"
+                                    [style.height.%]="row.yellowPct"></div>
+                                  <div
+                                    *ngIf="row.showBudgetCap"
+                                    class="budget-gauge__bar-cap budget-gauge__bar-cap--top"
+                                    aria-hidden="true"></div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="budget-gauge__plot-foot">
+                        <div class="budget-gauge__plot-foot-inner">
+                          <div
+                            *ngFor="let row of budgetGaugeRows"
+                            class="budget-gauge__foot-col"
+                            [attr.title]="row.barTitle"
+                            [attr.aria-label]="row.barTitle">
+                            <span class="budget-gauge__pct budget-gauge__pct--below">{{ row.pctLabel }}</span>
+                            <span class="budget-gauge__xlabel">{{ row.label }}</span>
+                            <span *ngIf="row.period" class="budget-gauge__xsub">{{ row.period }}</span>
+                            <span class="budget-gauge__amounts">{{ row.amountsLine }}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </ng-container>
+              <p *ngIf="!budgetTableLoading && !budgetGaugeRows.length" class="budget-gauge__empty">
+                No budget rows to chart yet. Load succeeds when budget details are available.
+              </p>
+            </div>
+            <p class="budget-list-hint">
+              Same rows as the budget table. Each bar uses its own budget as 100% height; yellow = spent share of that
+              budget.
+            </p>
           </mat-card>
         </div>
       </div>
@@ -366,7 +503,7 @@
         </header>
 
         <div class="main-section">
-          <mat-card class="table-card table-card--recent-expenses" *ngIf="usersTableConfig">
+          <mat-card class="table-card" *ngIf="usersTableConfig">
             <div class="section-head section-head--table">
               <h3>Users</h3>
               <span class="section-hint section-hint--page-scope">This page</span>
@@ -382,8 +519,7 @@
               [loading]="usersTableLoading"
               [hidePaginator]="true"
               [sortState]="usersTableSortState"
-              [embedded]="true"
-              embeddedVariant="admin-users">
+              [embedded]="true">
             </app-dynamic-data-table>
           </mat-card>
 
@@ -567,6 +703,124 @@
         <input matInput [(ngModel)]="reportUserName" [ngModelOptions]="{ standalone: true }" />
       </mat-form-field>
       <button mat-raised-button color="primary" type="button" (click)="downloadUserWiseReport()">Download user-wise CSV</button>
+    </div>
+  </mat-card>
+</div>
+
+<div class="overlay" *ngIf="isAddBudgetModalOpen" (click)="closeAddBudgetModal()">
+  <mat-card
+    class="modal-card modal-card--wide form-modal add-budget-modal-card"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="add-budget-modal-title"
+    (click)="$event.stopPropagation()">
+    <button type="button" class="close-btn" aria-label="Close" (click)="closeAddBudgetModal()">✖</button>
+
+    <header class="add-budget-modal-card__header">
+      <p class="add-budget-modal-card__eyebrow">Budgets</p>
+      <h2 id="add-budget-modal-title" class="add-budget-modal-card__title">Add budget</h2>
+      <p class="add-budget-modal-card__subtitle">New category and how much to allocate for the month you pick.</p>
+    </header>
+
+    <form class="add-budget-modal-card__form" [formGroup]="categoryBudgetForm" (ngSubmit)="createCategoryBudget()">
+      <p class="add-budget-modal-card__section-label">Category</p>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Category name</mat-label>
+        <input matInput formControlName="name" />
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Description</mat-label>
+        <input matInput formControlName="description" />
+      </mat-form-field>
+
+      <p class="add-budget-modal-card__section-label">Period &amp; amount</p>
+      <div class="mini-grid">
+        <mat-form-field appearance="outline">
+          <mat-label>Month</mat-label>
+          <input matInput type="number" formControlName="month" />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Year</mat-label>
+          <input matInput type="number" formControlName="year" />
+        </mat-form-field>
+      </div>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Allocated amount</mat-label>
+        <input matInput type="number" formControlName="allocated_amount" />
+      </mat-form-field>
+      <div class="modal-actions modal-actions--start">
+        <button mat-stroked-button type="button" (click)="closeAddBudgetModal()">Cancel</button>
+        <button mat-raised-button color="primary" type="submit">Create</button>
+      </div>
+    </form>
+  </mat-card>
+</div>
+
+<div class="overlay" *ngIf="isEditBudgetModalOpen" (click)="closeEditBudgetModal()">
+  <mat-card class="modal-card modal-card--wide form-modal add-budget-modal-card" (click)="$event.stopPropagation()">
+    <button type="button" class="close-btn" aria-label="Close" (click)="closeEditBudgetModal()">✖</button>
+    <header class="add-budget-modal-card__header">
+      <p class="add-budget-modal-card__eyebrow">Budgets</p>
+      <h2 class="add-budget-modal-card__title">Update budget</h2>
+      <p class="add-budget-modal-card__subtitle">Change category name, period, or allocated amount for this row.</p>
+    </header>
+    <form class="add-budget-modal-card__form" [formGroup]="budgetEditForm" (ngSubmit)="submitBudgetEdit()">
+      <p class="add-budget-modal-card__section-label">Category</p>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Category name</mat-label>
+        <input matInput formControlName="name" />
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Description</mat-label>
+        <input matInput formControlName="description" />
+      </mat-form-field>
+      <p class="add-budget-modal-card__section-label">Period &amp; amount</p>
+      <div class="mini-grid">
+        <mat-form-field appearance="outline">
+          <mat-label>Month</mat-label>
+          <input matInput type="number" formControlName="month" />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Year</mat-label>
+          <input matInput type="number" formControlName="year" />
+        </mat-form-field>
+      </div>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Allocated amount</mat-label>
+        <input matInput type="number" formControlName="allocated_amount" />
+      </mat-form-field>
+      <div class="modal-actions modal-actions--start">
+        <button mat-stroked-button type="button" (click)="closeEditBudgetModal()">Cancel</button>
+        <button mat-raised-button color="primary" type="submit">Save changes</button>
+      </div>
+    </form>
+  </mat-card>
+</div>
+
+<div class="overlay" *ngIf="selectedBudgetDeleteRow !== null" (click)="closeBudgetDeleteDialog()">
+  <mat-card class="modal-card" (click)="$event.stopPropagation()">
+    <button type="button" class="close-btn" (click)="closeBudgetDeleteDialog()">✖</button>
+    <h3>Delete budget</h3>
+    <p>
+      Remove this budget row for
+      <strong>{{ selectedBudgetDeleteRow?.['category'] }}</strong>
+      ({{ selectedBudgetDeleteRow?.['month'] }} / {{ selectedBudgetDeleteRow?.['year'] }})? This cannot be undone.
+    </p>
+    <div class="modal-actions">
+      <button mat-stroked-button type="button" (click)="closeBudgetDeleteDialog()">Cancel</button>
+      <button mat-raised-button color="warn" type="button" (click)="confirmBudgetDelete()">Delete</button>
+    </div>
+  </mat-card>
+</div>
+
+<div class="overlay" *ngIf="isBudgetDescriptionModalOpen" (click)="closeBudgetDescriptionModal()">
+  <mat-card class="modal-card modal-card--wide" (click)="$event.stopPropagation()">
+    <button type="button" class="close-btn" aria-label="Close" (click)="closeBudgetDescriptionModal()">✖</button>
+    <h3>Description</h3>
+    <p class="budget-description-modal__category" *ngIf="budgetDescriptionModalTitle">{{ budgetDescriptionModalTitle }}</p>
+    <div class="budget-description-modal__body">{{ budgetDescriptionModalText }}</div>
+    <div class="modal-actions">
+      <button mat-stroked-button type="button" (click)="closeBudgetDescriptionModal()">Close</button>
     </div>
   </mat-card>
 </div>

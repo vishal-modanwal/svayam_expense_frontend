@@ -1,8 +1,8 @@
-/** Drives `table-layout: fixed` column % presets when `embedded` is true. */
-export type DynamicTableEmbeddedVariant = 'user' | 'admin-expenses' | 'admin-budget' | 'admin-users';
-
 /** Optional non-text cells (emit events from `DynamicDataTableComponent`). */
 export type DynamicTableCellControl =
+  | 'adminBudgetDescription'
+  | 'adminBudgetEdit'
+  | 'adminBudgetDelete'
   | 'adminExpenseEdit'
   | 'adminExpenseReceipt'
   | 'adminExpenseDelete'

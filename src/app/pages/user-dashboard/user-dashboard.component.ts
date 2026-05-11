@@ -50,6 +50,9 @@ export class UserDashboardComponent implements OnInit, OnDestroy {
   selectedCategory: number | null = null;
   selectedCategoryLabel = 'All Categories';
 
+  /** Client-side filter on the current expense page (title / vendor), reference-style search bar. */
+  expenseSearchInput = '';
+
   isExpenseFormModalOpen = false;
   isExpenseReportDownloading = false;
   expenseForModal: Expense | null = null;
@@ -58,6 +61,7 @@ export class UserDashboardComponent implements OnInit, OnDestroy {
   selectedDeleteExpense: Expense | null = null;
 
   private readonly subs = new Subscription();
+  private expenseSearchTimer?: ReturnType<typeof setTimeout>;
 
   constructor(
     private readonly authService: AuthService,
@@ -85,6 +89,7 @@ export class UserDashboardComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    clearTimeout(this.expenseSearchTimer);
     this.subs.unsubscribe();
   }
 
@@ -102,7 +107,7 @@ export class UserDashboardComponent implements OnInit, OnDestroy {
   }
 
   private refreshUserFromProfile(): void {
-    this.profileService.getMe().subscribe({
+    this.profileService.getProfileStatus().subscribe({
       next: (res) => {
         const u = res?.user;
         if (u) {
@@ -205,25 +210,26 @@ export class UserDashboardComponent implements OnInit, OnDestroy {
 
   loadExpenses(): void {
     this.userExpenseLoading = true;
+    const search = this.expenseSearchInput.trim();
     this.expenseService
       .getMyExpenses({
         page: this.page,
         limit: this.pageSize,
         category_id: this.selectedCategory,
         sortBy: this.sortBy,
-        order: this.order
+        order: this.order,
+        ...(search ? { search } : {})
       })
       .subscribe({
         next: (res) => {
           this.expenses = (res.data || []).map((item) => ({ ...item, amount: Number(item.amount) }));
           const p = res.pagination;
           this.totalPages = Math.max(1, p?.totalPages || 1);
-          this.totalItems = p?.totalItems ?? this.expenses.length;
+          this.totalItems = p?.totalItems ?? p?.total_records ?? this.expenses.length;
           if (p?.itemsPerPage && this.pageSizeOptions.includes(p.itemsPerPage)) {
             this.pageSize = p.itemsPerPage;
           }
-          this.pageExpense = this.expenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
-          this.userExpenseTableRows = this.expenses.map((item) => this.expenseToFlatRow(item));
+          this.rebuildUserExpenseRows();
           this.userExpenseSortState = {
             active: this.sortBy,
             direction: this.order === 'ASC' ? 'asc' : 'desc'
@@ -257,6 +263,34 @@ export class UserDashboardComponent implements OnInit, OnDestroy {
       active: this.sortBy,
       direction: this.order === 'ASC' ? 'asc' : 'desc'
     };
+    this.loadExpenses();
+  }
+
+  onExpenseSearchInput(): void {
+    clearTimeout(this.expenseSearchTimer);
+    this.expenseSearchTimer = setTimeout(() => {
+      this.page = 1;
+      this.loadExpenses();
+    }, 280);
+  }
+
+  clearExpenseSearch(): void {
+    clearTimeout(this.expenseSearchTimer);
+    this.expenseSearchInput = '';
+    this.page = 1;
+    this.loadExpenses();
+  }
+
+  /** Maps the current API page into table rows and the “Your expense” total for this page. */
+  rebuildUserExpenseRows(): void {
+    this.userExpenseTableRows = this.expenses.map((item) => this.expenseToFlatRow(item));
+    this.pageExpense = this.expenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  }
+
+  /** Run search immediately (toolbar search submit). */
+  applyExpenseSearchFromToolbar(): void {
+    clearTimeout(this.expenseSearchTimer);
+    this.page = 1;
     this.loadExpenses();
   }
 

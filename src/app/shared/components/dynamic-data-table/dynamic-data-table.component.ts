@@ -17,12 +17,7 @@ import { MatSort, Sort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { Observable, Subject, Subscription, merge } from 'rxjs';
 import { debounceTime, distinctUntilChanged, takeUntil, tap } from 'rxjs/operators';
-import {
-  DynamicTableColumn,
-  DynamicTableEmbeddedVariant,
-  DynamicTableQuery,
-  DynamicTableViewConfig
-} from './dynamic-data-table.models';
+import { DynamicTableColumn, DynamicTableQuery, DynamicTableViewConfig } from './dynamic-data-table.models';
 import { resolveReceiptPublicUrl } from 'src/app/core/utils/receipt-url';
 import { environment } from 'src/environments/environment';
 
@@ -47,15 +42,12 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy {
    * (used on user dashboard to match the reference expense table).
    */
   @Input() embedded = false;
-  /**
-   * When `embedded` is true, selects column width presets (`table-layout: fixed`).
-   * Omit when `embedded` is false.
-   */
-  @Input() embeddedVariant: DynamicTableEmbeddedVariant | null = null;
-
   @Output() readonly queryChange = new EventEmitter<DynamicTableQuery>();
   @Output() readonly adminExpenseEdit = new EventEmitter<Record<string, unknown>>();
   @Output() readonly adminExpenseDelete = new EventEmitter<Record<string, unknown>>();
+  @Output() readonly adminBudgetDescription = new EventEmitter<Record<string, unknown>>();
+  @Output() readonly adminBudgetEdit = new EventEmitter<Record<string, unknown>>();
+  @Output() readonly adminBudgetDelete = new EventEmitter<Record<string, unknown>>();
   @Output() readonly userExpenseAction = new EventEmitter<{
     action: 'notes' | 'edit' | 'delete';
     row: Record<string, unknown>;
@@ -131,36 +123,6 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy {
 
   get showTableHead(): boolean {
     return !!(this.config?.title || this.showFilter);
-  }
-
-  isAmountColumn(col: DynamicTableColumn): boolean {
-    return col.key === 'amount';
-  }
-
-  isCategoryColumn(col: DynamicTableColumn): boolean {
-    return col.key === 'category_name' || col.key === 'category';
-  }
-
-  isPaymentColumn(col: DynamicTableColumn): boolean {
-    return col.key === 'payment_method' || col.key === 'payment';
-  }
-
-  isTitleColumn(col: DynamicTableColumn): boolean {
-    return col.key === 'title';
-  }
-
-  isCenteredControlColumn(col: DynamicTableColumn): boolean {
-    const c = col.cellControl;
-    return (
-      c === 'userExpenseViewNotes' ||
-      c === 'userExpenseEdit' ||
-      c === 'userExpenseDelete' ||
-      c === 'userExpenseReceipt' ||
-      c === 'adminExpenseReceipt' ||
-      c === 'adminExpenseDelete' ||
-      c === 'adminExpenseEdit' ||
-      c === 'expenseReceiptDownload'
-    );
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -328,6 +290,24 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy {
 
   onAdminExpenseDeleteClick(row: Record<string, unknown>): void {
     this.adminExpenseDelete.emit(row);
+  }
+
+  onAdminBudgetDescriptionClick(row: Record<string, unknown>, ev?: Event): void {
+    ev?.stopPropagation();
+    this.adminBudgetDescription.emit(row);
+    this.cdr.markForCheck();
+  }
+
+  onAdminBudgetEditClick(row: Record<string, unknown>, ev?: Event): void {
+    ev?.stopPropagation();
+    this.adminBudgetEdit.emit(row);
+    this.cdr.markForCheck();
+  }
+
+  onAdminBudgetDeleteClick(row: Record<string, unknown>, ev?: Event): void {
+    ev?.stopPropagation();
+    this.adminBudgetDelete.emit(row);
+    this.cdr.markForCheck();
   }
 
   onUserExpenseAction(action: 'notes' | 'edit' | 'delete', row: Record<string, unknown>): void {
