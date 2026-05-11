@@ -4,7 +4,7 @@
       <div class="dynamic-table__head" *ngIf="showTableHead">
         <h2 class="dynamic-table__title" *ngIf="config?.title as title">{{ title }}</h2>
         <mat-form-field *ngIf="showFilter" appearance="outline" class="dynamic-table__filter">
-          <mat-label>Filter</mat-label>
+          <mat-label>{{ 'table.filter' | translate }}</mat-label>
           <input matInput [formControl]="filterControl" [placeholder]="filterPlaceholder" />
           <mat-icon matSuffix class="dynamic-table__filter-icon" *ngIf="loading">hourglass_empty</mat-icon>
         </mat-form-field>
@@ -29,10 +29,10 @@
                 mat-button
                 type="button"
                 class="dynamic-table__link dynamic-table__link--view"
-                [attr.title]="'View full description'"
-                [attr.aria-label]="'View budget description'"
+                [attr.title]="'table.viewDescAria' | translate"
+                [attr.aria-label]="'table.viewBudgetDescAria' | translate"
                 (click)="onAdminBudgetDescriptionClick(row, $event)">
-                View
+                {{ 'table.view' | translate }}
               </button>
               <button
                 *ngIf="col.cellControl === 'adminBudgetEdit'"
@@ -40,7 +40,7 @@
                 type="button"
                 class="dynamic-table__link dynamic-table__link--edit"
                 (click)="onAdminBudgetEditClick(row, $event)">
-                Edit
+                {{ 'table.edit' | translate }}
               </button>
               <button
                 *ngIf="col.cellControl === 'adminBudgetDelete'"
@@ -48,7 +48,7 @@
                 type="button"
                 class="dynamic-table__link dynamic-table__link--delete"
                 (click)="onAdminBudgetDeleteClick(row, $event)">
-                Delete
+                {{ 'table.delete' | translate }}
               </button>
               <ng-container
                 *ngIf="
@@ -63,7 +63,7 @@
                     type="button"
                     class="dynamic-table__link dynamic-table__link--edit"
                     (click)="onAdminExpenseEditClick(row)">
-                    Edit
+                    {{ 'table.edit' | translate }}
                   </button>
                 </ng-container>
                 <ng-container *ngSwitchCase="'adminExpenseReceipt'">
@@ -71,9 +71,8 @@
                     mat-button
                     type="button"
                     class="dynamic-table__link dynamic-table__link--view"
-                    [attr.title]="receiptHref(row) ? 'View receipt' : 'No receipt on this row'"
-                    (click)="openReceiptModal(row, $event)">
-                    View
+                    (click)="openReceiptModal(row)">
+                    {{ 'table.view' | translate }}
                   </button>
                 </ng-container>
                 <ng-container *ngSwitchCase="'adminExpenseDelete'">
@@ -82,7 +81,7 @@
                     type="button"
                     class="dynamic-table__link dynamic-table__link--delete"
                     (click)="onAdminExpenseDeleteClick(row)">
-                    Delete
+                    {{ 'table.delete' | translate }}
                   </button>
                 </ng-container>
                 <ng-container *ngSwitchCase="'userExpenseActions'">
@@ -92,21 +91,21 @@
                       type="button"
                       class="dynamic-table__link dynamic-table__link--view"
                       (click)="onUserExpenseAction('notes', row)">
-                      View
+                      {{ 'table.view' | translate }}
                     </button>
                     <button
                       mat-button
                       type="button"
                       class="dynamic-table__link dynamic-table__link--edit"
                       (click)="onUserExpenseAction('edit', row)">
-                      Edit
+                      {{ 'table.edit' | translate }}
                     </button>
                     <button
                       mat-button
                       type="button"
                       class="dynamic-table__link dynamic-table__link--delete"
                       (click)="onUserExpenseAction('delete', row)">
-                      Delete
+                      {{ 'table.delete' | translate }}
                     </button>
                   </span>
                 </ng-container>
@@ -116,7 +115,7 @@
                     type="button"
                     class="dynamic-table__link dynamic-table__link--view"
                     (click)="onUserExpenseAction('notes', row)">
-                    View
+                    {{ 'table.view' | translate }}
                   </button>
                 </ng-container>
                 <ng-container *ngSwitchCase="'userExpenseEdit'">
@@ -125,7 +124,7 @@
                     type="button"
                     class="dynamic-table__link dynamic-table__link--edit"
                     (click)="onUserExpenseAction('edit', row)">
-                    Edit
+                    {{ 'table.edit' | translate }}
                   </button>
                 </ng-container>
                 <ng-container *ngSwitchCase="'userExpenseDelete'">
@@ -134,7 +133,7 @@
                     type="button"
                     class="dynamic-table__link dynamic-table__link--delete"
                     (click)="onUserExpenseAction('delete', row)">
-                    Delete
+                    {{ 'table.delete' | translate }}
                   </button>
                 </ng-container>
                 <ng-container *ngSwitchCase="'userExpenseReceipt'">
@@ -142,28 +141,24 @@
                     mat-button
                     type="button"
                     class="dynamic-table__link dynamic-table__link--view"
-                    [attr.title]="receiptHref(row) ? 'View receipt' : 'No receipt on this row'"
-                    (click)="openReceiptModal(row, $event)">
-                    View
+                    (click)="openReceiptModal(row)">
+                    {{ 'table.view' | translate }}
                   </button>
                 </ng-container>
                 <ng-container *ngSwitchCase="'expenseReceiptDownload'">
                   <a
-                    *ngIf="receiptDirectAbs(row) as dl; else noReceiptDl"
+                    *ngIf="receiptDirectAbs(row) as dl"
                     mat-button
-                    type="button"
                     class="dynamic-table__link dynamic-table__link--view"
                     [href]="dl"
                     [attr.download]="receiptDownloadFilename(row)"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title="Download receipt (same-origin download works best)"
-                    (click)="$event.stopPropagation()">
-                    Download
+                    [attr.title]="'table.downloadReceiptTitle' | translate"
+                    (click)="downloadReceipt(row, $event)">
+                    {{ 'table.download' | translate }}
                   </a>
-                  <ng-template #noReceiptDl>
-                    <span class="dynamic-table__muted" title="No receipt">—</span>
-                  </ng-template>
+                  <span *ngIf="!receiptDirectAbs(row)" class="dynamic-table__muted">{{
+                    'table.noReceipt' | translate
+                  }}</span>
                 </ng-container>
                 <ng-container *ngSwitchDefault>
                   <span>{{ formatCell(row, col) }}</span>
@@ -177,7 +172,7 @@
 
           <tr class="mat-row dynamic-table__nodata-row" *matNoDataRow>
             <td class="mat-cell dynamic-table__empty" [attr.colspan]="displayedColumnKeys.length">
-              {{ loading ? 'Loading…' : 'No data to display' }}
+              {{ loading ? ('table.loading' | translate) : ('table.noData' | translate) }}
             </td>
           </tr>
         </table>
@@ -205,30 +200,10 @@
       aria-labelledby="receipt-modal-title"
       (click)="$event.stopPropagation()">
       <div class="receipt-modal__toolbar">
-        <h2 id="receipt-modal-title" class="receipt-modal__title">Receipt</h2>
-        <div class="receipt-modal__toolbar-actions">
-          <a
-            *ngIf="receiptModalDirectUrl"
-            mat-stroked-button
-            type="button"
-            [href]="receiptModalDirectUrl"
-            [attr.download]="receiptModalDownloadName"
-            target="_blank"
-            rel="noopener noreferrer"
-            (click)="$event.stopPropagation()">
-            Download
-          </a>
-          <button
-            *ngIf="receiptModalDirectUrl"
-            mat-stroked-button
-            type="button"
-            (click)="openReceiptInNewTab($event)">
-            Open in new tab
-          </button>
-          <button mat-icon-button type="button" aria-label="Close receipt" (click)="closeReceiptModal()">
-            <mat-icon>close</mat-icon>
-          </button>
-        </div>
+        <h2 id="receipt-modal-title" class="receipt-modal__title">{{ 'table.receipt' | translate }}</h2>
+        <button mat-icon-button type="button" [attr.aria-label]="'table.closeReceiptAria' | translate" (click)="closeReceiptModal()">
+          <mat-icon>close</mat-icon>
+        </button>
       </div>
       <div class="receipt-modal__body">
         <ng-container *ngIf="receiptModalHasFile">
@@ -236,26 +211,21 @@
             *ngIf="receiptPreviewImageUrl"
             [src]="receiptPreviewImageUrl"
             class="receipt-modal__img"
-            alt="Receipt" />
+            [attr.alt]="'table.receiptPreviewAlt' | translate" />
           <iframe
             *ngIf="receiptPreviewFrameUrl && !receiptPreviewImageUrl"
             [src]="receiptPreviewFrameUrl"
             class="receipt-modal__frame"
-            title="Receipt (PDF)"></iframe>
-          <p
-            *ngIf="!receiptPreviewImageUrl && !receiptPreviewFrameUrl"
-            class="dynamic-table__muted receipt-modal__empty">
-            Could not show preview for this file type.
-          </p>
+            [title]="'table.receiptFrameTitle' | translate"></iframe>
         </ng-container>
-        <p *ngIf="!receiptModalHasFile" class="dynamic-table__muted receipt-modal__empty">
-          No receipt was uploaded for this expense.
-        </p>
+        <ng-template #receiptModalEmpty>
+          <p class="dynamic-table__muted receipt-modal__empty">{{ 'table.noReceiptUploaded' | translate }}</p>
+        </ng-template>
       </div>
     </div>
   </div>
 </ng-container>
 
 <ng-template #noConfig>
-  <p class="dynamic-table__no-config">Table configuration is not available.</p>
+  <p class="dynamic-table__no-config">{{ 'table.noConfig' | translate }}</p>
 </ng-template>

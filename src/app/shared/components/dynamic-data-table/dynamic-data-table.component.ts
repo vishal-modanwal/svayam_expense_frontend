@@ -6,6 +6,7 @@ import {
   Input,
   OnChanges,
   OnDestroy,
+  OnInit,
   Output,
   SimpleChanges,
   ViewChild
@@ -17,9 +18,15 @@ import { MatSort, Sort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { Observable, Subject, Subscription, merge } from 'rxjs';
 import { debounceTime, distinctUntilChanged, takeUntil, tap } from 'rxjs/operators';
-import { DynamicTableCellControl, DynamicTableColumn, DynamicTableQuery, DynamicTableViewConfig } from './dynamic-data-table.models';
-import { expenseRowReceiptHref, normalizeReceiptHttpUrl } from 'src/app/core/utils/receipt-url';
+import { I18nService } from 'src/app/core/services/i18n.service';
 import { ToastService } from 'src/app/core/services/toast.service';
+import {
+  DynamicTableCellControl,
+  DynamicTableColumn,
+  DynamicTableQuery,
+  DynamicTableViewConfig
+} from './dynamic-data-table.models';
+import { expenseRowReceiptHref, normalizeReceiptHttpUrl } from 'src/app/core/utils/receipt-url';
 import { environment } from 'src/environments/environment';
 
 @Component({
@@ -28,7 +35,7 @@ import { environment } from 'src/environments/environment';
   styleUrls: ['./dynamic-data-table.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class DynamicDataTableComponent implements OnChanges, OnDestroy {
+export class DynamicDataTableComponent implements OnChanges, OnDestroy, OnInit {
   @Input() config: DynamicTableViewConfig | null = null;
   @Input() rows: Record<string, unknown>[] = [];
   @Input() totalCount = 0;
@@ -106,8 +113,13 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy {
   constructor(
     private readonly cdr: ChangeDetectorRef,
     private readonly sanitizer: DomSanitizer,
+    private readonly i18n: I18nService,
     private readonly toast: ToastService
   ) {}
+
+  ngOnInit(): void {
+    this.i18n.onLanguageChange.pipe(takeUntil(this.destroy$)).subscribe(() => this.cdr.markForCheck());
+  }
 
   get columns(): DynamicTableColumn[] {
     return this.config?.columns ?? [];
@@ -199,7 +211,7 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy {
       return '—';
     }
     if (typeof v === 'boolean') {
-      return v ? 'Yes' : 'No';
+      return v ? this.i18n.instant('table.yes') : this.i18n.instant('table.no');
     }
     const fmt = col.valueFormat;
     if (fmt === 'inr') {
@@ -306,6 +318,11 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy {
       return 'receipt';
     }
     return this.receiptDownloadFilenameFromHref(href);
+  }
+
+  /** Stops the click from bubbling to parent row/cell handlers; browser follows `[href]` / `download`. */
+  downloadReceipt(_row: Record<string, unknown>, ev: Event): void {
+    ev.stopPropagation();
   }
 
   private receiptDownloadFilenameFromHref(href: string): string {

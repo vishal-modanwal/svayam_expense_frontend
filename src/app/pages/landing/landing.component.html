@@ -2,22 +2,21 @@
   <header class="hero" aria-labelledby="landing-hero-title">
     <div class="hero-inner">
       <div class="hero-copy">
-        <p class="hero-eyebrow">Organizational Finance Simplified</p>
+        <p class="hero-eyebrow">{{ 'landing.eyebrow' | translate }}</p>
         <h1 id="landing-hero-title">
-          Take Control Of Expenses
-          <span class="highlight">With Clarity</span>
+          {{ 'landing.titleLine1' | translate }}
+          <span class="highlight">{{ 'landing.titleHighlight' | translate }}</span>
         </h1>
         <p class="hero-lead">
-          Track daily spending, set monthly budgets, and see trends in one
-          dashboard—so you can decide faster and stress less.
+          {{ 'landing.lead' | translate }}
         </p>
         <div class="hero-actions" *ngIf="!isLoggedIn()">
-          <a routerLink="/register" class="btn btn-primary">Get started</a>
-          <a routerLink="/login" class="btn btn-ghost">Login</a>
+          <a routerLink="/register" class="btn btn-primary">{{ 'landing.getStarted' | translate }}</a>
+          <a routerLink="/login" class="btn btn-ghost">{{ 'landing.login' | translate }}</a>
         </div>
-        <ul class="hero-trust" aria-label="Highlights">
-          <li>Explore</li>
-          <li>Built for Custom Budgets</li>
+        <ul class="hero-trust" [attr.aria-label]="'landing.trustExplore' | translate">
+          <li>{{ 'landing.trustExplore' | translate }}</li>
+          <li>{{ 'landing.trustBudgets' | translate }}</li>
         </ul>
       </div>
       <div class="hero-visual" aria-hidden="true">
@@ -32,36 +31,33 @@
   <section class="about section" aria-labelledby="about-title">
     <div class="section-inner">
       <div class="section-head">
-        <span class="section-label">Why SvayamExpense</span>
-        <h2 id="about-title">Know where your money goes</h2>
+        <span class="section-label">{{ 'landing.aboutLabel' | translate }}</span>
+        <h2 id="about-title">{{ 'landing.aboutTitle' | translate }}</h2>
         <p class="section-deck">
-          A focused tool for logging expenses, respecting monthly limits, and
-          spotting patterns—without spreadsheet fatigue.
+          {{ 'landing.aboutDeck' | translate }}
         </p>
       </div>
       <div class="about-grid">
         <div class="about-copy">
           <p>
-            Organize spending by category, compare against your budget share,
-            and keep notes when you need context later.
+            {{ 'landing.aboutP1' | translate }}
           </p>
           <p>
-            Whether you are tightening up or just curious, the workflow stays
-            lightweight so the habit actually sticks.
+            {{ 'landing.aboutP2' | translate }}
           </p>
         </div>
-        <ul class="about-pills" aria-label="Product pillars">
+        <ul class="about-pills" [attr.aria-label]="'landing.featuresLabel' | translate">
           <li>
-            <span class="pill-title">Budgets that flex</span>
-            <span class="pill-desc">Set a monthly cap and see headroom at a glance.</span>
+            <span class="pill-title">{{ 'landing.pill1Title' | translate }}</span>
+            <span class="pill-desc">{{ 'landing.pill1Desc' | translate }}</span>
           </li>
           <li>
-            <span class="pill-title">Category clarity</span>
-            <span class="pill-desc">Tag expenses and review charts when you want depth.</span>
+            <span class="pill-title">{{ 'landing.pill2Title' | translate }}</span>
+            <span class="pill-desc">{{ 'landing.pill2Desc' | translate }}</span>
           </li>
           <li>
-            <span class="pill-title">Your data, your account</span>
-            <span class="pill-desc">Sign in securely; your ledger stays tied to you.</span>
+            <span class="pill-title">{{ 'landing.pill3Title' | translate }}</span>
+            <span class="pill-desc">{{ 'landing.pill3Desc' | translate }}</span>
           </li>
         </ul>
       </div>
@@ -71,11 +67,10 @@
   <section class="features section section--band" aria-labelledby="features-title">
     <div class="section-inner">
       <div class="section-head">
-        <span class="section-label">Capabilities</span>
-        <h2 id="features-title">Everything you need to stay on track</h2>
+        <span class="section-label">{{ 'landing.featuresLabel' | translate }}</span>
+        <h2 id="features-title">{{ 'landing.featuresTitle' | translate }}</h2>
         <p class="section-deck">
-          Thoughtful defaults and a clean UI so you spend less time in the app
-          and more time making decisions.
+          {{ 'landing.featuresDeck' | translate }}
         </p>
       </div>
       <ul class="feature-grid">
@@ -87,10 +82,9 @@
               <rect x="17" y="4" width="4" height="16" rx="1" />
             </svg>
           </div>
-          <h3>Smart dashboard</h3>
+          <h3>{{ 'landing.feat1Title' | translate }}</h3>
           <p>
-            Totals, category mix, and budget vs spent—presented so the story of
-            the month is obvious in seconds.
+            {{ 'landing.feat1Desc' | translate }}
           </p>
         </li>
         <li class="feature-card">
@@ -100,10 +94,9 @@
               <path d="M9 12l2 2 4-4" />
             </svg>
           </div>
-          <h3>Secure &amp; reliable</h3>
+          <h3>{{ 'landing.feat2Title' | translate }}</h3>
           <p>
-            Authentication-backed access and solid engineering practices so
-            your records stay private and available when you need them.
+            {{ 'landing.feat2Desc' | translate }}
           </p>
         </li>
         <li class="feature-card">
@@ -112,10 +105,9 @@
               <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
             </svg>
           </div>
-          <h3>Fast day-to-day use</h3>
+          <h3>{{ 'landing.feat3Title' | translate }}</h3>
           <p>
-            Add entries quickly, paginate through history, and filter without
-            waiting—optimized for real routines, not demos.
+            {{ 'landing.feat3Desc' | translate }}
           </p>
         </li>
       </ul>
@@ -125,48 +117,34 @@
   <section class="how section" aria-labelledby="how-title">
     <div class="section-inner">
       <div class="section-head">
-        <span class="section-label">Flow</span>
-        <h2 id="how-title">How it works</h2>
+        <span class="section-label">{{ 'landing.howLabel' | translate }}</span>
+        <h2 id="how-title">{{ 'landing.howTitle' | translate }}</h2>
         <p class="section-deck">
-          Four short steps from signup to better awareness—no training manual
-          required.
+          {{ 'landing.howDeck' | translate }}
         </p>
       </div>
       <ol class="steps">
         <li class="step">
           <span class="step-num" aria-hidden="true">1</span>
-          <h3>Create account</h3>
-          <p>Register in a minute and land on your personal workspace.</p>
+          <h3>{{ 'landing.step1Title' | translate }}</h3>
+          <p>{{ 'landing.step1Desc' | translate }}</p>
         </li>
         <li class="step">
           <span class="step-num" aria-hidden="true">2</span>
-          <h3>Add expenses</h3>
-          <p>Log amounts, categories, and optional notes as you go.</p>
+          <h3>{{ 'landing.step2Title' | translate }}</h3>
+          <p>{{ 'landing.step2Desc' | translate }}</p>
         </li>
         <li class="step">
           <span class="step-num" aria-hidden="true">3</span>
-          <h3>Analyze</h3>
-          <p>Use summaries and charts to see habits, not just totals.</p>
+          <h3>{{ 'landing.step3Title' | translate }}</h3>
+          <p>{{ 'landing.step3Desc' | translate }}</p>
         </li>
         <li class="step">
           <span class="step-num" aria-hidden="true">4</span>
-          <h3>Improve</h3>
-          <p>Adjust your budget and behavior with evidence, not guesswork.</p>
+          <h3>{{ 'landing.step4Title' | translate }}</h3>
+          <p>{{ 'landing.step4Desc' | translate }}</p>
         </li>
       </ol>
     </div>
   </section>
-
-  <!-- <section class="cta-band" aria-labelledby="cta-title">
-    <div class="cta-inner">
-      <div class="cta-copy">
-        <h2 id="cta-title">Start in under a minute</h2>
-        <p>Create an account, set your monthly budget, and add your first expense.</p>
-      </div>
-      <div class="cta-actions">
-        <a routerLink="/register" class="btn btn-primary btn-lg">Create free account</a>
-        <a routerLink="/login" class="btn btn-on-dark">I already have an account</a>
-      </div>
-    </div>
-  </section> -->
 </div>

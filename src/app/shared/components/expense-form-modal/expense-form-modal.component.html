@@ -1,6 +1,12 @@
 <div class="modal-header">
   <h2>
-    {{ expense ? 'Edit Expense' : createAsExtra ? 'Add admin extra expense' : 'Add Expense' }}
+    {{
+      expense
+        ? ('expenseForm.editTitle' | translate)
+        : createAsExtra
+          ? ('expenseForm.addAdminExtraTitle' | translate)
+          : ('expenseForm.addTitle' | translate)
+    }}
   </h2>
   <button type="button" class="close-btn" (click)="close()">✖</button>
 </div>
@@ -9,7 +15,7 @@
   <div class="receipt-scanner__primary">
     <label for="receiptPick" class="receipt-pick-btn">
       <mat-icon>receipt_long</mat-icon>
-      Choose receipt
+      {{ 'expenseForm.chooseReceipt' | translate }}
     </label>
     <input
       type="file"
@@ -17,60 +23,62 @@
       accept="image/*,.pdf,application/pdf,.heic,.heif"
       style="display: none"
       (change)="onReceiptPickChange($event)" />
-    <span class="receipt-scanner__hint">Images: OCR + attach on save · PDF: attach on save</span>
+    <span class="receipt-scanner__hint">{{ 'expenseForm.receiptHint' | translate }}</span>
   </div>
 
   <span *ngIf="scanning" class="scanning-text">
     <mat-icon>hourglass_empty</mat-icon>
-    {{ scanStatusLabel || 'Working…' }}
+    {{ scanStatusLabel ? scanStatusLabel : ('expenseForm.working' | translate) }}
   </span>
   <span *ngIf="scanned && receiptFile" class="scanned-text">
     <mat-icon>check_circle</mat-icon>
-    Receipt will upload on save
+    {{ 'expenseForm.receiptOnSave' | translate }}
   </span>
   <span *ngIf="receiptFileLabel && !scanning" class="receipt-file-name">
     <mat-icon>attach_file</mat-icon>
     {{ receiptFileLabel }}
   </span>
   <button *ngIf="receiptFile" mat-stroked-button type="button" class="receipt-clear" (click)="clearPendingReceipt()">
-    Clear receipt
+    {{ 'expenseForm.clearReceipt' | translate }}
   </button>
 </div>
 
 <p class="receipt-existing" *ngIf="receiptPreviewHref && !receiptFile">
-  <span>Saved receipt:</span>
-  <a [href]="receiptPreviewHref" target="_blank" rel="noopener noreferrer">Open</a>
-  <span class="receipt-existing-hint" *ngIf="expense?.receipt_path"> — scan a new image to replace on save.</span>
+  <span>{{ 'expenseForm.savedReceipt' | translate }}</span>
+  <a [href]="receiptPreviewHref" target="_blank" rel="noopener noreferrer">{{ 'expenseForm.open' | translate }}</a>
+  <span class="receipt-existing-hint" *ngIf="expense?.receipt_path">{{ 'expenseForm.replaceHint' | translate }}</span>
 </p>
 
 <form [formGroup]="form" (ngSubmit)="submit(); $event.preventDefault()">
   <mat-form-field appearance="outline" class="full">
-    <mat-label>Title</mat-label>
+    <mat-label>{{ 'expenseForm.title' | translate }}</mat-label>
     <input matInput formControlName="title" />
   </mat-form-field>
-  <small *ngIf="submitted && f['title']?.errors?.['required']">Title is required</small>
-  <small *ngIf="submitted && f['title']?.errors?.['minlength']">Min 3 characters required</small>
+  <small *ngIf="submitted && f['title']?.errors?.['required']">{{ 'expenseForm.titleRequired' | translate }}</small>
+  <small *ngIf="submitted && f['title']?.errors?.['minlength']">{{ 'expenseForm.titleMin' | translate }}</small>
 
   <mat-form-field appearance="outline" class="full">
-    <mat-label>Amount</mat-label>
+    <mat-label>{{ 'expenseForm.amount' | translate }}</mat-label>
     <input matInput type="number" formControlName="amount" />
   </mat-form-field>
-  <small *ngIf="submitted && f['amount']?.errors">Amount is required</small>
+  <small *ngIf="submitted && f['amount']?.errors">{{ 'expenseForm.amountRequired' | translate }}</small>
 
   <mat-form-field appearance="outline" class="full">
-    <mat-label>Date</mat-label>
+    <mat-label>{{ 'expenseForm.date' | translate }}</mat-label>
     <input matInput type="date" formControlName="expense_date" />
     <mat-hint *ngIf="expense">Cannot change after create (API).</mat-hint>
   </mat-form-field>
-  <small *ngIf="!expense && submitted && f['expense_date']?.errors?.['required']">Date is required</small>
+  <small *ngIf="!expense && submitted && f['expense_date']?.errors?.['required']">{{
+    'expenseForm.dateRequired' | translate
+  }}</small>
 
   <mat-form-field appearance="outline" class="full">
-    <mat-label>Vendor Name</mat-label>
+    <mat-label>{{ 'expenseForm.vendor' | translate }}</mat-label>
     <input matInput formControlName="vendor" />
   </mat-form-field>
 
   <mat-form-field appearance="outline" class="full">
-    <mat-label>Category</mat-label>
+    <mat-label>{{ 'expenseForm.category' | translate }}</mat-label>
     <mat-select
       formControlName="category_id"
       panelClass="expense-form-category-panel"
@@ -78,21 +86,21 @@
       <mat-option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</mat-option>
     </mat-select>
   </mat-form-field>
-  <small *ngIf="submitted && f['category_id']?.errors?.['required']">Category is required</small>
+  <small *ngIf="submitted && f['category_id']?.errors?.['required']">{{ 'expenseForm.categoryRequired' | translate }}</small>
 
   <mat-form-field appearance="outline" class="full">
-    <mat-label>Payment Mode</mat-label>
+    <mat-label>{{ 'expenseForm.paymentMode' | translate }}</mat-label>
     <mat-select formControlName="payment_method">
-      <mat-option value="Cash">Cash</mat-option>
-      <mat-option value="Card">Card</mat-option>
-      <mat-option value="UPI">UPI</mat-option>
-      <mat-option value="Net Banking">Net Banking</mat-option>
-      <mat-option value="Others">Others</mat-option>
+      <mat-option value="Cash">{{ 'expenseForm.cash' | translate }}</mat-option>
+      <mat-option value="UPI">{{ 'expenseForm.upi' | translate }}</mat-option>
+      <mat-option value="Card">{{ 'expenseForm.card' | translate }}</mat-option>
+      <mat-option value="Net Banking">{{ 'expenseForm.netBanking' | translate }}</mat-option>
+      <mat-option value="Others">{{ 'expenseForm.others' | translate }}</mat-option>
     </mat-select>
   </mat-form-field>
 
   <mat-form-field appearance="outline" class="full">
-    <mat-label>Currency</mat-label>
+    <mat-label>{{ 'expenseForm.currency' | translate }}</mat-label>
     <mat-select formControlName="currency">
       <mat-option value="INR">INR</mat-option>
       <mat-option value="USD">USD</mat-option>
@@ -100,7 +108,7 @@
   </mat-form-field>
 
   <mat-form-field appearance="outline" class="full">
-    <mat-label>Notes</mat-label>
+    <mat-label>{{ 'expenseForm.notes' | translate }}</mat-label>
     <textarea matInput formControlName="description" rows="3"></textarea>
   </mat-form-field>
 
@@ -124,9 +132,9 @@
   </div>
 
   <div class="actions">
-    <button mat-stroked-button type="button" (click)="close()">Cancel</button>
+    <button mat-stroked-button type="button" (click)="close()">{{ 'expenseForm.cancel' | translate }}</button>
     <button mat-raised-button color="primary" type="submit">
-      {{ expense ? 'Update' : 'Add Expense' }}
+      {{ expense ? ('expenseForm.submitUpdate' | translate) : ('expenseForm.submitAdd' | translate) }}
     </button>
   </div>
 </form>

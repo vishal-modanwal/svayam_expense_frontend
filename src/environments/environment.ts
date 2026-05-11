@@ -5,7 +5,7 @@
 export const environment = {
   production: false,
   appName: 'SvayamExpense',
-  apiBaseUrl: 'http://localhost:5000/api',
+  apiBaseUrl: 'http://localhost:3000/api',
   /**
    * Origin for static `/uploads/...` (multer). Empty string: same host as the app (ng serve `proxy.conf.json` forwards `/uploads`).
    * Set to `http://localhost:5000` only if you open files without proxying `/uploads`.

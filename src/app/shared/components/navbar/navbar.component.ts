@@ -5,6 +5,7 @@ import { filter, Subscription } from 'rxjs';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { ProfileService } from 'src/app/core/services/profile.service';
 import { mergeStoredProfileWithUser } from 'src/app/core/utils/stored-user-profile';
+import { I18nService } from 'src/app/core/services/i18n.service';
 
 const THEME_STORAGE_KEY = 'appTheme';
 const LEGACY_THEME_KEY = 'dashboardTheme';
@@ -25,12 +26,14 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   private userSub?: Subscription;
   private routerSub?: Subscription;
+  private langSub?: Subscription;
 
   constructor(
     private readonly router: Router,
     private readonly auth: AuthService,
     private readonly profile: ProfileService,
-    private readonly cdr: ChangeDetectorRef
+    private readonly cdr: ChangeDetectorRef,
+    readonly i18n: I18nService
   ) {}
 
   ngOnInit(): void {
@@ -47,11 +50,13 @@ export class NavbarComponent implements OnInit, OnDestroy {
       this.loadUserForNav();
       this.cdr.detectChanges();
     });
+    this.langSub = this.i18n.onLanguageChange.subscribe(() => this.cdr.detectChanges());
   }
 
   ngOnDestroy(): void {
     this.userSub?.unsubscribe();
     this.routerSub?.unsubscribe();
+    this.langSub?.unsubscribe();
   }
 
   get userInitials(): string {
@@ -79,7 +84,13 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   dashboardLabel(): string {
-    return this.auth.isLoggedIn() && this.auth.getRole() === 'admin' ? 'Admin' : 'Dashboard';
+    return this.auth.isLoggedIn() && this.auth.getRole() === 'admin'
+      ? this.i18n.instant('nav.admin')
+      : this.i18n.instant('nav.dashboard');
+  }
+
+  setLang(lang: 'en' | 'hi'): void {
+    this.i18n.use(lang);
   }
 
   toggleTheme(): void {

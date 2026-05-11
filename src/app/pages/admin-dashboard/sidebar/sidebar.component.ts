@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { Router } from '@angular/router';
+import { I18nService } from 'src/app/core/services/i18n.service';
 
 export type AdminSidebarToolAction = 'ai-summary' | 'download-report';
 
@@ -40,7 +41,31 @@ export class SidebarComponent {
     { action: 'download-report', label: 'Download Report', icon: 'download' }
   ];
 
-  constructor(private readonly router: Router) {}
+  constructor(private readonly router: Router, readonly i18n: I18nService) {}
+
+  workspaceLabelKey(path: string): string {
+    switch (path) {
+      case 'expenses':
+        return 'admin.sidebarExpenses';
+      case 'budgets':
+        return 'admin.sidebarBudgets';
+      case 'employees':
+        return 'admin.sidebarEmployees';
+      default:
+        return path;
+    }
+  }
+
+  toolLabelKey(action: AdminSidebarToolAction): string {
+    switch (action) {
+      case 'ai-summary':
+        return 'admin.sidebarSummary';
+      case 'download-report':
+        return 'admin.sidebarDownloadReport';
+      default:
+        return action;
+    }
+  }
 
   get initials(): string {
     const n = (this.userName || '').trim();

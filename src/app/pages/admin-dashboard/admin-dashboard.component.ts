@@ -23,6 +23,7 @@ import { ExpenseService } from 'src/app/core/services/expense.service';
 import { ChatService, replyTextFromChatJson } from 'src/app/core/services/chat.service';
 import { MetaService } from 'src/app/core/services/meta.service';
 import { ToastService } from 'src/app/core/services/toast.service';
+import { I18nService } from 'src/app/core/services/i18n.service';
 import {
   buildAdminExpenseViewConfigFromTableMeta,
   buildAdminBudgetOverviewTableConfig,
@@ -49,6 +50,8 @@ interface AiChatLine {
   role: 'user' | 'assistant';
   text: string;
 }
+
+type AiChatChipAction = 'reports' | 'budgets' | 'search_tip';
 
 /**
  * Budget gauge row: each column height = 100% of that row's budget (normalized).
@@ -112,8 +115,6 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   navDrawerOpen = false;
   adminNotificationCount = 0;
   adminAlertBadgeCount = 0;
-  readonly adminRoleLabel = 'Administrator';
-
   userName = 'Admin';
 
   expenseLoading = false;
@@ -179,6 +180,15 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   aiChatDraft = '';
   /** True while POST /api/chat/message is in flight. */
   aiChatSending = false;
+  readonly aiChatSuggestions: ReadonlyArray<{
+    labelKey: string;
+    action: AiChatChipAction;
+  }> = [
+    { labelKey: 'admin.aiChipReports', action: 'reports' },
+    { labelKey: 'admin.aiChipBudgets', action: 'budgets' },
+    { labelKey: 'admin.aiChipSearch', action: 'search_tip' }
+  ];
+  readonly dismissedAiChatChipActions = new Set<AiChatChipAction>();
 
   /** Server-side list query for the admin expense table (public for template bindings). */
   readonly expenseQuery: DynamicTableQuery = {
@@ -203,6 +213,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   private aiChatPageScrollY = 0;
   private aiChatScrollLocked = false;
   private sectionRouteSub?: Subscription;
+  private langSub?: Subscription;
 
   readonly categoryBudgetForm = this.fb.group({
     name: ['', [Validators.required]],
@@ -237,27 +248,48 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     private readonly router: Router,
     private readonly route: ActivatedRoute,
     private readonly cdr: ChangeDetectorRef,
-    @Inject(DOCUMENT) private readonly documentRef: Document
+    @Inject(DOCUMENT) private readonly documentRef: Document,
+    readonly i18n: I18nService
   ) {}
+
+  setLang(lang: 'en' | 'hi'): void {
+    this.i18n.use(lang);
+  }
+
+  chipDismissAria(s: { labelKey: string; action: AiChatChipAction }): string {
+    return this.i18n.instant('admin.removeSuggestionWith', { label: this.i18n.instant(s.labelKey) });
+  }
 
   get sectionTitle(): string {
     if (this.activeSection === 'budgets') {
-      return 'Budget management';
+      return this.i18n.instant('admin.sectionBudgetsTitle');
     }
     if (this.activeSection === 'employees') {
-      return 'Team insights';
+      return this.i18n.instant('admin.sectionEmployeesTitle');
     }
-    return 'Organisation expenses';
+    return this.i18n.instant('admin.sectionExpensesTitle');
   }
 
   get sectionSubtitle(): string {
     if (this.activeSection === 'budgets') {
-      return 'Create, update and track category-wise budgets.';
+      return this.i18n.instant('admin.sectionBudgetsSubtitle');
     }
     if (this.activeSection === 'employees') {
-      return 'User insights and activation controls.';
+      return this.i18n.instant('admin.sectionEmployeesSubtitle');
     }
-    return 'Monitor allocated budgets, spend, and every entry in one place.';
+    return this.i18n.instant('admin.sectionExpensesSubtitle');
+  }
+
+  budgetDeleteConfirmText(): string {
+    const row = this.selectedBudgetDeleteRow;
+    if (!row) {
+      return '';
+    }
+    return this.i18n.instant('admin.deleteBudgetConfirm', {
+      cat: String(row['category'] ?? ''),
+      month: String(row['month'] ?? ''),
+      year: String(row['year'] ?? '')
+    });
   }
 
   get adminAllocated(): number {
@@ -311,6 +343,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       }
       this.applyWorkspaceSection(next);
     });
+    this.langSub = this.i18n.onLanguageChange.subscribe(() => this.cdr.detectChanges());
     this.loadAll();
   }
 
@@ -323,6 +356,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.sectionRouteSub?.unsubscribe();
+    this.langSub?.unsubscribe();
     this.summaryDonut?.destroy();
     this.unlockPageScrollForAiChat();
   }
@@ -428,14 +462,47 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.isAiSummaryOpen = true;
   }
 
+  dismissAiChatChip(action: AiChatChipAction, event: MouseEvent): void {
+    event.stopPropagation();
+    this.dismissedAiChatChipActions.add(action);
+  }
+
+  onAiChatSuggestion(s: { labelKey: string; action: AiChatChipAction }): void {
+    this.dismissedAiChatChipActions.add(s.action);
+    this.aiChatMessages.push({ role: 'user', text: this.i18n.instant(s.labelKey) });
+
+    if (s.action === 'reports') {
+      this.aiChatMessages.push({ role: 'assistant', text: 'Opening report download…' });
+      this.queueScrollAiChat();
+      setTimeout(() => {
+        this.closeAiChatModal();
+        this.isReportModalOpen = true;
+      }, 300);
+      return;
+    }
+
+    if (s.action === 'budgets') {
+      this.aiChatMessages.push({ role: 'assistant', text: 'Opening Budgets. Blue = budget, orange = spent.' });
+      void this.router.navigate(['/admin', 'budgets']);
+      this.toastService.info('Budgets: blue bars = budget, orange = spent per category.');
+      this.queueScrollAiChat();
+      return;
+    }
+
+    this.aiChatMessages.push({ role: 'assistant', text: 'Opening Expenses. Use the person search to filter by user.' });
+    void this.router.navigate(['/admin', 'expenses']);
+    this.toastService.info('Expenses: search by user name with the person icon, then submit.');
+    this.queueScrollAiChat();
+  }
+
   getExpenseSortLabel(): string {
     switch (this.selectedExpenseSort) {
       case 'high':
-        return 'Amount: High to Low';
+        return this.i18n.instant('admin.sortHigh');
       case 'low':
-        return 'Amount: Low to High';
+        return this.i18n.instant('admin.sortLow');
       default:
-        return 'Latest first';
+        return this.i18n.instant('admin.sortLatest');
     }
   }
 
@@ -1177,27 +1244,30 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
   getBudgetSortLabel(): string {
     if (this.selectedBudgetListSort === 'latest') {
-      return 'Latest first';
+      return this.i18n.instant('admin.sortLatest');
     }
     if (this.selectedBudgetListSort === 'high') {
-      return 'Amount: High to Low';
+      return this.i18n.instant('admin.sortHigh');
     }
     if (this.selectedBudgetListSort === 'low') {
-      return 'Amount: Low to High';
+      return this.i18n.instant('admin.sortLow');
     }
     const a = this.budgetQuery.sortActive || 'year';
     const d = this.budgetQuery.sortDirection || 'desc';
     if (a === 'amount') {
-      return d === 'desc' ? 'Amount: High to Low' : 'Amount: Low to High';
+      return d === 'desc' ? this.i18n.instant('admin.sortHigh') : this.i18n.instant('admin.sortLow');
     }
     if (a === 'category') {
-      return d === 'desc' ? 'Category: Z to A' : 'Category: A to Z';
+      return d === 'desc' ? this.i18n.instant('admin.sortCategoryZA') : this.i18n.instant('admin.sortCategoryAZ');
     }
     if (a === 'year') {
-      return d === 'desc' ? 'Year: Newest first' : 'Year: Oldest first';
+      return d === 'desc' ? this.i18n.instant('admin.sortYearNewest') : this.i18n.instant('admin.sortYearOldest');
     }
     const label = this.budgetTableConfig?.columns.find((c) => c.key === a)?.label ?? a;
-    return `${label} (${d === 'desc' ? 'high first' : 'low first'})`;
+    return this.i18n.instant('admin.sortDynamic', {
+      label,
+      dir: d === 'desc' ? this.i18n.instant('admin.sortHighFirst') : this.i18n.instant('admin.sortLowFirst')
+    });
   }
 
   applyBudgetListSort(mode: 'latest' | 'high' | 'low'): void {
