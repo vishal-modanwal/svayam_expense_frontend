@@ -78,6 +78,16 @@ body.dark-theme .dynamic-table__link--delete {
   padding: 16px 16px 0;
 }
 
+.dynamic-table__head-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  flex: 1 1 auto;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
 .dynamic-table__title {
   margin: 0;
   font-size: 1.15rem;
@@ -90,6 +100,175 @@ body.dark-theme .dynamic-table__link--delete {
   flex: 1 1 220px;
   max-width: min(100%, 360px);
   margin-bottom: 0;
+}
+
+/* ────── Table ⇄ Card view toggle ────── */
+.dynamic-table__view-toggle.mat-button-toggle-group {
+  flex-shrink: 0;
+  border-radius: 10px;
+  border-color: var(--border, #e2e8f0);
+  background: var(--surface-muted, #f1f5f9);
+  box-shadow: none;
+}
+
+.dynamic-table__view-toggle .mat-button-toggle {
+  background: transparent;
+  color: var(--text-muted, #64748b);
+  font-weight: 600;
+}
+
+.dynamic-table__view-toggle .mat-button-toggle .mat-button-toggle-label-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  line-height: 34px;
+  font-size: 0.78rem;
+}
+
+.dynamic-table__view-toggle .mat-button-toggle mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  color: inherit;
+}
+
+.dynamic-table__view-toggle .mat-button-toggle-checked {
+  background: var(--surface, #ffffff);
+  color: var(--primary-strong, #1d4ed8);
+  box-shadow: var(--shadow-soft, 0 4px 14px rgba(15, 23, 42, 0.06));
+}
+
+.dynamic-table__view-toggle .mat-button-toggle-checked mat-icon {
+  color: var(--primary, #2563eb);
+}
+
+body.dark-theme .dynamic-table__view-toggle.mat-button-toggle-group {
+  background: var(--surface-muted, #1e293b);
+  border-color: var(--border, #334155);
+}
+
+body.dark-theme .dynamic-table__view-toggle .mat-button-toggle-checked {
+  background: var(--surface, #0f172a);
+  color: #93c5fd;
+}
+
+body.dark-theme .dynamic-table__view-toggle .mat-button-toggle-checked mat-icon {
+  color: #93c5fd;
+}
+
+/* ────── Card view ────── */
+.dynamic-table__cards {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  padding: 14px 16px 4px;
+  min-height: 80px;
+}
+
+.dynamic-table__card-item {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 14px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border, #e2e8f0);
+  background: var(--surface, #ffffff);
+  box-shadow: var(--shadow-soft, 0 4px 14px rgba(15, 23, 42, 0.06));
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.dynamic-table__card-item--inactive {
+  opacity: 0.65;
+}
+
+.dynamic-table__card-fields {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dynamic-table__card-row {
+  display: grid;
+  grid-template-columns: minmax(0, 38%) minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+  padding: 4px 0;
+  border-bottom: 1px dashed color-mix(in srgb, var(--border, #e2e8f0) 70%, transparent);
+}
+
+.dynamic-table__card-row:last-child {
+  border-bottom: none;
+}
+
+.dynamic-table__card-label {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted, #64748b);
+  word-break: break-word;
+}
+
+.dynamic-table__card-value {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text, #0f172a);
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.dynamic-table__card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border, #e2e8f0);
+}
+
+.dynamic-table__card-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dynamic-table__card-action-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted, #64748b);
+  letter-spacing: 0.02em;
+}
+
+.dynamic-table__card-action .dynamic-table__link.mat-button {
+  min-height: 30px;
+  padding: 0 10px;
+  font-size: 0.78rem;
+  border-radius: 8px;
+}
+
+.dynamic-table__empty--card {
+  grid-column: 1 / -1;
+  padding: 26px 12px;
+  text-align: center;
+  color: var(--text-muted, #64748b);
+  font-size: 0.95rem;
+}
+
+/* Keep MatSort + MatPaginator + MatTable wired in card view but invisible. */
+.dynamic-table__hidden-table {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
 }
 
 .dynamic-table__filter-icon {
@@ -343,13 +522,183 @@ body.dark-theme .receipt-modal__frame {
   background: #1e293b;
 }
 
+.dynamic-table__row--inactive {
+  opacity: 0.58;
+}
+
+.dynamic-table__row--inactive .dynamic-table__td {
+  color: #64748b;
+}
+
+body.dark-theme .dynamic-table__row--inactive .dynamic-table__td {
+  color: #94a3b8;
+}
+
+.employee-active-toggle-cell {
+  display: flex;
+  align-items: center;
+}
+
 @media (max-width: 600px) {
   .dynamic-table__head {
     flex-direction: column;
     align-items: stretch;
+    padding: 12px 12px 0;
+    gap: 10px;
+  }
+
+  .dynamic-table__head-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
   }
 
   .dynamic-table__filter {
     max-width: none;
+  }
+
+  .dynamic-table__title {
+    font-size: 1rem;
+  }
+
+  /* Toggle: icon-only on phones (label hidden), centered. */
+  .dynamic-table__view-toggle.mat-button-toggle-group {
+    align-self: flex-end;
+    border-radius: 999px;
+  }
+
+  .dynamic-table__view-toggle .mat-button-toggle .mat-button-toggle-label-content {
+    padding: 0 10px;
+    line-height: 30px;
+  }
+
+  .dynamic-table__view-toggle-label {
+    display: none;
+  }
+
+  .dynamic-table__cards {
+    grid-template-columns: 1fr;
+    padding: 12px 10px 2px;
+    gap: 10px;
+  }
+
+  .dynamic-table__card-item {
+    padding: 12px 12px 10px;
+    border-radius: 10px;
+  }
+
+  .dynamic-table__card-row {
+    grid-template-columns: minmax(0, 42%) minmax(0, 1fr);
+    gap: 8px;
+    padding: 3px 0;
+  }
+
+  .dynamic-table__card-label {
+    font-size: 0.65rem;
+  }
+
+  .dynamic-table__card-value {
+    font-size: 0.8125rem;
+  }
+
+  .dynamic-table__card-action .dynamic-table__link.mat-button {
+    font-size: 0.72rem;
+    min-height: 28px;
+    padding: 0 8px;
+    line-height: 26px;
+  }
+
+  /* Tighter cells + smaller body font on small screens. */
+  .dynamic-table__mat {
+    /* Allow horizontal scroll but use a smaller minimum so phones don't scroll for narrow tables. */
+    min-width: 480px;
+  }
+
+  .dynamic-table__th {
+    font-size: 0.7rem;
+    padding: 8px 8px !important;
+  }
+
+  .dynamic-table__td {
+    font-size: 0.8125rem;
+    padding: 8px 8px !important;
+  }
+
+  .dynamic-table__link.mat-button {
+    font-size: 0.7rem;
+    padding: 0 6px;
+    line-height: 26px;
+    min-width: 0;
+    min-height: 26px;
+    border-radius: 6px;
+  }
+
+  .dynamic-table__link.mat-button .mat-button-wrapper {
+    padding: 0 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .dynamic-table__actions {
+    gap: 2px;
+  }
+
+  /* Scroll hint: subtle right-edge shadow so users know table scrolls horizontally. */
+  .dynamic-table__scroll {
+    background:
+      linear-gradient(to right, transparent, transparent),
+      linear-gradient(to right, rgba(15, 23, 42, 0.08), transparent);
+    background-repeat: no-repeat;
+    background-size: 100% 100%, 14px 100%;
+    background-position: 0 0, 100% 0;
+    background-attachment: local, scroll;
+  }
+}
+
+body.dark-theme .dynamic-table__scroll {
+  /* Match scroll hint in dark mode. */
+}
+
+@media (max-width: 600px) {
+  body.dark-theme .dynamic-table__scroll {
+    background:
+      linear-gradient(to right, transparent, transparent),
+      linear-gradient(to right, rgba(0, 0, 0, 0.55), transparent);
+    background-repeat: no-repeat;
+    background-size: 100% 100%, 14px 100%;
+    background-position: 0 0, 100% 0;
+    background-attachment: local, scroll;
+  }
+}
+
+@media (max-width: 480px) {
+  .dynamic-table__empty {
+    padding: 22px 12px !important;
+    font-size: 0.875rem;
+  }
+
+  .receipt-modal-backdrop {
+    padding: 12px 8px;
+  }
+
+  .receipt-modal {
+    width: 100%;
+    max-height: 92vh;
+    max-height: 92dvh;
+    border-radius: 12px;
+  }
+
+  .receipt-modal__toolbar {
+    padding: 10px 8px 10px 14px;
+  }
+
+  .receipt-modal__title {
+    font-size: 0.95rem;
+  }
+
+  .receipt-modal__body {
+    padding: 10px 12px 12px;
+    max-height: calc(92dvh - 60px);
   }
 }

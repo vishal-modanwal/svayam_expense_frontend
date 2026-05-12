@@ -187,6 +187,16 @@
               <mat-icon>add</mat-icon>
               {{ 'admin.addExpense' | translate }}
             </button>
+            <button
+              mat-stroked-button
+              color="accent"
+              type="button"
+              class="action-btn"
+              (click)="openAdminExtraExpenseModal()"
+              [attr.aria-label]="'admin.addAdminExtraExpenseAria' | translate">
+              <mat-icon>add_circle_outline</mat-icon>
+              {{ 'admin.addAdminExtraExpense' | translate }}
+            </button>
 
           </div>
         </div>
@@ -228,7 +238,7 @@
                   class="expense-audience-chip"
                   [class.expense-audience-chip--active]="expenseAudience === 'inactive-users'"
                   (click)="setExpenseAudience('inactive-users')">
-                  Inactive users
+                  {{ 'admin.inactiveUsers' | translate }}
                 </button>
               </div>
             </div>
@@ -508,50 +518,79 @@
           </div>
         </header>
 
+        <div class="toolbar-panel">
+          <div class="toolbar-pair toolbar-pair--grow">
+            <div class="search-shell" role="search">
+              <mat-icon class="search-shell__icon" aria-hidden="true">search</mat-icon>
+              <input
+                type="search"
+                class="search-shell__input"
+                [(ngModel)]="employeeSearchInput"
+                (keyup.enter)="applyEmployeeSearch()"
+                [placeholder]="'admin.searchEmployeesPlaceholder' | translate"
+                autocomplete="off"
+                [attr.aria-label]="'admin.searchEmployeesAria' | translate" />
+              <button
+                mat-icon-button
+                type="button"
+                class="search-shell__submit"
+                [attr.aria-label]="'admin.runSearchAria' | translate"
+                (click)="applyEmployeeSearch()">
+                <mat-icon>arrow_forward</mat-icon>
+              </button>
+            </div>
+            <button
+              mat-stroked-button
+              type="button"
+              class="search-clear-btn"
+              *ngIf="employeeQuery.filter"
+              (click)="clearEmployeeSearch()">
+              <mat-icon>close</mat-icon>
+              {{ 'user.clear' | translate }}
+            </button>
+
+            <div class="sort-wrapper">
+              <button mat-button type="button" [matMenuTriggerFor]="employeeSortMenu" class="sort-btn action-btn">
+                <mat-icon>tune</mat-icon>
+                {{ getEmployeeSortLabel() }}
+                <mat-icon class="arrow">expand_more</mat-icon>
+              </button>
+              <mat-menu #employeeSortMenu="matMenu" class="sort-menu">
+                <button mat-menu-item type="button" (click)="applyEmployeeSort('latest')">
+                  <mat-icon>schedule</mat-icon>
+                  <span>{{ 'admin.sortLatest' | translate }}</span>
+                  <mat-icon *ngIf="employeeSortMode === 'latest'" class="check">check</mat-icon>
+                </button>
+                <button mat-menu-item type="button" (click)="applyEmployeeSort('az')">
+                  <mat-icon>sort_by_alpha</mat-icon>
+                  <span>{{ 'admin.sortNameAZ' | translate }}</span>
+                  <mat-icon *ngIf="employeeSortMode === 'az'" class="check">check</mat-icon>
+                </button>
+              </mat-menu>
+            </div>
+          </div>
+        </div>
+
         <div class="main-section">
           <mat-card class="table-card" *ngIf="usersTableConfig">
             <div class="section-head section-head--table">
-              <h3>{{ 'admin.users' | translate }}</h3>
+              <h3>{{ 'admin.employees' | translate }}</h3>
               <span class="section-hint section-hint--page-scope">{{ 'admin.thisPage' | translate }}</span>
             </div>
             <p class="users-meta-hint">
-              {{ 'admin.usersMetaHint' | translate }}
+              {{ 'admin.employeesMetaHint' | translate }}
             </p>
             <app-dynamic-data-table
               [config]="usersTableConfig"
               [rows]="usersTableRows"
-              [totalCount]="usersTableRows.length"
+              [totalCount]="employeeTotalCount"
               [loading]="usersTableLoading"
-              [hidePaginator]="true"
-              [sortState]="usersTableSortState"
-              [embedded]="true">
+              [pageIndex]="employeeQuery.pageIndex"
+              [embedded]="true"
+              [employeeToggleBusyRowIds]="employeeToggleBusyRowIds"
+              (queryChange)="onEmployeeDynamicQuery($event)"
+              (employeeActiveToggle)="onEmployeeActiveToggle($event)">
             </app-dynamic-data-table>
-          </mat-card>
-
-          <div class="employee-grid">
-            <mat-card class="card employee-card" *ngFor="let emp of employeeInsights">
-              <div class="card-left">
-                <div class="icon-box remaining">
-                  <mat-icon>person</mat-icon>
-                </div>
-                <div class="text">
-                  <h3>{{ emp.name }}</h3>
-                  <p>{{ 'admin.entriesOnPage' | translate: { n: emp.entries } }}</p>
-                </div>
-              </div>
-              <div class="card-right">₹{{ emp.spent | number: '1.0-0' }}</div>
-            </mat-card>
-          </div>
-
-          <mat-card class="panel-card">
-            <h3>{{ 'admin.userStatusToggle' | translate }}</h3>
-            <form [formGroup]="userToggleForm" (ngSubmit)="toggleUser()" class="toggle-form">
-              <mat-form-field appearance="outline">
-                <mat-label>{{ 'admin.userId' | translate }}</mat-label>
-                <input matInput type="number" formControlName="userId" />
-              </mat-form-field>
-              <button mat-raised-button color="primary" type="submit">{{ 'admin.toggleActive' | translate }}</button>
-            </form>
           </mat-card>
         </div>
       </div>

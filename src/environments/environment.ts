@@ -7,8 +7,9 @@ export const environment = {
   appName: 'SvayamExpense',
   apiBaseUrl: 'http://localhost:3000/api',
   /**
-   * Origin for static `/uploads/...` (multer). Empty string: same host as the app (ng serve `proxy.conf.json` forwards `/uploads`).
-   * Set to `http://localhost:5000` only if you open files without proxying `/uploads`.
+   * Optional **origin only** (e.g. `http://localhost:3000`) when `/uploads/...` must be prefixed manually.
+   * Do **not** include `/uploads` here — paths already use `/uploads/{receipt_path}`.
+   * Empty string: receipt URLs come from `apiBaseUrl` origin + `/uploads/...`, or same-host `/uploads/...` via proxy.
    */
   uploadsOrigin: ''
 };

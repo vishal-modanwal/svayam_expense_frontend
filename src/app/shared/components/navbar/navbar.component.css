@@ -431,3 +431,39 @@ body.dark-theme ::ng-deep .profile-mobile-line.muted {
     min-width: 0;
   }
 }
+
+@media (max-width: 420px) {
+  .brand {
+    font-size: 0.98rem;
+    gap: 8px;
+  }
+
+  .brand-logo {
+    width: 28px;
+    height: 28px;
+  }
+
+  .nav-login-btn--mobile {
+    min-height: 36px;
+    padding: 0 14px;
+    font-size: 0.78rem;
+  }
+
+  .lang-switch--mobile .lang-switch__btn {
+    padding: 3px 5px;
+    font-size: 0.72rem;
+  }
+}
+
+@media (max-width: 340px) {
+  .brand-text {
+    /* Brand stays compact; logo carries identity. */
+    font-size: 0.9rem;
+  }
+
+  .navbar-inner {
+    gap: 4px;
+    padding-left: 8px;
+    padding-right: 4px;
+  }
+}

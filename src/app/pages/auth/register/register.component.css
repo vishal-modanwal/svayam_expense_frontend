@@ -123,3 +123,23 @@ body.dark-theme :host ::ng-deep .register-stepper .mat-step-header .mat-step-ico
 body.dark-theme :host ::ng-deep .register-stepper .mat-stepper-horizontal-line {
   border-top-color: #475569;
 }
+
+@media (max-width: 480px) {
+  .step-actions {
+    flex-direction: column-reverse;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .step-actions .btn-login {
+    width: 100%;
+  }
+
+  :host ::ng-deep .register-stepper .mat-step-header {
+    padding: 0 4px;
+  }
+
+  :host ::ng-deep .register-stepper .mat-step-label {
+    font-size: 0.72rem;
+  }
+}

@@ -504,6 +504,40 @@
     padding-right: max(16px, env(safe-area-inset-right, 0px));
   }
 
+  .hero-eyebrow {
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+  }
+
+  .hero-copy h1 {
+    font-size: clamp(1.6rem, 7.5vw, 2.125rem);
+  }
+
+  .hero-lead {
+    font-size: 0.95rem;
+    line-height: 1.55;
+  }
+
+  .btn {
+    padding: 10px 18px;
+    font-size: 0.875rem;
+  }
+
+  .btn-lg {
+    padding: 12px 22px;
+    font-size: 0.9375rem;
+  }
+
+  .hero-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .hero-actions .btn {
+    justify-content: center;
+  }
+
   .steps {
     grid-template-columns: 1fr;
   }
@@ -511,5 +545,35 @@
   .hero-inner {
     width: 100%;
     max-width: 100%;
+  }
+
+  .section {
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+
+  .section-head h2 {
+    font-size: clamp(1.35rem, 6vw, 1.65rem);
+  }
+
+  .section-deck {
+    font-size: 0.95rem;
+  }
+
+  .feature-card h3 {
+    font-size: 1.05rem;
+  }
+
+  .cta-band {
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+
+  .cta-copy h2 {
+    font-size: 1.35rem;
+  }
+
+  .cta-copy p {
+    font-size: 0.95rem;
   }
 }

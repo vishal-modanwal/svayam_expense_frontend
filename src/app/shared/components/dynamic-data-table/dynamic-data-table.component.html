@@ -1,16 +1,195 @@
 <ng-container *ngIf="config?.columns?.length; else noConfig">
+  <!-- Shared cell renderer — used inside table <td> and card view action footer. -->
+  <ng-template #cellTpl let-row="row" let-col="col">
+    <button
+      *ngIf="col.cellControl === 'adminBudgetDescription'"
+      mat-button
+      type="button"
+      class="dynamic-table__link dynamic-table__link--view"
+      [attr.title]="'table.viewDescAria' | translate"
+      [attr.aria-label]="'table.viewBudgetDescAria' | translate"
+      (click)="onAdminBudgetDescriptionClick(row, $event)">
+      {{ 'table.view' | translate }}
+    </button>
+    <button
+      *ngIf="col.cellControl === 'adminBudgetEdit'"
+      mat-button
+      type="button"
+      class="dynamic-table__link dynamic-table__link--edit"
+      (click)="onAdminBudgetEditClick(row, $event)">
+      {{ 'table.edit' | translate }}
+    </button>
+    <button
+      *ngIf="col.cellControl === 'adminBudgetDelete'"
+      mat-button
+      type="button"
+      class="dynamic-table__link dynamic-table__link--delete"
+      (click)="onAdminBudgetDeleteClick(row, $event)">
+      {{ 'table.delete' | translate }}
+    </button>
+    <ng-container
+      *ngIf="
+        col.cellControl !== 'adminBudgetDescription' &&
+        col.cellControl !== 'adminBudgetEdit' &&
+        col.cellControl !== 'adminBudgetDelete'
+      "
+      [ngSwitch]="effectiveCellSwitch(col)">
+      <ng-container *ngSwitchCase="'adminExpenseEdit'">
+        <button
+          mat-button
+          type="button"
+          class="dynamic-table__link dynamic-table__link--edit"
+          (click)="onAdminExpenseEditClick(row)">
+          {{ 'table.edit' | translate }}
+        </button>
+      </ng-container>
+      <ng-container *ngSwitchCase="'adminExpenseReceipt'">
+        <button
+          mat-button
+          type="button"
+          class="dynamic-table__link dynamic-table__link--view"
+          (click)="openReceiptModal(row)">
+          {{ 'table.view' | translate }}
+        </button>
+      </ng-container>
+      <ng-container *ngSwitchCase="'adminExpenseDelete'">
+        <button
+          mat-button
+          type="button"
+          class="dynamic-table__link dynamic-table__link--delete"
+          (click)="onAdminExpenseDeleteClick(row)">
+          {{ 'table.delete' | translate }}
+        </button>
+      </ng-container>
+      <ng-container *ngSwitchCase="'userExpenseActions'">
+        <span class="dynamic-table__actions">
+          <button
+            mat-button
+            type="button"
+            class="dynamic-table__link dynamic-table__link--view"
+            (click)="onUserExpenseAction('notes', row)">
+            {{ 'table.view' | translate }}
+          </button>
+          <button
+            mat-button
+            type="button"
+            class="dynamic-table__link dynamic-table__link--edit"
+            (click)="onUserExpenseAction('edit', row)">
+            {{ 'table.edit' | translate }}
+          </button>
+          <button
+            mat-button
+            type="button"
+            class="dynamic-table__link dynamic-table__link--delete"
+            (click)="onUserExpenseAction('delete', row)">
+            {{ 'table.delete' | translate }}
+          </button>
+        </span>
+      </ng-container>
+      <ng-container *ngSwitchCase="'userExpenseViewNotes'">
+        <button
+          mat-button
+          type="button"
+          class="dynamic-table__link dynamic-table__link--view"
+          (click)="onUserExpenseAction('notes', row)">
+          {{ 'table.view' | translate }}
+        </button>
+      </ng-container>
+      <ng-container *ngSwitchCase="'userExpenseEdit'">
+        <button
+          mat-button
+          type="button"
+          class="dynamic-table__link dynamic-table__link--edit"
+          (click)="onUserExpenseAction('edit', row)">
+          {{ 'table.edit' | translate }}
+        </button>
+      </ng-container>
+      <ng-container *ngSwitchCase="'userExpenseDelete'">
+        <button
+          mat-button
+          type="button"
+          class="dynamic-table__link dynamic-table__link--delete"
+          (click)="onUserExpenseAction('delete', row)">
+          {{ 'table.delete' | translate }}
+        </button>
+      </ng-container>
+      <ng-container *ngSwitchCase="'userExpenseReceipt'">
+        <button
+          mat-button
+          type="button"
+          class="dynamic-table__link dynamic-table__link--view"
+          (click)="openReceiptModal(row)">
+          {{ 'table.view' | translate }}
+        </button>
+      </ng-container>
+      <ng-container *ngSwitchCase="'expenseReceiptDownload'">
+        <a
+          *ngIf="receiptDirectAbs(row) as dl"
+          mat-button
+          class="dynamic-table__link dynamic-table__link--view"
+          [href]="dl"
+          [attr.download]="receiptDownloadFilename(row)"
+          [attr.title]="'table.downloadReceiptTitle' | translate"
+          (click)="onReceiptDownloadClick(row, $event); $event.stopPropagation()">
+          {{ 'table.download' | translate }}
+        </a>
+        <span *ngIf="!receiptDirectAbs(row)" class="dynamic-table__muted">{{
+          'table.noReceipt' | translate
+        }}</span>
+      </ng-container>
+      <ng-container *ngSwitchCase="'employeeActiveToggle'">
+        <div class="employee-active-toggle-cell" (click)="$event.stopPropagation()">
+          <mat-slide-toggle
+            class="employee-active-toggle"
+            color="primary"
+            [checked]="employeeRowIsActive(row)"
+            [disabled]="employeeToggleDisabled(row)"
+            [attr.aria-label]="'admin.employeeActiveToggleAria' | translate"
+            (change)="onEmployeeActiveToggleClick(row)">
+          </mat-slide-toggle>
+        </div>
+      </ng-container>
+      <ng-container *ngSwitchDefault>
+        <span>{{ formatCell(row, col) }}</span>
+      </ng-container>
+    </ng-container>
+  </ng-template>
+
   <div class="dynamic-table" [class.dynamic-table--embedded]="embedded">
     <mat-card class="dynamic-table__card" [class.mat-elevation-z2]="!embedded">
       <div class="dynamic-table__head" *ngIf="showTableHead">
         <h2 class="dynamic-table__title" *ngIf="config?.title as title">{{ title }}</h2>
-        <mat-form-field *ngIf="showFilter" appearance="outline" class="dynamic-table__filter">
-          <mat-label>{{ 'table.filter' | translate }}</mat-label>
-          <input matInput [formControl]="filterControl" [placeholder]="filterPlaceholder" />
-          <mat-icon matSuffix class="dynamic-table__filter-icon" *ngIf="loading">hourglass_empty</mat-icon>
-        </mat-form-field>
+        <div class="dynamic-table__head-controls">
+          <mat-form-field *ngIf="showFilter" appearance="outline" class="dynamic-table__filter">
+            <mat-label>{{ 'table.filter' | translate }}</mat-label>
+            <input matInput [formControl]="filterControl" [placeholder]="filterPlaceholder" />
+            <mat-icon matSuffix class="dynamic-table__filter-icon" *ngIf="loading">hourglass_empty</mat-icon>
+          </mat-form-field>
+          <mat-button-toggle-group
+            class="dynamic-table__view-toggle"
+            [value]="viewMode"
+            (change)="onViewModeChange($event.value)"
+            [attr.aria-label]="'table.viewToggleAria' | translate">
+            <mat-button-toggle
+              value="table"
+              [matTooltip]="'table.viewTableTooltip' | translate"
+              [attr.aria-label]="'table.viewTable' | translate">
+              <mat-icon>table_rows</mat-icon>
+              <span class="dynamic-table__view-toggle-label">{{ 'table.viewTable' | translate }}</span>
+            </mat-button-toggle>
+            <mat-button-toggle
+              value="card"
+              [matTooltip]="'table.viewCardTooltip' | translate"
+              [attr.aria-label]="'table.viewCard' | translate">
+              <mat-icon>view_agenda</mat-icon>
+              <span class="dynamic-table__view-toggle-label">{{ 'table.viewCard' | translate }}</span>
+            </mat-button-toggle>
+          </mat-button-toggle-group>
+        </div>
       </div>
 
-      <div class="dynamic-table__scroll">
+      <!-- Table view -->
+      <div class="dynamic-table__scroll" *ngIf="viewMode === 'table'">
         <div class="dynamic-table__loading" *ngIf="loading" aria-hidden="true"></div>
         <table mat-table matSort [dataSource]="dataSource" class="dynamic-table__mat">
           <ng-container *ngFor="let col of columns; trackBy: trackByKey" [matColumnDef]="col.key">
@@ -24,157 +203,63 @@
               {{ col.label }}
             </th>
             <td mat-cell *matCellDef="let row" [style.min-width]="col.minWidth || null" class="dynamic-table__td">
-              <button
-                *ngIf="col.cellControl === 'adminBudgetDescription'"
-                mat-button
-                type="button"
-                class="dynamic-table__link dynamic-table__link--view"
-                [attr.title]="'table.viewDescAria' | translate"
-                [attr.aria-label]="'table.viewBudgetDescAria' | translate"
-                (click)="onAdminBudgetDescriptionClick(row, $event)">
-                {{ 'table.view' | translate }}
-              </button>
-              <button
-                *ngIf="col.cellControl === 'adminBudgetEdit'"
-                mat-button
-                type="button"
-                class="dynamic-table__link dynamic-table__link--edit"
-                (click)="onAdminBudgetEditClick(row, $event)">
-                {{ 'table.edit' | translate }}
-              </button>
-              <button
-                *ngIf="col.cellControl === 'adminBudgetDelete'"
-                mat-button
-                type="button"
-                class="dynamic-table__link dynamic-table__link--delete"
-                (click)="onAdminBudgetDeleteClick(row, $event)">
-                {{ 'table.delete' | translate }}
-              </button>
-              <ng-container
-                *ngIf="
-                  col.cellControl !== 'adminBudgetDescription' &&
-                  col.cellControl !== 'adminBudgetEdit' &&
-                  col.cellControl !== 'adminBudgetDelete'
-                "
-                [ngSwitch]="effectiveCellSwitch(col)">
-                <ng-container *ngSwitchCase="'adminExpenseEdit'">
-                  <button
-                    mat-button
-                    type="button"
-                    class="dynamic-table__link dynamic-table__link--edit"
-                    (click)="onAdminExpenseEditClick(row)">
-                    {{ 'table.edit' | translate }}
-                  </button>
-                </ng-container>
-                <ng-container *ngSwitchCase="'adminExpenseReceipt'">
-                  <button
-                    mat-button
-                    type="button"
-                    class="dynamic-table__link dynamic-table__link--view"
-                    (click)="openReceiptModal(row)">
-                    {{ 'table.view' | translate }}
-                  </button>
-                </ng-container>
-                <ng-container *ngSwitchCase="'adminExpenseDelete'">
-                  <button
-                    mat-button
-                    type="button"
-                    class="dynamic-table__link dynamic-table__link--delete"
-                    (click)="onAdminExpenseDeleteClick(row)">
-                    {{ 'table.delete' | translate }}
-                  </button>
-                </ng-container>
-                <ng-container *ngSwitchCase="'userExpenseActions'">
-                  <span class="dynamic-table__actions">
-                    <button
-                      mat-button
-                      type="button"
-                      class="dynamic-table__link dynamic-table__link--view"
-                      (click)="onUserExpenseAction('notes', row)">
-                      {{ 'table.view' | translate }}
-                    </button>
-                    <button
-                      mat-button
-                      type="button"
-                      class="dynamic-table__link dynamic-table__link--edit"
-                      (click)="onUserExpenseAction('edit', row)">
-                      {{ 'table.edit' | translate }}
-                    </button>
-                    <button
-                      mat-button
-                      type="button"
-                      class="dynamic-table__link dynamic-table__link--delete"
-                      (click)="onUserExpenseAction('delete', row)">
-                      {{ 'table.delete' | translate }}
-                    </button>
-                  </span>
-                </ng-container>
-                <ng-container *ngSwitchCase="'userExpenseViewNotes'">
-                  <button
-                    mat-button
-                    type="button"
-                    class="dynamic-table__link dynamic-table__link--view"
-                    (click)="onUserExpenseAction('notes', row)">
-                    {{ 'table.view' | translate }}
-                  </button>
-                </ng-container>
-                <ng-container *ngSwitchCase="'userExpenseEdit'">
-                  <button
-                    mat-button
-                    type="button"
-                    class="dynamic-table__link dynamic-table__link--edit"
-                    (click)="onUserExpenseAction('edit', row)">
-                    {{ 'table.edit' | translate }}
-                  </button>
-                </ng-container>
-                <ng-container *ngSwitchCase="'userExpenseDelete'">
-                  <button
-                    mat-button
-                    type="button"
-                    class="dynamic-table__link dynamic-table__link--delete"
-                    (click)="onUserExpenseAction('delete', row)">
-                    {{ 'table.delete' | translate }}
-                  </button>
-                </ng-container>
-                <ng-container *ngSwitchCase="'userExpenseReceipt'">
-                  <button
-                    mat-button
-                    type="button"
-                    class="dynamic-table__link dynamic-table__link--view"
-                    (click)="openReceiptModal(row)">
-                    {{ 'table.view' | translate }}
-                  </button>
-                </ng-container>
-                <ng-container *ngSwitchCase="'expenseReceiptDownload'">
-                  <a
-                    *ngIf="receiptDirectAbs(row) as dl"
-                    mat-button
-                    class="dynamic-table__link dynamic-table__link--view"
-                    [href]="dl"
-                    [attr.download]="receiptDownloadFilename(row)"
-                    [attr.title]="'table.downloadReceiptTitle' | translate"
-                    (click)="downloadReceipt(row, $event)">
-                    {{ 'table.download' | translate }}
-                  </a>
-                  <span *ngIf="!receiptDirectAbs(row)" class="dynamic-table__muted">{{
-                    'table.noReceipt' | translate
-                  }}</span>
-                </ng-container>
-                <ng-container *ngSwitchDefault>
-                  <span>{{ formatCell(row, col) }}</span>
-                </ng-container>
-              </ng-container>
+              <ng-container *ngTemplateOutlet="cellTpl; context: { row: row, col: col }"></ng-container>
             </td>
           </ng-container>
 
           <tr mat-header-row *matHeaderRowDef="displayedColumnKeys; sticky: true" class="dynamic-table__header-row"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedColumnKeys" class="dynamic-table__data-row"></tr>
+          <tr
+            mat-row
+            *matRowDef="let row; columns: displayedColumnKeys"
+            class="dynamic-table__data-row"
+            [class.dynamic-table__row--inactive]="employeeRowIsInactiveVisual(row)"></tr>
 
           <tr class="mat-row dynamic-table__nodata-row" *matNoDataRow>
             <td class="mat-cell dynamic-table__empty" [attr.colspan]="displayedColumnKeys.length">
               {{ loading ? ('table.loading' | translate) : ('table.noData' | translate) }}
             </td>
           </tr>
+        </table>
+      </div>
+
+      <!-- Card view -->
+      <div class="dynamic-table__cards" *ngIf="viewMode === 'card'">
+        <div class="dynamic-table__loading" *ngIf="loading" aria-hidden="true"></div>
+        <ng-container *ngIf="rows?.length; else cardEmpty">
+          <article
+            *ngFor="let row of rows; trackBy: trackByRowIndex"
+            class="dynamic-table__card-item"
+            [class.dynamic-table__card-item--inactive]="employeeRowIsInactiveVisual(row)">
+            <dl class="dynamic-table__card-fields">
+              <div class="dynamic-table__card-row" *ngFor="let col of dataColumns; trackBy: trackByKey">
+                <dt class="dynamic-table__card-label">{{ col.label }}</dt>
+                <dd class="dynamic-table__card-value">{{ formatCell(row, col) }}</dd>
+              </div>
+            </dl>
+            <footer class="dynamic-table__card-actions" *ngIf="actionColumns.length">
+              <div class="dynamic-table__card-action" *ngFor="let col of actionColumns; trackBy: trackByKey">
+                <span class="dynamic-table__card-action-label" *ngIf="col.label">{{ col.label }}</span>
+                <ng-container *ngTemplateOutlet="cellTpl; context: { row: row, col: col }"></ng-container>
+              </div>
+            </footer>
+          </article>
+        </ng-container>
+        <ng-template #cardEmpty>
+          <p class="dynamic-table__empty dynamic-table__empty--card">
+            {{ loading ? ('table.loading' | translate) : ('table.noData' | translate) }}
+          </p>
+        </ng-template>
+      </div>
+
+      <!-- Hidden mat-table when in card view: keep MatSort + MatPaginator alive so filter/page/sort still emit queryChange. -->
+      <div class="dynamic-table__hidden-table" *ngIf="viewMode === 'card'" aria-hidden="true">
+        <table mat-table matSort [dataSource]="dataSource">
+          <ng-container *ngFor="let col of columns; trackBy: trackByKey" [matColumnDef]="col.key">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header [disabled]="!isSortable(col)">{{ col.label }}</th>
+            <td mat-cell *matCellDef="let row">{{ col.key }}</td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="displayedColumnKeys"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumnKeys"></tr>
         </table>
       </div>
 

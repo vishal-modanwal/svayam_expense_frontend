@@ -3,7 +3,9 @@ import { BrowserModule } from '@angular/platform-browser';
 import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatCardModule } from '@angular/material/card';
@@ -17,6 +19,7 @@ import { MatTableModule } from '@angular/material/table';
 import { MatSortModule } from '@angular/material/sort';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatBadgeModule } from '@angular/material/badge';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { LottieModule } from 'ngx-lottie';
 import player from 'lottie-web';
 
@@ -78,7 +81,9 @@ export function initAppI18n(i18n: I18nService): () => Promise<void> {
     FormsModule,
     ReactiveFormsModule,
     MatButtonModule,
+    MatButtonToggleModule,
     MatIconModule,
+    MatTooltipModule,
     MatMenuModule,
     MatDividerModule,
     MatCardModule,
@@ -92,6 +97,7 @@ export function initAppI18n(i18n: I18nService): () => Promise<void> {
     MatSortModule,
     MatPaginatorModule,
     MatBadgeModule,
+    MatSlideToggleModule,
     LottieModule.forRoot({ player: lottiePlayerFactory })
   ],
   providers: [

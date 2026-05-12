@@ -24,9 +24,15 @@ import {
   DynamicTableCellControl,
   DynamicTableColumn,
   DynamicTableQuery,
-  DynamicTableViewConfig
+  DynamicTableViewConfig,
+  DynamicTableViewMode
 } from './dynamic-data-table.models';
-import { expenseRowReceiptHref, normalizeReceiptHttpUrl } from 'src/app/core/utils/receipt-url';
+import {
+  downloadReceiptViaBlob,
+  expenseRowReceiptHref,
+  isReceiptDownloadCrossOrigin,
+  normalizeReceiptHttpUrl
+} from 'src/app/core/utils/receipt-url';
 import { environment } from 'src/environments/environment';
 
 @Component({
@@ -60,6 +66,10 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy, OnInit {
     action: 'notes' | 'edit' | 'delete';
     row: Record<string, unknown>;
   }>();
+  /** Admin employees table: PATCH toggle user active (parent owns API + busy state). */
+  @Output() readonly employeeActiveToggle = new EventEmitter<Record<string, unknown>>();
+  /** Row `id` / `user_id` values currently awaiting `toggleUserStatus`. */
+  @Input() employeeToggleBusyRowIds: readonly number[] = [];
 
   @ViewChild(MatPaginator)
   set paginator(p: MatPaginator | undefined) {
@@ -104,6 +114,18 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy, OnInit {
   receiptPreviewImageUrl: SafeUrl | null = null;
   receiptPreviewFrameUrl: SafeResourceUrl | null = null;
 
+  /** Table ⇄ Card view toggle (defaults: card on phones, table on desktops; persisted per-table in localStorage). */
+  viewMode: DynamicTableViewMode = 'table';
+  /** True if we should auto-track viewport size — set false once the user picks a mode manually. */
+  private viewModeUserPicked = false;
+  private mobileMql?: MediaQueryList;
+  private readonly mobileMqlListener: (ev: MediaQueryListEvent) => void = (ev) => {
+    if (this.viewModeUserPicked) {
+      return;
+    }
+    this.setViewMode(ev.matches ? 'card' : 'table', /* userPicked */ false);
+  };
+
   private _paginator?: MatPaginator;
   private _sort?: MatSort;
   private readonly destroy$ = new Subject<void>();
@@ -119,6 +141,7 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy, OnInit {
 
   ngOnInit(): void {
     this.i18n.onLanguageChange.pipe(takeUntil(this.destroy$)).subscribe(() => this.cdr.markForCheck());
+    this.initViewMode();
   }
 
   get columns(): DynamicTableColumn[] {
@@ -155,7 +178,81 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy, OnInit {
     if (col.key === '_download') {
       return 'expenseReceiptDownload';
     }
+    if (col.key === '_employee_active') {
+      return 'employeeActiveToggle';
+    }
     return '__plain__';
+  }
+
+  hasEmployeeActiveToggleColumn(): boolean {
+    return !!this.config?.columns?.some((c) => c.cellControl === 'employeeActiveToggle');
+  }
+
+  employeeRowIsInactiveVisual(row: Record<string, unknown>): boolean {
+    return this.hasEmployeeActiveToggleColumn() && !this.employeeRowIsActive(row);
+  }
+
+  employeeRowIsActive(row: Record<string, unknown>): boolean {
+    const v =
+      row['is_active'] ??
+      row['isActive'] ??
+      row['active'] ??
+      row['user_active'] ??
+      row['status'] ??
+      row['enabled'] ??
+      row['user_status'] ??
+      row['account_status'];
+    if (typeof v === 'boolean') {
+      return v;
+    }
+    if (typeof v === 'number') {
+      return v === 1;
+    }
+    const s = String(v ?? '').trim().toLowerCase();
+    if (s === '1' || s === 'true' || s === 'active' || s === 'yes') {
+      return true;
+    }
+    if (s === '0' || s === 'false' || s === 'inactive' || s === 'no' || s === '') {
+      return false;
+    }
+    return false;
+  }
+
+  employeeToggleRowId(row: Record<string, unknown>): number | null {
+    const raw = row['id'] ?? row['user_id'];
+    const n = typeof raw === 'number' ? raw : Number(raw);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  employeeToggleDisabled(row: Record<string, unknown>): boolean {
+    const id = this.employeeToggleRowId(row);
+    if (id == null) {
+      return true;
+    }
+    return this.employeeToggleBusyRowIds.includes(id);
+  }
+
+  onEmployeeActiveToggleClick(row: Record<string, unknown>): void {
+    if (this.employeeToggleDisabled(row)) {
+      return;
+    }
+    this.employeeActiveToggle.emit(row);
+  }
+
+  onReceiptDownloadClick(row: Record<string, unknown>, ev: MouseEvent): void {
+    const abs = this.receiptDirectAbs(row);
+    if (!abs) {
+      return;
+    }
+    if (!isReceiptDownloadCrossOrigin(abs)) {
+      return;
+    }
+    ev.preventDefault();
+    ev.stopPropagation();
+    const name = this.receiptDownloadFilename(row);
+    void downloadReceiptViaBlob(abs, name).catch(() => {
+      window.open(abs, '_blank', 'noopener,noreferrer');
+    });
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -201,8 +298,123 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy, OnInit {
 
   ngOnDestroy(): void {
     this.clearInteractionSubscription();
+    if (this.mobileMql) {
+      type LegacyMql = MediaQueryList & {
+        removeListener?: (cb: (ev: MediaQueryListEvent) => void) => void;
+      };
+      const mql = this.mobileMql as LegacyMql;
+      if (typeof mql.removeEventListener === 'function') {
+        mql.removeEventListener('change', this.mobileMqlListener);
+      } else if (typeof mql.removeListener === 'function') {
+        mql.removeListener(this.mobileMqlListener);
+      }
+      this.mobileMql = undefined;
+    }
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  /* ────── View mode (table ⇄ card) ────── */
+
+  /** True for cell controls that render interactive buttons / toggles instead of plain text. */
+  isActionColumn(col: DynamicTableColumn): boolean {
+    return this.effectiveCellSwitch(col) !== '__plain__';
+  }
+
+  /** Non-action columns — rendered as label/value pairs in card view. */
+  get dataColumns(): DynamicTableColumn[] {
+    return this.columns.filter((c) => !this.isActionColumn(c));
+  }
+
+  /** Action columns — rendered as a footer button bar in card view. */
+  get actionColumns(): DynamicTableColumn[] {
+    return this.columns.filter((c) => this.isActionColumn(c));
+  }
+
+  trackByRowIndex(index: number, row: Record<string, unknown>): string | number {
+    const id = row['id'] ?? row['user_id'] ?? row['expense_id'];
+    if (typeof id === 'string' || typeof id === 'number') {
+      return id;
+    }
+    return index;
+  }
+
+  /** User clicked the segmented control — flip view + persist. */
+  onViewModeChange(mode: DynamicTableViewMode | null): void {
+    if (!mode) {
+      return;
+    }
+    this.setViewMode(mode, /* userPicked */ true);
+  }
+
+  private initViewMode(): void {
+    const stored = this.readStoredViewMode();
+    if (stored) {
+      this.viewMode = stored;
+      this.viewModeUserPicked = true;
+      this.cdr.markForCheck();
+      return;
+    }
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return;
+    }
+    this.mobileMql = window.matchMedia('(max-width: 600px)');
+    this.viewMode = this.mobileMql.matches ? 'card' : 'table';
+    type LegacyMql = MediaQueryList & {
+      addListener?: (cb: (ev: MediaQueryListEvent) => void) => void;
+    };
+    const mql = this.mobileMql as LegacyMql;
+    if (typeof mql.addEventListener === 'function') {
+      mql.addEventListener('change', this.mobileMqlListener);
+    } else if (typeof mql.addListener === 'function') {
+      mql.addListener(this.mobileMqlListener);
+    }
+    this.cdr.markForCheck();
+  }
+
+  private setViewMode(mode: DynamicTableViewMode, userPicked: boolean): void {
+    if (this.viewMode === mode && (!userPicked || this.viewModeUserPicked)) {
+      return;
+    }
+    this.viewMode = mode;
+    if (userPicked) {
+      this.viewModeUserPicked = true;
+      this.writeStoredViewMode(mode);
+    }
+    this.cdr.markForCheck();
+  }
+
+  private viewModeStorageKey(): string | null {
+    const id = this.config?.title?.trim();
+    if (!id) {
+      return null;
+    }
+    return `dt-view:${id}`;
+  }
+
+  private readStoredViewMode(): DynamicTableViewMode | null {
+    try {
+      const key = this.viewModeStorageKey();
+      if (!key || typeof window === 'undefined' || !window.localStorage) {
+        return null;
+      }
+      const raw = window.localStorage.getItem(key);
+      return raw === 'table' || raw === 'card' ? raw : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private writeStoredViewMode(mode: DynamicTableViewMode): void {
+    try {
+      const key = this.viewModeStorageKey();
+      if (!key || typeof window === 'undefined' || !window.localStorage) {
+        return;
+      }
+      window.localStorage.setItem(key, mode);
+    } catch {
+      /* localStorage may be blocked (private mode / quota) — silently ignore. */
+    }
   }
 
   formatCell(row: Record<string, unknown>, col: DynamicTableColumn): string {
@@ -318,11 +530,6 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy, OnInit {
       return 'receipt';
     }
     return this.receiptDownloadFilenameFromHref(href);
-  }
-
-  /** Stops the click from bubbling to parent row/cell handlers; browser follows `[href]` / `download`. */
-  downloadReceipt(_row: Record<string, unknown>, ev: Event): void {
-    ev.stopPropagation();
   }
 
   private receiptDownloadFilenameFromHref(href: string): string {

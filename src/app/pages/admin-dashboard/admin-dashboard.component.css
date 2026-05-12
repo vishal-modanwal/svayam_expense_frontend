@@ -1872,8 +1872,204 @@ body.dark-theme .budget-gauge__amounts {
 }
 
 @media (max-width: 680px) {
+  .admin-shell {
+    --admin-topbar-height: 52px;
+  }
+
+  .admin-topbar {
+    padding: 0 4px 0 2px;
+  }
+
+  .admin-topbar__brand-logo {
+    width: 24px;
+    height: 24px;
+  }
+
+  .admin-topbar__brand-text {
+    font-size: 0.95rem;
+  }
+
   .admin-main {
     padding: 14px max(12px, env(safe-area-inset-right, 0px)) 24px max(12px, env(safe-area-inset-left, 0px));
+  }
+
+  .dashboard-hero--compact .greet,
+  .greet {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  #name {
+    font-size: 1.2rem;
+  }
+
+  .subtitle {
+    font-size: 0.85rem;
+  }
+
+  /* Hero "Refresh" button — same compact pill on phones. */
+  .greet .action-btn,
+  .greet > button.mat-stroked-button,
+  .greet > button.mat-raised-button {
+    align-self: flex-start;
+    min-height: 32px;
+    padding: 0 12px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1.2;
+    border-radius: 999px;
+  }
+
+  .greet .action-btn .mat-button-wrapper,
+  .greet > button.mat-stroked-button .mat-button-wrapper,
+  .greet > button.mat-raised-button .mat-button-wrapper {
+    padding: 4px 8px;
+    line-height: 1.2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-height: 30px;
+    box-sizing: border-box;
+  }
+
+  .greet .action-btn mat-icon,
+  .greet > button.mat-stroked-button mat-icon,
+  .greet > button.mat-raised-button mat-icon {
+    font-size: 15px;
+    width: 15px;
+    height: 15px;
+    margin-right: 2px;
+  }
+
+  .summary-pill {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  /* AI assistant button: compact pill on phones. */
+  .ai-btn-solid {
+    min-height: 32px;
+    padding: 0 10px;
+    font-size: 0.72rem;
+    border-radius: 999px;
+  }
+
+  .ai-btn-solid mat-icon {
+    font-size: 15px;
+    width: 15px;
+    height: 15px;
+  }
+
+  /* Default modal action buttons (Save/Cancel/etc.): compact on phones. */
+  .modal-actions button.mat-raised-button,
+  .modal-actions button.mat-stroked-button,
+  .modal-actions button.mat-button {
+    min-height: 36px;
+    padding: 0 14px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 10px;
+  }
+
+  .modal-actions button .mat-button-wrapper {
+    padding: 4px 10px;
+    line-height: 1.2;
+    min-height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  /* Any stray .action-btn that isn't inside the toolbar grid still uses our compact size. */
+  .action-btn.mat-stroked-button,
+  .action-btn.mat-raised-button {
+    min-height: 34px;
+    font-size: 0.72rem;
+    border-radius: 999px;
+  }
+
+  .stat-cards.cards {
+    gap: 10px;
+  }
+
+  .card {
+    padding: 14px 14px;
+  }
+
+  .text h3 {
+    font-size: 0.8125rem;
+  }
+
+  .text p {
+    font-size: 0.7rem;
+  }
+
+  .card-right {
+    font-size: 1rem;
+  }
+
+  .icon-box {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+  }
+
+  .icon-box mat-icon {
+    width: 17px;
+    height: 17px;
+    font-size: 17px;
+  }
+
+  .chart-card-header h3 {
+    font-size: 0.95rem;
+  }
+
+  .chart-caption,
+  .budget-gauge__intro {
+    font-size: 0.75rem;
+  }
+
+  /* Audience chip row scrolls horizontally instead of wrapping awkwardly. */
+  .expense-audience-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+
+  .expense-audience-chips::-webkit-scrollbar {
+    display: none;
+  }
+
+  .expense-audience-chip {
+    flex-shrink: 0;
+    font-size: 0.75rem;
+    padding: 5px 12px;
+  }
+
+  .admin-summary-donut {
+    height: min(280px, 50vw + 120px);
+    min-height: 220px;
+  }
+
+  .donut-chart-wrap {
+    height: min(240px, 50vw + 100px);
+    min-height: 180px;
+  }
+
+  /* AI orb / chat: bottom-right comfortable area on phones. */
+  .admin-ai-fab {
+    right: max(14px, env(safe-area-inset-right, 0px));
+    bottom: max(80px, calc(env(safe-area-inset-bottom, 0px) + 64px));
+  }
+
+  .admin-ai-fab__orb {
+    width: 52px;
+    height: 52px;
   }
 
   .menu-list {
@@ -1881,22 +2077,161 @@ body.dark-theme .budget-gauge__amounts {
     display: grid;
   }
 
+  /* ────── Compact mobile toolbar (search + sort + add buttons) ────── */
   .toolbar-panel {
     flex-direction: column;
     align-items: stretch;
+    padding: 8px 10px;
+    margin-bottom: 12px;
+    gap: 8px;
   }
 
   .toolbar-pair,
   .toolbar-pair--grow {
     width: 100%;
+    display: flex;
     flex-direction: column;
     align-items: stretch;
+    gap: 8px;
   }
 
+  /* Search row: smaller height, tighter padding, smaller submit / icon. */
   .search-shell {
     max-width: none;
-    flex: 1 1 auto;
+    flex: 0 0 auto;
     width: 100%;
+    min-height: 40px;
+    padding: 0 4px 0 12px;
+    border-radius: 10px;
+    gap: 2px;
+  }
+
+  .search-shell__icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+  }
+
+  .search-shell__input {
+    font-size: 0.875rem;
+    padding: 8px 6px 8px 2px;
+  }
+
+  .search-shell__submit {
+    width: 32px !important;
+    height: 32px !important;
+    margin: 0 2px 0 0;
+    border-radius: 8px !important;
+  }
+
+  .search-shell__submit mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+
+  /* Clear button: small compact pill. */
+  .search-clear-btn.mat-stroked-button {
+    min-height: 32px;
+    padding: 0 10px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    border-radius: 999px;
+    line-height: 1.2;
+  }
+
+  .search-clear-btn mat-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+  }
+
+  /* Sort + add buttons share the same compact "chip" size and live in a 2-col grid. */
+  .toolbar-pair--grow {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .toolbar-pair--grow .search-shell {
+    grid-column: 1 / -1;
+  }
+
+  .toolbar-pair--grow .search-clear-btn {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+    width: 100%;
+  }
+
+  .toolbar-pair--grow .sort-wrapper,
+  .toolbar-pair--grow > .action-btn {
+    grid-column: span 1;
+  }
+
+  .toolbar-pair--grow .sort-wrapper {
+    width: 100%;
+  }
+
+  .toolbar-pair--grow .sort-btn,
+  .toolbar-pair--grow > .action-btn,
+  .toolbar-panel > .action-btn {
+    width: 100%;
+    min-height: 34px;
+    height: auto;
+    padding: 0 8px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    line-height: 1.2;
+    border-radius: 999px;
+    justify-content: center;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .toolbar-pair--grow .sort-btn mat-icon:not(.arrow),
+  .toolbar-pair--grow > .action-btn mat-icon,
+  .toolbar-panel > .action-btn mat-icon {
+    font-size: 15px;
+    width: 15px;
+    height: 15px;
+    margin-right: 2px;
+    flex-shrink: 0;
+  }
+
+  .toolbar-pair--grow .sort-btn .arrow {
+    font-size: 15px;
+    width: 15px;
+    height: 15px;
+    margin-left: 1px;
+  }
+
+  /* Material 13 button wrapper compact. */
+  .toolbar-pair--grow .sort-btn.mat-button .mat-button-wrapper,
+  .toolbar-pair--grow > .action-btn .mat-button-wrapper,
+  .toolbar-panel > .action-btn .mat-button-wrapper {
+    padding: 4px 8px;
+    line-height: 1.2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px 4px;
+    min-height: 32px;
+    box-sizing: border-box;
+  }
+
+  /* Subdue the sort button to look like a soft chip — same as user dashboard. */
+  .toolbar-pair--grow .sort-btn {
+    border-color: color-mix(in srgb, var(--border) 72%, transparent);
+    color: color-mix(in srgb, var(--text-muted) 35%, var(--text));
+    background: color-mix(in srgb, var(--surface) 65%, var(--surface-muted));
+    box-shadow: none;
+  }
+
+  body.dark-theme .toolbar-pair--grow .sort-btn {
+    color: color-mix(in srgb, var(--text) 78%, var(--text-muted));
+    border-color: color-mix(in srgb, var(--border) 88%, transparent);
+    background: color-mix(in srgb, var(--surface) 55%, var(--surface-muted));
   }
 
   .right-actions {
@@ -1991,6 +2326,19 @@ body.dark-theme .budget-gauge__amounts {
   .card-right {
     width: 100%;
     text-align: right;
+  }
+
+  #name {
+    font-size: 1.05rem;
+  }
+
+  .admin-topbar__brand-text {
+    font-size: 0.875rem;
+  }
+
+  .expense-audience-chip {
+    font-size: 0.7rem;
+    padding: 4px 10px;
   }
 }
 

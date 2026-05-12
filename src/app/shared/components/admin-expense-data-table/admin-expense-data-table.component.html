@@ -1,43 +1,104 @@
-<div class="table-loading" *ngIf="loading">Loading…</div>
+<div class="admin-expense-table-head">
+  <span class="table-loading" *ngIf="loading">Loading…</span>
+  <mat-button-toggle-group
+    class="admin-expense-table__view-toggle"
+    [value]="viewMode"
+    (change)="onViewModeChange($event.value)"
+    [attr.aria-label]="'table.viewToggleAria' | translate">
+    <mat-button-toggle
+      value="table"
+      [matTooltip]="'table.viewTableTooltip' | translate"
+      [attr.aria-label]="'table.viewTable' | translate">
+      <mat-icon>table_rows</mat-icon>
+      <span class="admin-expense-table__view-toggle-label">{{ 'table.viewTable' | translate }}</span>
+    </mat-button-toggle>
+    <mat-button-toggle
+      value="card"
+      [matTooltip]="'table.viewCardTooltip' | translate"
+      [attr.aria-label]="'table.viewCard' | translate">
+      <mat-icon>view_agenda</mat-icon>
+      <span class="admin-expense-table__view-toggle-label">{{ 'table.viewCard' | translate }}</span>
+    </mat-button-toggle>
+  </mat-button-toggle-group>
+</div>
 
-<table mat-table [dataSource]="dataSource" class="modern-table" [class.dimmed]="loading">
-  <ng-container matColumnDef="title">
-    <th mat-header-cell *matHeaderCellDef>Title</th>
-    <td mat-cell *matCellDef="let e">{{ e.title }}</td>
+<!-- Table view -->
+<ng-container *ngIf="viewMode === 'table'">
+  <table mat-table [dataSource]="dataSource" class="modern-table" [class.dimmed]="loading">
+    <ng-container matColumnDef="title">
+      <th mat-header-cell *matHeaderCellDef>Title</th>
+      <td mat-cell *matCellDef="let e">{{ e.title }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="user">
+      <th mat-header-cell *matHeaderCellDef>User</th>
+      <td mat-cell *matCellDef="let e">{{ e.user }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="category">
+      <th mat-header-cell *matHeaderCellDef>Category</th>
+      <td mat-cell *matCellDef="let e">
+        <span class="badge">{{ e.category }}</span>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="date">
+      <th mat-header-cell *matHeaderCellDef>Date</th>
+      <td mat-cell *matCellDef="let e">{{ e.date }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="amount">
+      <th mat-header-cell *matHeaderCellDef>Amount</th>
+      <td mat-cell *matCellDef="let e">₹{{ e.amount | number: '1.0-2' }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef>Actions</th>
+      <td mat-cell *matCellDef="let e">
+        <button mat-button type="button" class="cell-link edit-link" (click)="editExpense.emit(e)">Edit</button>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+  </table>
+</ng-container>
+
+<!-- Card view -->
+<div class="admin-expense-cards" *ngIf="viewMode === 'card'" [class.dimmed]="loading">
+  <ng-container *ngIf="dataSource.data?.length; else cardEmpty">
+    <article
+      *ngFor="let e of dataSource.data; trackBy: trackByRow"
+      class="admin-expense-card">
+      <header class="admin-expense-card__head">
+        <h3 class="admin-expense-card__title" *ngIf="showColumn('title')">{{ e.title }}</h3>
+        <span class="admin-expense-card__amount" *ngIf="showColumn('amount')">₹{{ e.amount | number: '1.0-2' }}</span>
+      </header>
+
+      <dl class="admin-expense-card__fields">
+        <div class="admin-expense-card__row" *ngIf="showColumn('user')">
+          <dt>User</dt>
+          <dd>{{ e.user }}</dd>
+        </div>
+        <div class="admin-expense-card__row" *ngIf="showColumn('category')">
+          <dt>Category</dt>
+          <dd><span class="badge">{{ e.category }}</span></dd>
+        </div>
+        <div class="admin-expense-card__row" *ngIf="showColumn('date')">
+          <dt>Date</dt>
+          <dd>{{ e.date }}</dd>
+        </div>
+      </dl>
+
+      <footer class="admin-expense-card__actions" *ngIf="showColumn('actions')">
+        <button mat-button type="button" class="cell-link edit-link" (click)="editExpense.emit(e)">Edit</button>
+      </footer>
+    </article>
   </ng-container>
-
-  <ng-container matColumnDef="user">
-    <th mat-header-cell *matHeaderCellDef>User</th>
-    <td mat-cell *matCellDef="let e">{{ e.user }}</td>
-  </ng-container>
-
-  <ng-container matColumnDef="category">
-    <th mat-header-cell *matHeaderCellDef>Category</th>
-    <td mat-cell *matCellDef="let e">
-      <span class="badge">{{ e.category }}</span>
-    </td>
-  </ng-container>
-
-  <ng-container matColumnDef="date">
-    <th mat-header-cell *matHeaderCellDef>Date</th>
-    <td mat-cell *matCellDef="let e">{{ e.date }}</td>
-  </ng-container>
-
-  <ng-container matColumnDef="amount">
-    <th mat-header-cell *matHeaderCellDef>Amount</th>
-    <td mat-cell *matCellDef="let e">₹{{ e.amount | number: '1.0-2' }}</td>
-  </ng-container>
-
-  <ng-container matColumnDef="actions">
-    <th mat-header-cell *matHeaderCellDef>Actions</th>
-    <td mat-cell *matCellDef="let e">
-      <button mat-button type="button" class="cell-link edit-link" (click)="editExpense.emit(e)">Edit</button>
-    </td>
-  </ng-container>
-
-  <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-  <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
-</table>
+  <ng-template #cardEmpty>
+    <p class="admin-expense-cards__empty">{{ loading ? ('table.loading' | translate) : ('table.noData' | translate) }}</p>
+  </ng-template>
+</div>
 
 <mat-paginator
   [length]="totalRecords"

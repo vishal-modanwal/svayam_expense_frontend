@@ -325,6 +325,30 @@ body.dark-theme .close-btn {
 }
 
 @media (max-width: 480px) {
+  .modal-header h2 {
+    font-size: 1rem;
+    line-height: 1.35;
+  }
+
+  .form-budget-banner {
+    padding: 12px 12px;
+    gap: 10px;
+  }
+
+  .form-budget-banner__icon {
+    font-size: 22px;
+    width: 22px;
+    height: 22px;
+  }
+
+  .form-budget-banner__title {
+    font-size: 0.95rem;
+  }
+
+  .form-budget-banner__api-msg {
+    font-size: 0.875rem;
+  }
+
   .receipt-scanner {
     flex-direction: column;
     align-items: stretch;
@@ -339,6 +363,7 @@ body.dark-theme .close-btn {
   .receipt-pick-btn {
     justify-content: center;
     width: 100%;
+    min-height: 44px;
     box-sizing: border-box;
   }
 
@@ -346,12 +371,20 @@ body.dark-theme .close-btn {
     max-width: none;
   }
 
+  .receipt-file-name {
+    max-width: 100%;
+    word-break: break-all;
+    white-space: normal;
+  }
+
   .actions {
     flex-direction: column-reverse;
     align-items: stretch;
+    gap: 10px;
   }
 
   .actions button {
     width: 100%;
+    min-height: 44px;
   }
 }

@@ -948,6 +948,41 @@ body.dark-theme .section-hint--page-scope {
     white-space: normal;
   }
 
+  /* AI assistant button: compact pill on phones. */
+  .ai-btn-solid {
+    min-height: 32px;
+    padding: 0 10px;
+    font-size: 0.72rem;
+    border-radius: 999px;
+  }
+
+  .ai-btn-solid mat-icon {
+    font-size: 15px;
+    width: 15px;
+    height: 15px;
+  }
+
+  /* Default modal action buttons compact on phones. */
+  .modal-actions button.mat-raised-button,
+  .modal-actions button.mat-stroked-button,
+  .modal-actions button.mat-button {
+    min-height: 36px;
+    padding: 0 14px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 10px;
+  }
+
+  .modal-actions button .mat-button-wrapper {
+    padding: 4px 10px;
+    line-height: 1.2;
+    min-height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+
   /** All modals: bottom sheet pattern, safe areas, scroll inside card */
   .overlay {
     display: flex;
@@ -1014,6 +1049,44 @@ body.dark-theme .section-hint--page-scope {
 @media (max-width: 480px) {
   .section-head--table h3 {
     font-size: 1rem;
+  }
+
+  #name {
+    font-size: 1.1rem;
+  }
+
+  .subtitle {
+    font-size: 0.8125rem;
+  }
+
+  .metric-card--expense .metric-card__inner {
+    padding: 12px 12px;
+    gap: 10px;
+  }
+
+  .metric-card__icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .metric-card__icon.mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+
+  .metric-card__label {
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+  }
+
+  .section-head {
+    gap: 6px;
+    padding-bottom: 10px;
+  }
+
+  .section-hint {
+    font-size: 0.625rem;
   }
 }
 

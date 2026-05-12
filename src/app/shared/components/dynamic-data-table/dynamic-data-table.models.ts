@@ -11,7 +11,8 @@ export type DynamicTableCellControl =
   | 'userExpenseEdit'
   | 'userExpenseDelete'
   | 'userExpenseReceipt'
-  | 'expenseReceiptDownload';
+  | 'expenseReceiptDownload'
+  | 'employeeActiveToggle';
 
 /** Column definition — typically one object per API column. */
 export interface DynamicTableColumn {
@@ -54,3 +55,6 @@ export interface DynamicTableQuery {
   sortDirection: 'asc' | 'desc' | '';
   filter: string;
 }
+
+/** Two presentation modes for each table — switched via segmented control above the table. */
+export type DynamicTableViewMode = 'table' | 'card';

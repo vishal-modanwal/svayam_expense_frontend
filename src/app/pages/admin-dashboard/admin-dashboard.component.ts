@@ -29,7 +29,8 @@ import {
   buildAdminBudgetOverviewTableConfig,
   buildFallbackExpenseMetaConfig,
   buildViewConfigFromEmbeddedColumns,
-  buildViewConfigFromTableMeta
+  buildViewConfigFromTableMeta,
+  withEmployeeUsersTableEnhancements
 } from 'src/app/core/utils/table-meta.utils';
 import { listRowReceiptPath } from 'src/app/core/utils/receipt-url';
 import {
@@ -39,12 +40,6 @@ import {
 import { AdminSidebarToolAction } from './sidebar/sidebar.component';
 
 type AdminSection = 'expenses' | 'budgets' | 'employees';
-
-interface EmployeeInsight {
-  name: string;
-  entries: number;
-  spent: number;
-}
 
 interface AiChatLine {
   role: 'user' | 'assistant';
@@ -132,8 +127,6 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   adminExpenseModalCreateExtra = false;
   /** Row pending delete confirmation (admin expense table). */
   selectedAdminDeleteExpense: Expense | null = null;
-  employeeInsights: EmployeeInsight[] = [];
-
   expenseSearchInput = '';
   selectedExpenseSort: 'latest' | 'high' | 'low' = 'latest';
 
@@ -168,11 +161,25 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   };
   budgetTableSortState: Sort | null = { active: 'year', direction: 'desc' };
 
-  usersTableSortState: Sort | null = null;
-
   usersTableConfig: DynamicTableViewConfig | null = null;
   usersTableRows: Record<string, unknown>[] = [];
   usersTableLoading = false;
+  /** Full employee list from API before client filter/sort. */
+  usersEmployeeSourceRows: Record<string, unknown>[] = [];
+  /** Client-side paginator: length = filtered rows (not current page). */
+  employeeTotalCount = 0;
+  readonly employeeQuery: DynamicTableQuery = {
+    pageIndex: 0,
+    pageSize: 25,
+    sortActive: null,
+    sortDirection: '',
+    filter: ''
+  };
+  employeeSearchInput = '';
+  employeeSortMode: 'latest' | 'az' = 'latest';
+  private readonly employeeToggleBusyIds = new Set<number>();
+  /** Snapshot for `app-dynamic-data-table` `@Input` (OnPush). */
+  employeeToggleBusyRowIds: number[] = [];
 
   /** Chat-style assistant modal (full conversation). */
   isAiChatModalOpen = false;
@@ -230,10 +237,6 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     month: [new Date().getMonth() + 1, [Validators.required, Validators.min(1), Validators.max(12)]],
     year: [new Date().getFullYear(), [Validators.required, Validators.min(2000)]],
     allocated_amount: [0, [Validators.required, Validators.min(1)]]
-  });
-
-  readonly userToggleForm = this.fb.group({
-    userId: [null as number | null, [Validators.required]]
   });
 
   constructor(
@@ -864,17 +867,6 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       });
   }
 
-  toggleUser(): void {
-    if (this.userToggleForm.invalid) {
-      this.userToggleForm.markAllAsTouched();
-      return;
-    }
-    this.adminService.toggleUserStatus(this.userToggleForm.value.userId as number).subscribe({
-      next: (res) => this.toastService.success(res.message || 'User status toggled'),
-      error: (err) => this.toastService.error(err?.error?.message || 'Toggle user failed')
-    });
-  }
-
   downloadMonthlyReport(): void {
     if (this.reportMonth < 1 || this.reportMonth > 12) {
       this.toastService.error('Enter a valid month (1 to 12)');
@@ -1370,17 +1362,224 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     const pagination = { pageSizeOptions: [10, 25, 50], defaultPageSize: 25 };
     this.adminService.getUsersDetails().subscribe({
       next: (res) => {
-        const cfg = buildViewConfigFromEmbeddedColumns(res.columns, pagination, 'Users');
+        const title = this.i18n.instant('admin.employees');
+        let cfg = buildViewConfigFromEmbeddedColumns(res.columns, pagination, title);
+        cfg = withEmployeeUsersTableEnhancements(cfg, this.i18n.instant('admin.employeeActivityColumn'));
         this.usersTableConfig = cfg;
-        this.usersTableRows = (res.data ?? []) as Record<string, unknown>[];
+        if (cfg?.pagination?.defaultPageSize) {
+          this.employeeQuery.pageSize = cfg.pagination.defaultPageSize;
+        }
+        this.employeeQuery.pageIndex = 0;
+        this.employeeQuery.filter = '';
+        this.employeeSearchInput = '';
+        const raw = (res.data ?? []) as Record<string, unknown>[];
+        this.usersEmployeeSourceRows = raw.map((r) => ({ ...r }));
+        this.applyEmployeeView();
         this.usersTableLoading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.usersTableConfig = null;
+        this.usersEmployeeSourceRows = [];
         this.usersTableRows = [];
+        this.employeeTotalCount = 0;
         this.usersTableLoading = false;
+        this.cdr.markForCheck();
       }
     });
+  }
+
+  onEmployeeDynamicQuery(q: DynamicTableQuery): void {
+    this.employeeQuery.pageIndex = q.pageIndex;
+    this.employeeQuery.pageSize = q.pageSize;
+    this.applyEmployeeView();
+    this.cdr.markForCheck();
+  }
+
+  getEmployeeSortLabel(): string {
+    return this.employeeSortMode === 'az'
+      ? this.i18n.instant('admin.sortNameAZ')
+      : this.i18n.instant('admin.sortLatest');
+  }
+
+  applyEmployeeSort(mode: 'latest' | 'az'): void {
+    this.employeeSortMode = mode;
+    this.employeeQuery.pageIndex = 0;
+    this.applyEmployeeView();
+  }
+
+  applyEmployeeSearch(): void {
+    this.employeeQuery.filter = this.employeeSearchInput.trim();
+    this.employeeQuery.pageIndex = 0;
+    this.applyEmployeeView();
+  }
+
+  clearEmployeeSearch(): void {
+    this.employeeSearchInput = '';
+    this.employeeQuery.filter = '';
+    this.employeeQuery.pageIndex = 0;
+    this.applyEmployeeView();
+  }
+
+  onEmployeeActiveToggle(row: Record<string, unknown>): void {
+    const id = this.getEmployeeRowUserId(row);
+    if (id == null) {
+      this.toastService.error(this.i18n.instant('admin.employeeToggleMissingId'));
+      return;
+    }
+    if (this.employeeToggleBusyIds.has(id)) {
+      return;
+    }
+    this.employeeToggleBusyIds.add(id);
+    this.employeeToggleBusyRowIds = [...this.employeeToggleBusyIds];
+    this.cdr.markForCheck();
+    this.adminService.toggleUserStatus(id).subscribe({
+      next: (res) => {
+        this.flipEmployeeActiveInSource(id);
+        this.applyEmployeeView();
+        this.employeeToggleBusyIds.delete(id);
+        this.employeeToggleBusyRowIds = [...this.employeeToggleBusyIds];
+        this.toastService.success(res.message || this.i18n.instant('admin.employeeStatusUpdated'));
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.employeeToggleBusyIds.delete(id);
+        this.employeeToggleBusyRowIds = [...this.employeeToggleBusyIds];
+        this.toastService.error(err?.error?.message || this.i18n.instant('admin.employeeToggleFailed'));
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  private applyEmployeeView(): void {
+    const q = this.employeeQuery.filter.trim().toLowerCase();
+    let rows = this.usersEmployeeSourceRows.map((r) => ({ ...r }));
+    if (q) {
+      rows = rows.filter((r) => this.employeeRowMatchesSearch(r, q));
+    }
+    rows.sort((a, b) => {
+      if (this.employeeSortMode === 'az') {
+        return this.readEmployeeNameForSort(a).localeCompare(this.readEmployeeNameForSort(b), undefined, {
+          sensitivity: 'base'
+        });
+      }
+      return this.readEmployeeLatestSortKey(b) - this.readEmployeeLatestSortKey(a);
+    });
+    this.employeeTotalCount = rows.length;
+    const pageSize = Math.max(1, this.employeeQuery.pageSize);
+    let pageIndex = this.employeeQuery.pageIndex;
+    const totalPages = Math.max(1, Math.ceil(rows.length / pageSize) || 1);
+    const maxPageIndex = Math.max(0, totalPages - 1);
+    if (pageIndex > maxPageIndex) {
+      pageIndex = maxPageIndex;
+      this.employeeQuery.pageIndex = pageIndex;
+    }
+    const start = pageIndex * pageSize;
+    this.usersTableRows = rows.slice(start, start + pageSize);
+  }
+
+  private employeeRowMatchesSearch(row: Record<string, unknown>, q: string): boolean {
+    const hay = [
+      this.readEmployeeScalar(row, ['name', 'full_name', 'user_name', 'first_name', 'username', 'display_name']),
+      this.readEmployeeScalar(row, ['email', 'user_email', 'email_id']),
+      this.readEmployeeScalar(row, ['mobile', 'phone', 'mobile_no', 'phone_number', 'contact'])
+    ]
+      .join(' ')
+      .toLowerCase();
+    return hay.includes(q);
+  }
+
+  private readEmployeeScalar(row: Record<string, unknown>, keys: string[]): string {
+    for (const k of keys) {
+      const v = row[k];
+      if (v != null && String(v).trim() !== '') {
+        return String(v).trim();
+      }
+    }
+    return '';
+  }
+
+  private readEmployeeNameForSort(row: Record<string, unknown>): string {
+    const n = this.readEmployeeScalar(row, ['name', 'full_name', 'user_name', 'username', 'display_name']);
+    if (n) {
+      return n;
+    }
+    const first = this.readEmployeeScalar(row, ['first_name']);
+    const last = this.readEmployeeScalar(row, ['last_name']);
+    return `${first} ${last}`.trim() || String(this.getEmployeeRowUserId(row) ?? '');
+  }
+
+  private readEmployeeLatestSortKey(row: Record<string, unknown>): number {
+    const keys = ['id', 'user_id', 'created_at', 'updated_at', 'joined_at'];
+    for (const k of keys) {
+      const v = row[k];
+      if (typeof v === 'number' && Number.isFinite(v)) {
+        return v;
+      }
+      if (typeof v === 'string' && /^\d+$/.test(v.trim())) {
+        return Number(v.trim());
+      }
+      if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v)) {
+        const t = Date.parse(v);
+        if (!Number.isNaN(t)) {
+          return t;
+        }
+      }
+    }
+    return 0;
+  }
+
+  private getEmployeeRowUserId(row: Record<string, unknown>): number | null {
+    const raw = row['id'] ?? row['user_id'];
+    const n = typeof raw === 'number' ? raw : Number(raw);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  private flipEmployeeActiveInSource(userId: number): void {
+    const row = this.usersEmployeeSourceRows.find((r) => this.getEmployeeRowUserId(r) === userId);
+    if (!row) {
+      return;
+    }
+    const cur =
+      row['is_active'] ??
+      row['isActive'] ??
+      row['active'] ??
+      row['user_active'] ??
+      row['status'] ??
+      row['enabled'] ??
+      row['user_status'] ??
+      row['account_status'];
+    let next: unknown;
+    if (typeof cur === 'boolean') {
+      next = !cur;
+    } else if (typeof cur === 'number') {
+      next = cur === 1 ? 0 : 1;
+    } else {
+      const s = String(cur ?? '').toLowerCase();
+      next = s === '1' || s === 'true' || s === 'active' ? 0 : 1;
+    }
+    row['is_active'] = next;
+    if ('isActive' in row) {
+      row['isActive'] = next;
+    }
+    if ('active' in row) {
+      row['active'] = next;
+    }
+    if ('enabled' in row) {
+      row['enabled'] = next;
+    }
+    if ('user_active' in row) {
+      row['user_active'] = next;
+    }
+    if ('status' in row) {
+      const on =
+        typeof next === 'boolean'
+          ? next
+          : typeof next === 'number'
+            ? next === 1
+            : String(next).toLowerCase() === '1' || String(next).toLowerCase() === 'true';
+      row['status'] = on ? 'active' : 'inactive';
+    }
   }
 
   private expenseToFlatRow(e: Expense): Record<string, unknown> {
@@ -1513,7 +1712,6 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.adminExpenseTableRows = expenses.map((item) => this.expenseToFlatRow(item));
     const serverTotal = res.pagination?.totalItems ?? res.pagination?.total_records ?? expenses.length;
     this.expenseTotalCount = q ? expenses.length : serverTotal;
-    this.employeeInsights = this.buildEmployeeInsights(expenses);
     this.expenseLoading = false;
     if (this.activeSection === 'expenses') {
       setTimeout(() => this.renderSummaryDonut(), 0);
@@ -1529,21 +1727,6 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       },
       error: (err) => this.toastService.error(err?.error?.message || 'Category load failed')
     });
-  }
-
-  private buildEmployeeInsights(expenses: Expense[]): EmployeeInsight[] {
-    const employeeMap = new Map<string, EmployeeInsight>();
-    expenses.forEach((item) => {
-      const name = item.user_name || 'Unknown';
-      const prev = employeeMap.get(name);
-      if (!prev) {
-        employeeMap.set(name, { name, entries: 1, spent: Number(item.amount || 0) });
-        return;
-      }
-      prev.entries += 1;
-      prev.spent += Number(item.amount || 0);
-    });
-    return [...employeeMap.values()].sort((a, b) => b.spent - a.spent);
   }
 
   formatBudgetGaugeTick(n: number): string {

@@ -18,7 +18,12 @@ mat-card {
 
 @media (max-width: 480px) {
   .page {
-    padding-top: max(14px, env(safe-area-inset-top, 0px));
+    padding: max(14px, env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) 20px max(12px, env(safe-area-inset-left, 0px));
+  }
+
+  mat-card {
+    padding: 16px !important;
+    border-radius: 12px;
   }
 
   mat-card form {
@@ -30,5 +35,10 @@ mat-card {
   mat-card button[type='submit'] {
     width: 100%;
     margin-top: 8px;
+  }
+
+  mat-card-title,
+  .mat-card-title {
+    font-size: 1.1rem !important;
   }
 }

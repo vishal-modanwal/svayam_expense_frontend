@@ -42,8 +42,30 @@ export function resolveReceiptPublicUrl(
 }
 
 /**
- * GET /api/expense/my-expenses — each row has `receipt_path` (filename or null).
- * Join: `{API_BASE}/uploads/{receipt_path}` (e.g. `http://localhost:5000/api/uploads/receipt-abc.pdf`).
+ * Express serves uploads at site root: `{origin}/uploads/...`, not under `/api`.
+ * `apiBaseUrl` is typically `{origin}/api` — we use {@link uploadsServerOriginFromApiBase} only.
+ */
+export function uploadsServerOriginFromApiBase(apiBaseUrl: string): string {
+  const base = (apiBaseUrl || '').trim().replace(/\/$/, '');
+  if (!base) {
+    return '';
+  }
+  try {
+    if (/^https?:\/\//i.test(base)) {
+      return new URL(base).origin;
+    }
+    if (typeof window !== 'undefined' && window.location?.origin) {
+      return new URL(base, window.location.origin).origin;
+    }
+  } catch {
+    /* ignore */
+  }
+  return '';
+}
+
+/**
+ * Lists return `receipt_path` (filename or null) — not `receipt_url`. Browser URL:
+ * `{serverOrigin}/uploads/{receipt_path}` where `serverOrigin` is the Express host (no `/api` in path).
  */
 export function buildReceiptUrlFromReceiptPath(
   receiptPath: string | null | undefined,
@@ -59,16 +81,6 @@ export function buildReceiptUrlFromReceiptPath(
   if (/^https?:\/\//i.test(raw)) {
     return raw;
   }
-  const base = (apiBaseUrl || '').replace(/\/$/, '');
-  if (!base) {
-    const name0 = raw.replace(/^\/+/, '').replace(/\\/g, '/');
-    const tail = name0
-      .split('/')
-      .filter((s) => s && s !== '.' && s !== '..')
-      .map((seg) => encodeReceiptPathSegment(seg))
-      .join('/');
-    return tail ? `${RECEIPTS_PUBLIC_PREFIX}/${tail}` : null;
-  }
   const name = raw.replace(/^\/+/, '').replace(/\\/g, '/');
   const safe = name
     .split('/')
@@ -78,7 +90,11 @@ export function buildReceiptUrlFromReceiptPath(
   if (!safe) {
     return null;
   }
-  return `${base}/uploads/${safe}`;
+  const origin = uploadsServerOriginFromApiBase(apiBaseUrl);
+  if (!origin) {
+    return `${RECEIPTS_PUBLIC_PREFIX}/${safe}`;
+  }
+  return `${origin}${RECEIPTS_PUBLIC_PREFIX}/${safe}`;
 }
 
 /** Encode only when needed; avoid double-encoding already-safe `%HH` segments from APIs. */
@@ -238,8 +254,8 @@ export function listRowReceiptPath(row: Record<string, unknown>): string | null 
 }
 
 /**
- * List/table View & Download: `listRowReceiptPath` → `{apiBase}/uploads/...`.
- * Full `http(s)` URLs are not built here (only path/filename fields).
+ * List/table View & Download: `listRowReceiptPath` → `{serverOrigin}/uploads/...`
+ * (see {@link buildReceiptUrlFromReceiptPath}).
  */
 export function expenseRowReceiptHref(
   row: Record<string, unknown>,
@@ -282,7 +298,7 @@ export function normalizeReceiptHttpUrl(href: string, apiBaseUrl: string): strin
   try {
     const loc = typeof window !== 'undefined' ? window.location.origin : '';
     const u = new URL(href, loc || 'http://localhost');
-    // Any absolute URL on the API host → path-only (e.g. ng serve :4200 + proxy `/api` → `/api/uploads/...`).
+    // Absolute URL on the API host → path-only for dev proxy (e.g. `/uploads/...` on :4200).
     if (u.origin === apiOrigin) {
       return `${u.pathname}${u.search}${u.hash}`;
     }
@@ -290,4 +306,41 @@ export function normalizeReceiptHttpUrl(href: string, apiBaseUrl: string): strin
     return href;
   }
   return href;
+}
+
+/** True when `href` resolves to a different origin than the SPA (blob download is more reliable than `<a download>`). */
+export function isReceiptDownloadCrossOrigin(href: string): boolean {
+  if (typeof window === 'undefined' || !window.location?.origin) {
+    return false;
+  }
+  try {
+    const u = new URL(href, window.location.href);
+    return u.origin !== window.location.origin;
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Fetch receipt as blob and trigger download (for cross-origin or when `download` attribute is ignored).
+ */
+export async function downloadReceiptViaBlob(
+  receiptUrl: string,
+  suggestedName: string,
+  init?: RequestInit
+): Promise<void> {
+  const res = await fetch(receiptUrl, { credentials: 'include', ...init });
+  if (!res.ok) {
+    throw new Error(`Receipt not found (${res.status})`);
+  }
+  const blob = await res.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = objectUrl;
+  a.download = (suggestedName || 'receipt').replace(/[/\\?%*:|"<>]/g, '-');
+  a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
 }

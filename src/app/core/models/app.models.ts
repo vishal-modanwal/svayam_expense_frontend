@@ -30,6 +30,12 @@ export interface Category {
   name: string;
   description?: string;
   created_at?: string;
+  /** When present, 0/false/`inactive` rows are hidden from expense pickers. */
+  is_active?: boolean | number | string;
+  active?: boolean | number | string;
+  is_deleted?: boolean | number | string;
+  deleted_at?: string | null;
+  status?: string;
 }
 
 export interface Expense {

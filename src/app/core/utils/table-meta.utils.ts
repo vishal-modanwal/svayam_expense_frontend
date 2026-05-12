@@ -1,4 +1,5 @@
 import {
+  DynamicTableCellControl,
   DynamicTableColumn,
   DynamicTablePaginationConfig,
   DynamicTableViewConfig
@@ -208,6 +209,52 @@ export function buildViewConfigFromEmbeddedColumns(
     columns: tableMetaColumnsToDynamicColumns(columns),
     pagination,
     showFilter: options?.showFilter ?? false
+  };
+}
+
+/** Normalised column keys that represent “active / inactive” in users-details payloads. */
+const EMPLOYEE_ACTIVE_COLUMN_KEYS = new Set([
+  'is_active',
+  'isactive',
+  'active',
+  'user_active',
+  'is_user_active',
+  'status',
+  'enabled',
+  'user_status',
+  'account_status',
+  'activation_status'
+]);
+
+/**
+ * Admin employees list: drop API columns that only mirror active/inactive (`is_active`, `status`,
+ * etc.) so they are not shown twice; append a single `_employee_active` toggle (reads the same row fields).
+ */
+export function withEmployeeUsersTableEnhancements(
+  config: DynamicTableViewConfig | null,
+  activeToggleColumnLabel?: string
+): DynamicTableViewConfig | null {
+  if (!config?.columns?.length) {
+    return config;
+  }
+  const label = (activeToggleColumnLabel || 'Activity').trim() || 'Activity';
+  const columns = config.columns
+    .filter((c) => !EMPLOYEE_ACTIVE_COLUMN_KEYS.has(c.key.trim().toLowerCase()))
+    .map((c) => ({ ...c, sortable: false }));
+  const finalColumns = [
+    ...columns,
+    {
+      key: '_employee_active',
+      label,
+      sortable: false,
+      minWidth: '8.5rem',
+      cellControl: 'employeeActiveToggle' as DynamicTableCellControl
+    }
+  ];
+  return {
+    ...config,
+    columns: finalColumns,
+    showFilter: false
   };
 }
 
