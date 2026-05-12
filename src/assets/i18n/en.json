@@ -70,7 +70,7 @@
     "rights": "© 2026 ExpenseTracker. All rights reserved."
   },
   "auth": {
-    "loginTitle": "Login to SvayamExpense",
+    "loginTitle": "Login",
     "loginLead": "Don't have an account yet?",
     "loginSignupLink": "Sign up here!",
     "identityLabel": "Email or mobile",
@@ -82,7 +82,7 @@
     "passwordMin": "Minimum 6 characters required",
     "forgotPassword": "Forgot password?",
     "loggingIn": "Logging in…",
-    "loginSubmit": "Login to SvayamExpense",
+    "loginSubmit": "Login",
     "registerTitle": "Create account",
     "registerLead": "Already have an account?",
     "registerLoginLink": "Login here",

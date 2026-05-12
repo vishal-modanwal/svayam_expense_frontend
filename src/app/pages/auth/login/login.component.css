@@ -63,6 +63,34 @@
   box-shadow: 0 2px 12px var(--accent-glow);
 }
 
+.spendee-login .auth-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 0 0 22px;
+}
+
+.spendee-login .auth-brand-logo {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  flex-shrink: 0;
+  border-radius: 9px;
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.spendee-login .auth-brand-text {
+  font-family: var(--font-display, inherit);
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  background: linear-gradient(120deg, #1d4ed8 0%, #2563eb 45%, #3b82f6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
 .spendee-login .auth-title {
   margin: 0 0 14px;
   font-size: 1.7rem;
@@ -230,6 +258,17 @@ body.dark-theme .spendee-login .auth-title {
   color: transparent;
 }
 
+body.dark-theme .spendee-login .auth-brand-logo {
+  background: rgba(96, 165, 250, 0.12);
+}
+
+body.dark-theme .spendee-login .auth-brand-text {
+  background: linear-gradient(120deg, #93c5fd 0%, #60a5fa 40%, #3b82f6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
 body.dark-theme .spendee-login .auth-lead {
   color: #94a3b8;
 }
@@ -287,6 +326,20 @@ body.dark-theme .spendee-login .link-accent:hover {
     padding: 32px 20px 34px;
     max-width: 100%;
     box-sizing: border-box;
+  }
+
+  .spendee-login .auth-brand {
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+
+  .spendee-login .auth-brand-logo {
+    width: 34px;
+    height: 34px;
+  }
+
+  .spendee-login .auth-brand-text {
+    font-size: 1rem;
   }
 
   .spendee-login .auth-title {

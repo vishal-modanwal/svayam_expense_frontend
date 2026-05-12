@@ -70,7 +70,7 @@
     "rights": "© 2026 ExpenseTracker. सर्वाधिकार सुरक्षित।"
   },
   "auth": {
-    "loginTitle": "SvayamExpense में लॉगिन",
+    "loginTitle": "लॉगिन",
     "loginLead": "अभी तक खाता नहीं है?",
     "loginSignupLink": "यहाँ साइन अप करें!",
     "identityLabel": "ईमेल या मोबाइल",
@@ -82,7 +82,7 @@
     "passwordMin": "कम से कम 6 अक्षर",
     "forgotPassword": "पासवर्ड भूल गए?",
     "loggingIn": "लॉग इन हो रहा है…",
-    "loginSubmit": "SvayamExpense में लॉगिन",
+    "loginSubmit": "लॉगिन",
     "registerTitle": "खाता बनाएँ",
     "registerLead": "पहले से खाता है?",
     "registerLoginLink": "यहाँ लॉगिन करें",
