@@ -202,20 +202,21 @@
               </mat-menu>
             </div>
 
-            <button mat-stroked-button color="primary" type="button" class="action-btn" (click)="openAdminExpenseModal()">
-              <mat-icon>add</mat-icon>
-              {{ 'admin.addExpense' | translate }}
-            </button>
-            <button
-              mat-stroked-button
-              color="accent"
-              type="button"
-              class="action-btn"
-              (click)="openAdminExtraExpenseModal()"
-              [attr.aria-label]="'admin.addAdminExtraExpenseAria' | translate">
-              <mat-icon>add_circle_outline</mat-icon>
-              {{ 'admin.addAdminExtraExpense' | translate }}
-            </button>
+            <div class="admin-expense-add-actions">
+              <button mat-stroked-button color="primary" type="button" class="action-btn" (click)="openAdminExpenseModal()">
+                <mat-icon>add</mat-icon>
+                {{ 'admin.addExpense' | translate }}
+              </button>
+              <button
+                mat-stroked-button
+                type="button"
+                class="action-btn action-btn--lite-green-expense"
+                (click)="openAdminExtraExpenseModal()"
+                [attr.aria-label]="'admin.addAdminExtraExpenseAria' | translate">
+                <mat-icon>add_circle_outline</mat-icon>
+                {{ 'admin.addAdminExtraExpense' | translate }}
+              </button>
+            </div>
 
           </div>
         </div>

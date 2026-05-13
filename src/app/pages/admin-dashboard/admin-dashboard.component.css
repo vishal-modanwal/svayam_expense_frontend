@@ -2300,7 +2300,8 @@ body.dark-theme .budget-gauge__amounts {
   }
 
   .toolbar-pair--grow .sort-wrapper,
-  .toolbar-pair--grow > .action-btn {
+  .toolbar-pair--grow > .action-btn,
+  .toolbar-pair--grow .admin-expense-add-actions {
     grid-column: span 1;
   }
 
@@ -2310,6 +2311,7 @@ body.dark-theme .budget-gauge__amounts {
 
   .toolbar-pair--grow .sort-btn,
   .toolbar-pair--grow > .action-btn,
+  .toolbar-pair--grow .admin-expense-add-actions .action-btn,
   .toolbar-panel > .action-btn {
     width: 100%;
     min-height: 34px;
@@ -2327,6 +2329,7 @@ body.dark-theme .budget-gauge__amounts {
 
   .toolbar-pair--grow .sort-btn mat-icon:not(.arrow),
   .toolbar-pair--grow > .action-btn mat-icon,
+  .toolbar-pair--grow .admin-expense-add-actions .action-btn mat-icon,
   .toolbar-panel > .action-btn mat-icon {
     font-size: 15px;
     width: 15px;
@@ -2345,6 +2348,7 @@ body.dark-theme .budget-gauge__amounts {
   /* Material 13 button wrapper compact. */
   .toolbar-pair--grow .sort-btn.mat-button .mat-button-wrapper,
   .toolbar-pair--grow > .action-btn .mat-button-wrapper,
+  .toolbar-pair--grow .admin-expense-add-actions .action-btn .mat-button-wrapper,
   .toolbar-panel > .action-btn .mat-button-wrapper {
     padding: 4px 8px;
     line-height: 1.2;
