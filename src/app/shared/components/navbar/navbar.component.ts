@@ -148,7 +148,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.closeMobileNav();
   }
 
-  goToEditProfilePage(): void {
+  goToProfilePage(): void {
     this.navigateFromMenu('/profile');
   }
 

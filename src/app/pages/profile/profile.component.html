@@ -1,19 +1,104 @@
-<div class="page">
-  <mat-card>
-    <h2>{{ 'profile.title' | translate }}</h2>
-    <p>{{ 'profile.email' | translate }}: {{ email }}</p>
-    <p>{{ 'profile.role' | translate }}: {{ role }}</p>
-    <form [formGroup]="profileForm" (ngSubmit)="updateProfile()">
+<div class="profile-page">
+  <header class="profile-page__head">
+    <h1 class="profile-page__title">{{ 'profile.title' | translate }}</h1>
+    <p class="profile-page__subtitle">{{ 'profile.subtitle' | translate }}</p>
+  </header>
+
+  <div class="profile-loading" *ngIf="profileLoading">
+    <mat-icon class="profile-loading__icon" aria-hidden="true">hourglass_empty</mat-icon>
+    <p>{{ 'profile.loading' | translate }}</p>
+  </div>
+
+  <mat-card class="profile-card" *ngIf="!profileLoading">
+    <div class="profile-card__hero">
+      <div class="profile-card__avatar" aria-hidden="true">{{ initials }}</div>
+      <div class="profile-card__intro">
+        <h2 class="profile-card__name">{{ userName || '—' }}</h2>
+        <span class="profile-card__role-pill">{{ roleLabel() }}</span>
+      </div>
+    </div>
+
+    <mat-divider class="profile-card__divider"></mat-divider>
+
+    <ul class="profile-details" role="list">
+      <li class="profile-detail-row">
+        <span class="profile-detail-row__icon-wrap" aria-hidden="true">
+          <mat-icon>mail_outline</mat-icon>
+        </span>
+        <div class="profile-detail-row__text">
+          <span class="profile-detail-row__label">{{ 'profile.email' | translate }}</span>
+          <span class="profile-detail-row__value">{{ userEmail || '—' }}</span>
+        </div>
+      </li>
+      <li class="profile-detail-row">
+        <span class="profile-detail-row__icon-wrap" aria-hidden="true">
+          <mat-icon>phone_iphone</mat-icon>
+        </span>
+        <div class="profile-detail-row__text">
+          <span class="profile-detail-row__label">{{ 'profile.mobile' | translate }}</span>
+          <span class="profile-detail-row__value">{{
+            userMobile ? userMobile : ('profile.phoneEmpty' | translate)
+          }}</span>
+        </div>
+      </li>
+    </ul>
+
+    <div class="profile-card__actions">
+      <button mat-raised-button color="primary" type="button" class="profile-edit-btn" (click)="openEditModal()">
+        <mat-icon>edit</mat-icon>
+        {{ 'nav.editProfile' | translate }}
+      </button>
+    </div>
+  </mat-card>
+</div>
+
+<div
+  class="profile-modal-overlay"
+  *ngIf="isEditOpen"
+  role="dialog"
+  aria-modal="true"
+  [attr.aria-label]="'profile.editModalTitle' | translate"
+  (click)="closeEditModal()">
+  <mat-card class="profile-edit-modal" (click)="$event.stopPropagation()">
+    <button
+      type="button"
+      class="profile-edit-modal__close"
+      [attr.aria-label]="'profile.closeAria' | translate"
+      [disabled]="saving"
+      (click)="closeEditModal()">
+      ✕
+    </button>
+    <h2 class="profile-edit-modal__title">{{ 'profile.editModalTitle' | translate }}</h2>
+    <p class="profile-edit-modal__hint">{{ userEmail }}</p>
+
+    <form class="profile-edit-modal__form" [formGroup]="editForm" (ngSubmit)="submitEdit()">
       <mat-form-field appearance="outline" class="full">
         <mat-label>{{ 'profile.name' | translate }}</mat-label>
-        <input matInput formControlName="name" />
+        <input matInput formControlName="name" autocomplete="name" />
+        <mat-error *ngIf="editForm.get('name')?.touched && editForm.get('name')?.hasError('required')">
+          {{ 'profile.nameRequired' | translate }}
+        </mat-error>
+        <mat-error *ngIf="editForm.get('name')?.touched && editForm.get('name')?.hasError('minlength')">
+          {{ 'profile.nameMin' | translate }}
+        </mat-error>
       </mat-form-field>
       <mat-form-field appearance="outline" class="full">
         <mat-label>{{ 'profile.mobile' | translate }}</mat-label>
-        <input matInput formControlName="mobile_no" />
-        <mat-error *ngIf="profileForm.get('mobile_no')?.touched && profileForm.get('mobile_no')?.invalid">{{ 'profile.mobileError' | translate }}</mat-error>
+        <input matInput formControlName="mobile_no" inputmode="numeric" maxlength="10" autocomplete="tel" />
+        <mat-hint>{{ 'profile.mobileHint' | translate }}</mat-hint>
+        <mat-error *ngIf="editForm.get('mobile_no')?.touched && editForm.get('mobile_no')?.invalid">{{
+          'profile.mobileError' | translate
+        }}</mat-error>
       </mat-form-field>
-      <button mat-raised-button color="primary" type="submit">{{ 'profile.update' | translate }}</button>
+
+      <div class="profile-edit-modal__actions">
+        <button mat-stroked-button type="button" [disabled]="saving" (click)="closeEditModal()">
+          {{ 'profile.cancel' | translate }}
+        </button>
+        <button mat-raised-button color="primary" type="submit" [disabled]="saving || editForm.invalid">
+          {{ saving ? ('auth.saving' | translate) : ('profile.update' | translate) }}
+        </button>
+      </div>
     </form>
   </mat-card>
 </div>

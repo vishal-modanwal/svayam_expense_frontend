@@ -33,13 +33,6 @@
         routerLinkActive="nav-link--active"
         >{{ dashboardLabel() }}</a>
 
-      <a
-        *ngIf="isLoggedIn() && !isAdmin()"
-        class="links"
-        routerLink="/profile"
-        routerLinkActive="nav-link--active"
-        >{{ 'nav.profile' | translate }}</a>
-
       <a *ngIf="showRegisterNav()" class="links" routerLink="/register">{{ 'nav.signup' | translate }}</a>
 
       <a *ngIf="showLoginNav()" routerLink="/login" class="links">{{ 'nav.login' | translate }}</a>
@@ -66,9 +59,9 @@
             </div>
           </div>
           <mat-divider></mat-divider>
-          <button mat-menu-item type="button" (click)="goToEditProfilePage()">
-            <mat-icon>edit</mat-icon>
-            <span>{{ 'nav.editProfile' | translate }}</span>
+          <button mat-menu-item type="button" (click)="goToProfilePage()">
+            <mat-icon>person</mat-icon>
+            <span>{{ 'nav.profile' | translate }}</span>
           </button>
           <button mat-menu-item type="button" (click)="logout()">
             <mat-icon>logout</mat-icon>

@@ -134,12 +134,24 @@
   },
   "profile": {
     "title": "My Profile",
+    "subtitle": "Your account details in one place.",
     "email": "Email",
     "role": "Role",
     "name": "Name",
     "mobile": "Mobile Number",
     "mobileError": "10 digit mobile required",
-    "update": "Update Profile"
+    "update": "Update",
+    "updateProfile": "Update profile",
+    "loading": "Loading profile…",
+    "editModalTitle": "Edit your profile",
+    "cancel": "Cancel",
+    "closeAria": "Close dialog",
+    "phoneEmpty": "Not set",
+    "roleUser": "User",
+    "roleAdmin": "Administrator",
+    "mobileHint": "10 digits",
+    "nameRequired": "Name is required",
+    "nameMin": "At least 2 characters"
   },
   "user": {
     "greet": "Good day,",
