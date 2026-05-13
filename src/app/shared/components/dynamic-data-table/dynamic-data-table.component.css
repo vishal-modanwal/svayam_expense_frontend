@@ -392,13 +392,27 @@ body.dark-theme .dynamic-table__view-toggle .mat-button-toggle-checked mat-icon 
   font-size: 0.7rem;
   font-weight: 600;
   border-radius: 999px;
-  line-height: 1.2;
+  line-height: 1.25;
   border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  vertical-align: middle;
   transition:
     background 0.15s ease,
     color 0.15s ease,
     border-color 0.15s ease,
     box-shadow 0.15s ease;
+}
+
+/* `<a mat-button>` (download) uses a different baseline than `<button>` — keep label vertically centred. */
+.dynamic-table__card-action .dynamic-table__link.mat-button .mat-button-wrapper {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1.25 !important;
+  padding: 0 !important;
 }
 
 .dynamic-table__card-action .dynamic-table__link--view.mat-button {
@@ -906,7 +920,14 @@ body.dark-theme .dynamic-table__row--inactive .dynamic-table__td {
     font-size: 0.7rem;
     min-height: 26px;
     padding: 0 9px !important;
-    line-height: 26px;
+    line-height: 1.25;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .dynamic-table__card-action .dynamic-table__link.mat-button .mat-button-wrapper {
+    line-height: 1.25 !important;
   }
 
   /* Tighter cells + smaller body font on small screens. */

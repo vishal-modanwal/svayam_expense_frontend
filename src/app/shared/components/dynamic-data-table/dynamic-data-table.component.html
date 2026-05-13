@@ -254,9 +254,10 @@
                 </dd>
               </div>
             </dl>
-            <footer class="dynamic-table__card-actions dynamic-table__card-actions--toolbar" *ngIf="cardActionColumns.length">
-              <div class="dynamic-table__card-action" *ngFor="let col of cardActionColumns; trackBy: trackByKey">
-                <span class="dynamic-table__card-action-label" *ngIf="col.label">{{ col.label }}</span>
+            <footer
+              class="dynamic-table__card-actions dynamic-table__card-actions--toolbar"
+              *ngIf="cardFooterDisplayedColumns.length">
+              <div class="dynamic-table__card-action" *ngFor="let col of cardFooterDisplayedColumns; trackBy: trackByKey">
                 <ng-container *ngTemplateOutlet="cellTpl; context: { row: row, col: col, cardFooter: true }"></ng-container>
               </div>
             </footer>

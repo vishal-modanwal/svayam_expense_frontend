@@ -139,6 +139,14 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
    */
   expenseAudience: 'employee' | 'admin' | 'admin-extra' | 'inactive-users' = 'employee';
 
+  /**
+   * Employee active / inactive counts shown above the expense search bar.
+   * Filled from `usersEmployeeSourceRows` when present, else from GET /admin/users-details in `refreshExpenseToolbarUserCounts`.
+   * Set manually with `setExpenseToolbarUserCounts` if your API exposes counts elsewhere.
+   */
+  expenseToolbarActiveUsers: number | null = null;
+  expenseToolbarInactiveUsers: number | null = null;
+
   reportMode: 'monthly' | 'user' = 'monthly';
   reportMonth = new Date().getMonth() + 1;
   reportYear = new Date().getFullYear();
@@ -309,6 +317,19 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
   get adminUsagePct(): number {
     return Number(this.summary?.overall_usage_hike || 0);
+  }
+
+  /** Employees section — metrics from `users-details` cache (same basis as toolbar chips). */
+  get employeeSectionTotalUsers(): number {
+    return this.usersEmployeeSourceRows.length;
+  }
+
+  get employeeSectionActiveCount(): number {
+    return this.usersEmployeeSourceRows.filter((r) => this.readEmployeeRowIsActiveForExpenseToolbar(r)).length;
+  }
+
+  get employeeSectionInactiveCount(): number {
+    return Math.max(0, this.employeeSectionTotalUsers - this.employeeSectionActiveCount);
   }
 
   get aiHighlights(): string[] {
@@ -609,6 +630,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.loadCategories();
     this.loadExpenseTableMeta();
     this.loadBudgetTableMeta();
+    this.refreshExpenseToolbarUserCounts();
   }
 
   onSidebarToolAction(action: AdminSidebarToolAction): void {
@@ -636,6 +658,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     }
     if (section === 'expenses') {
       setTimeout(() => this.renderSummaryDonut(), 0);
+      this.refreshExpenseToolbarUserCounts();
     }
     if (section === 'employees') {
       this.loadUsersDetailsForEmployees();
@@ -1375,6 +1398,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         const raw = (res.data ?? []) as Record<string, unknown>[];
         this.usersEmployeeSourceRows = raw.map((r) => ({ ...r }));
         this.applyEmployeeView();
+        this.applyExpenseToolbarUserCountsFromRows(this.usersEmployeeSourceRows);
         this.usersTableLoading = false;
         this.cdr.markForCheck();
       },
@@ -1383,6 +1407,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         this.usersEmployeeSourceRows = [];
         this.usersTableRows = [];
         this.employeeTotalCount = 0;
+        this.expenseToolbarActiveUsers = null;
+        this.expenseToolbarInactiveUsers = null;
         this.usersTableLoading = false;
         this.cdr.markForCheck();
       }
@@ -1421,6 +1447,80 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.applyEmployeeView();
   }
 
+  /** Optional override when counts come from a dedicated API instead of users-details rows. */
+  setExpenseToolbarUserCounts(active: number | null, inactive: number | null): void {
+    this.expenseToolbarActiveUsers = active;
+    this.expenseToolbarInactiveUsers = inactive;
+    this.cdr.markForCheck();
+  }
+
+  /** Same active semantics as the employee table toggle (aligned with `DynamicDataTableComponent`). */
+  private readEmployeeRowIsActiveForExpenseToolbar(row: Record<string, unknown>): boolean {
+    const v =
+      row['is_active'] ??
+      row['isActive'] ??
+      row['active'] ??
+      row['user_active'] ??
+      row['status'] ??
+      row['enabled'] ??
+      row['user_status'] ??
+      row['account_status'];
+    if (typeof v === 'boolean') {
+      return v;
+    }
+    if (typeof v === 'number') {
+      return v === 1;
+    }
+    const s = String(v ?? '').trim().toLowerCase();
+    if (s === '1' || s === 'true' || s === 'active' || s === 'yes') {
+      return true;
+    }
+    if (s === '0' || s === 'false' || s === 'inactive' || s === 'no' || s === '') {
+      return false;
+    }
+    return false;
+  }
+
+  private applyExpenseToolbarUserCountsFromRows(rows: readonly Record<string, unknown>[]): void {
+    if (!rows.length) {
+      this.expenseToolbarActiveUsers = null;
+      this.expenseToolbarInactiveUsers = null;
+      return;
+    }
+    let active = 0;
+    let inactive = 0;
+    for (const r of rows) {
+      if (this.readEmployeeRowIsActiveForExpenseToolbar(r)) {
+        active += 1;
+      } else {
+        inactive += 1;
+      }
+    }
+    this.expenseToolbarActiveUsers = active;
+    this.expenseToolbarInactiveUsers = inactive;
+  }
+
+  /** Prefer cached employee rows; otherwise one `users-details` fetch for the expense toolbar chips. */
+  private refreshExpenseToolbarUserCounts(): void {
+    if (this.usersEmployeeSourceRows.length > 0) {
+      this.applyExpenseToolbarUserCountsFromRows(this.usersEmployeeSourceRows);
+      this.cdr.markForCheck();
+      return;
+    }
+    this.adminService.getUsersDetails().subscribe({
+      next: (res) => {
+        const rows = (res.data ?? []) as Record<string, unknown>[];
+        this.applyExpenseToolbarUserCountsFromRows(rows);
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.expenseToolbarActiveUsers = null;
+        this.expenseToolbarInactiveUsers = null;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
   onEmployeeActiveToggle(row: Record<string, unknown>): void {
     const id = this.getEmployeeRowUserId(row);
     if (id == null) {
@@ -1437,6 +1537,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.flipEmployeeActiveInSource(id);
         this.applyEmployeeView();
+        this.applyExpenseToolbarUserCountsFromRows(this.usersEmployeeSourceRows);
         this.employeeToggleBusyIds.delete(id);
         this.employeeToggleBusyRowIds = [...this.employeeToggleBusyIds];
         this.toastService.success(res.message || this.i18n.instant('admin.employeeStatusUpdated'));

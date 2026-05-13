@@ -127,7 +127,26 @@
           </mat-card>
         </section>
 
-        <div class="toolbar-panel">
+        <div class="expense-toolbar-suite">
+          <div
+            class="expense-usercount-row"
+            role="group"
+            [attr.aria-label]="'admin.expenseUserCountsAria' | translate">
+            <div class="usercount-chip usercount-chip--active">
+              <span class="usercount-chip__label">{{ 'admin.activeUsersChip' | translate }}</span>
+              <span class="usercount-chip__value">{{
+                expenseToolbarActiveUsers === null ? ('admin.userCountDash' | translate) : expenseToolbarActiveUsers
+              }}</span>
+            </div>
+            <div class="usercount-chip usercount-chip--inactive">
+              <span class="usercount-chip__label">{{ 'admin.inactiveUsersChip' | translate }}</span>
+              <span class="usercount-chip__value">{{
+                expenseToolbarInactiveUsers === null ? ('admin.userCountDash' | translate) : expenseToolbarInactiveUsers
+              }}</span>
+            </div>
+          </div>
+
+          <div class="toolbar-panel">
           <div class="toolbar-pair toolbar-pair--grow">
             <div class="search-shell" role="search">
               <mat-icon class="search-shell__icon" aria-hidden="true">person_search</mat-icon>
@@ -199,6 +218,7 @@
             </button>
 
           </div>
+        </div>
         </div>
 
         <div class="main-section">
@@ -297,6 +317,49 @@
             </button>
           </div>
         </header>
+
+        <section
+          class="stat-cards cards stat-cards--admin stat-cards--admin-row3"
+          [attr.aria-label]="'admin.budgetMetricsAria' | translate">
+          <mat-card class="card budget">
+            <div class="card-left">
+              <div class="icon-box">
+                <mat-icon>account_balance_wallet</mat-icon>
+              </div>
+              <div class="text">
+                <h3>{{ 'admin.budgetMetricTotalTitle' | translate }}</h3>
+                <p>{{ 'admin.budgetMetricTotalSub' | translate }}</p>
+              </div>
+            </div>
+            <div class="card-right">₹{{ adminAllocated | number: '1.0-0' }}</div>
+          </mat-card>
+
+          <mat-card class="card expense">
+            <div class="card-left">
+              <div class="icon-box">
+                <mat-icon>trending_down</mat-icon>
+              </div>
+              <div class="text">
+                <h3>{{ 'admin.budgetMetricExpenseTitle' | translate }}</h3>
+                <p>{{ 'admin.budgetMetricExpenseSub' | translate }}</p>
+              </div>
+            </div>
+            <div class="card-right">₹{{ adminSpent | number: '1.0-0' }}</div>
+          </mat-card>
+
+          <mat-card class="card remaining">
+            <div class="card-left">
+              <div class="icon-box">
+                <mat-icon>savings</mat-icon>
+              </div>
+              <div class="text">
+                <h3>{{ 'admin.budgetMetricRemainingTitle' | translate }}</h3>
+                <p>{{ 'admin.budgetMetricRemainingSub' | translate }}</p>
+              </div>
+            </div>
+            <div class="card-right">₹{{ adminRemaining | number: '1.0-0' }}</div>
+          </mat-card>
+        </section>
 
         <div class="toolbar-panel">
           <div class="toolbar-pair toolbar-pair--grow">
@@ -517,6 +580,49 @@
             </button>
           </div>
         </header>
+
+        <section
+          class="stat-cards cards stat-cards--admin stat-cards--admin-row3"
+          [attr.aria-label]="'admin.employeeMetricsAria' | translate">
+          <mat-card class="card usage">
+            <div class="card-left">
+              <div class="icon-box usage-icon">
+                <mat-icon>groups</mat-icon>
+              </div>
+              <div class="text">
+                <h3>{{ 'admin.employeeMetricTotalTitle' | translate }}</h3>
+                <p>{{ 'admin.employeeMetricTotalSub' | translate }}</p>
+              </div>
+            </div>
+            <div class="card-right">{{ employeeSectionTotalUsers | number: '1.0-0' }}</div>
+          </mat-card>
+
+          <mat-card class="card budget">
+            <div class="card-left">
+              <div class="icon-box">
+                <mat-icon>person</mat-icon>
+              </div>
+              <div class="text">
+                <h3>{{ 'admin.employeeMetricActiveTitle' | translate }}</h3>
+                <p>{{ 'admin.employeeMetricActiveSub' | translate }}</p>
+              </div>
+            </div>
+            <div class="card-right">{{ employeeSectionActiveCount | number: '1.0-0' }}</div>
+          </mat-card>
+
+          <mat-card class="card expense">
+            <div class="card-left">
+              <div class="icon-box">
+                <mat-icon>person_off</mat-icon>
+              </div>
+              <div class="text">
+                <h3>{{ 'admin.employeeMetricInactiveTitle' | translate }}</h3>
+                <p>{{ 'admin.employeeMetricInactiveSub' | translate }}</p>
+              </div>
+            </div>
+            <div class="card-right">{{ employeeSectionInactiveCount | number: '1.0-0' }}</div>
+          </mat-card>
+        </section>
 
         <div class="toolbar-panel">
           <div class="toolbar-pair toolbar-pair--grow">

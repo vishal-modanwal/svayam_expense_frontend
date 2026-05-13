@@ -113,7 +113,8 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy, OnInit {
   cardHeroTitleCol: DynamicTableColumn | null = null;
   cardHeroAmountCol: DynamicTableColumn | null = null;
   cardBodyFieldColumns: DynamicTableColumn[] = [];
-  cardActionColumns: DynamicTableColumn[] = [];
+  /** Card footer: receipt View → Download → Delete when those controls exist; else all actions (e.g. employee toggle). */
+  cardFooterDisplayedColumns: DynamicTableColumn[] = [];
 
   /** Inline receipt preview (View) — direct URL on `<img>` / `<iframe>` (see spec). */
   receiptModalOpen = false;
@@ -341,12 +342,13 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy, OnInit {
       this.cardHeroTitleCol = null;
       this.cardHeroAmountCol = null;
       this.cardBodyFieldColumns = [];
-      this.cardActionColumns = [];
+      this.cardFooterDisplayedColumns = [];
       return;
     }
     const cols = this.columns;
     const dataCols = cols.filter((c) => !this.isActionColumn(c));
-    this.cardActionColumns = cols.filter((c) => this.isActionColumn(c));
+    const actionCols = cols.filter((c) => this.isActionColumn(c));
+    this.cardFooterDisplayedColumns = this.buildCardFooterDisplayedColumns(actionCols);
     const title = dataCols.find((c) => c.key.toLowerCase() === 'title') ?? null;
     this.cardHeroTitleCol = title;
     this.cardHeroAmountCol =
@@ -360,6 +362,33 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy, OnInit {
       skip.add(this.cardHeroAmountCol.key);
     }
     this.cardBodyFieldColumns = dataCols.filter((c) => !skip.has(c.key));
+  }
+
+  /**
+   * Card footer chips: fixed order View (receipt) → Download → Delete when any of those exist;
+   * otherwise show every action (budget, employees, bundled columns).
+   */
+  private receiptChipSortRank(col: DynamicTableColumn): number | null {
+    const sw = this.effectiveCellSwitch(col);
+    if (sw === 'adminExpenseReceipt' || sw === 'userExpenseReceipt') {
+      return 1;
+    }
+    if (sw === 'expenseReceiptDownload') {
+      return 2;
+    }
+    if (sw === 'adminExpenseDelete' || sw === 'userExpenseDelete') {
+      return 3;
+    }
+    return null;
+  }
+
+  private buildCardFooterDisplayedColumns(allActions: DynamicTableColumn[]): DynamicTableColumn[] {
+    const ranked = allActions
+      .map((c) => ({ col: c, rank: this.receiptChipSortRank(c) }))
+      .filter((x): x is { col: DynamicTableColumn; rank: number } => x.rank !== null)
+      .sort((a, b) => a.rank - b.rank);
+    const chips = ranked.map((x) => x.col);
+    return chips.length > 0 ? chips : [...allActions];
   }
 
   isCategoryCardColumn(col: DynamicTableColumn): boolean {
