@@ -306,6 +306,7 @@
   "table": {
     "filter": "फ़िल्टर",
     "view": "देखें",
+    "descriptionChip": "विवरण",
     "edit": "संपादित",
     "delete": "हटाएँ",
     "download": "डाउनलोड",

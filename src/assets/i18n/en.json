@@ -306,6 +306,7 @@
   "table": {
     "filter": "Filter",
     "view": "View",
+    "descriptionChip": "Description",
     "edit": "Edit",
     "delete": "Delete",
     "download": "Download",

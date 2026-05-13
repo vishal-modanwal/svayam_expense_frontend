@@ -102,32 +102,36 @@
       *ngFor="let e of dataSource.data; trackBy: trackByRow"
       class="expense-card">
       <header class="expense-card__head">
-        <h3 class="expense-card__title" *ngIf="showColumn('title')">{{ e.title }}</h3>
-        <span class="expense-card__amount" *ngIf="showColumn('amount')">₹{{ e.amount | number: '1.0-2' }}</span>
+        <div class="expense-card__head-main">
+          <h3 class="expense-card__title" *ngIf="showColumn('title')">{{ e.title }}</h3>
+          <span class="expense-card__date-chip" *ngIf="showColumn('date')">
+            <mat-icon aria-hidden="true">event</mat-icon>
+            <span>{{ e.expense_date }}</span>
+          </span>
+        </div>
+        <span class="expense-card__amount" *ngIf="showColumn('amount')">
+          <span class="expense-card__currency">₹</span>{{ e.amount | number: '1.0-2' }}
+        </span>
       </header>
 
       <dl class="expense-card__fields">
         <div class="expense-card__row" *ngIf="showColumn('category')">
-          <dt>Category</dt>
+          <dt><mat-icon aria-hidden="true">local_offer</mat-icon><span>Category</span></dt>
           <dd><span class="badge">{{ e.category }}</span></dd>
         </div>
-        <div class="expense-card__row" *ngIf="showColumn('date')">
-          <dt>Date</dt>
-          <dd>{{ e.expense_date }}</dd>
-        </div>
         <div class="expense-card__row" *ngIf="showColumn('payment')">
-          <dt>Payment</dt>
+          <dt><mat-icon aria-hidden="true">payments</mat-icon><span>Payment</span></dt>
           <dd class="capitalize">{{ e.payment_method || '—' }}</dd>
         </div>
         <div class="expense-card__row" *ngIf="showColumn('vendor')">
-          <dt>Vendor</dt>
+          <dt><mat-icon aria-hidden="true">storefront</mat-icon><span>Vendor</span></dt>
           <dd>{{ e.vendor || '—' }}</dd>
         </div>
         <div class="expense-card__row" *ngIf="showColumn('receipt')">
-          <dt>Receipt</dt>
+          <dt><mat-icon aria-hidden="true">receipt_long</mat-icon><span>Receipt</span></dt>
           <dd>
             <ng-container *ngIf="receiptHref(e) as rh; else noCardReceipt">
-              <a [href]="rh" target="_blank" rel="noopener noreferrer" class="cell-link edit-link">View</a>
+              <a [href]="rh" target="_blank" rel="noopener noreferrer" class="receipt-chip">View</a>
             </ng-container>
             <ng-template #noCardReceipt>
               <span class="receipt-empty">—</span>
@@ -136,15 +140,26 @@
         </div>
       </dl>
 
-      <footer class="expense-card__actions" *ngIf="showColumn('notes') || showColumn('update') || showColumn('delete')">
-        <button *ngIf="showColumn('notes')" mat-button type="button" class="cell-link" (click)="viewNotes.emit(e)">View</button>
-        <button *ngIf="showColumn('update')" mat-button type="button" class="cell-link edit-link" (click)="edit.emit(e)">Edit</button>
-        <button *ngIf="showColumn('delete')" mat-button type="button" class="cell-link delete-link" (click)="delete.emit(e)">Delete</button>
+      <footer
+        class="expense-card__actions expense-card__actions--toolbar"
+        *ngIf="showColumn('notes') || showColumn('update') || showColumn('delete')">
+        <button *ngIf="showColumn('notes')" mat-button type="button" class="card-action card-action--notes" (click)="viewNotes.emit(e)">
+          {{ 'table.descriptionChip' | translate }}
+        </button>
+        <button *ngIf="showColumn('update')" mat-button type="button" class="card-action card-action--edit" (click)="edit.emit(e)">
+          {{ 'table.edit' | translate }}
+        </button>
+        <button *ngIf="showColumn('delete')" mat-button type="button" class="card-action card-action--delete" (click)="delete.emit(e)">
+          {{ 'table.delete' | translate }}
+        </button>
       </footer>
     </article>
   </ng-container>
   <ng-template #cardEmpty>
-    <p class="expense-cards__empty">{{ 'table.noData' | translate }}</p>
+    <div class="expense-cards__empty">
+      <mat-icon aria-hidden="true">inventory_2</mat-icon>
+      <p>{{ 'table.noData' | translate }}</p>
+    </div>
   </ng-template>
 </div>
 

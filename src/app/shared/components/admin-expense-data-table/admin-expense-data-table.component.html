@@ -90,8 +90,8 @@
         </div>
       </dl>
 
-      <footer class="admin-expense-card__actions" *ngIf="showColumn('actions')">
-        <button mat-button type="button" class="cell-link edit-link" (click)="editExpense.emit(e)">Edit</button>
+      <footer class="admin-expense-card__actions admin-expense-card__actions--toolbar" *ngIf="showColumn('actions')">
+        <button mat-button type="button" class="cell-link edit-link admin-expense-card__chip" (click)="editExpense.emit(e)">Edit</button>
       </footer>
     </article>
   </ng-container>

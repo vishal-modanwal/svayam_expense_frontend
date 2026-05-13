@@ -1,6 +1,6 @@
 <ng-container *ngIf="config?.columns?.length; else noConfig">
   <!-- Shared cell renderer — used inside table <td> and card view action footer. -->
-  <ng-template #cellTpl let-row="row" let-col="col">
+  <ng-template #cellTpl let-row="row" let-col="col" let-cardFooter="cardFooter">
     <button
       *ngIf="col.cellControl === 'adminBudgetDescription'"
       mat-button
@@ -9,7 +9,7 @@
       [attr.title]="'table.viewDescAria' | translate"
       [attr.aria-label]="'table.viewBudgetDescAria' | translate"
       (click)="onAdminBudgetDescriptionClick(row, $event)">
-      {{ 'table.view' | translate }}
+      {{ cardFooter ? ('table.descriptionChip' | translate) : ('table.view' | translate) }}
     </button>
     <button
       *ngIf="col.cellControl === 'adminBudgetEdit'"
@@ -68,7 +68,7 @@
             type="button"
             class="dynamic-table__link dynamic-table__link--view"
             (click)="onUserExpenseAction('notes', row)">
-            {{ 'table.view' | translate }}
+            {{ cardFooter ? ('table.descriptionChip' | translate) : ('table.view' | translate) }}
           </button>
           <button
             mat-button
@@ -92,7 +92,7 @@
           type="button"
           class="dynamic-table__link dynamic-table__link--view"
           (click)="onUserExpenseAction('notes', row)">
-          {{ 'table.view' | translate }}
+          {{ cardFooter ? ('table.descriptionChip' | translate) : ('table.view' | translate) }}
         </button>
       </ng-container>
       <ng-container *ngSwitchCase="'userExpenseEdit'">
@@ -166,6 +166,7 @@
             <mat-icon matSuffix class="dynamic-table__filter-icon" *ngIf="loading">hourglass_empty</mat-icon>
           </mat-form-field>
           <mat-button-toggle-group
+            *ngIf="showViewToggle"
             class="dynamic-table__view-toggle"
             [value]="viewMode"
             (change)="onViewModeChange($event.value)"
@@ -229,17 +230,34 @@
           <article
             *ngFor="let row of rows; trackBy: trackByRowIndex"
             class="dynamic-table__card-item"
-            [class.dynamic-table__card-item--inactive]="employeeRowIsInactiveVisual(row)">
+            [class.dynamic-table__card-item--inactive]="employeeRowIsInactiveVisual(row)"
+            [class.dynamic-table__card-item--with-hero]="cardHeroTitleCol != null">
+            <header class="dynamic-table__card-hero" *ngIf="cardHeroTitleCol as titleCol">
+              <div class="dynamic-table__card-hero-main">
+                <h3 class="dynamic-table__card-hero-title">{{ formatCell(row, titleCol) }}</h3>
+                <span class="dynamic-table__card-hero-amount" *ngIf="cardHeroAmountCol as amtCol">{{
+                  formatCell(row, amtCol)
+                }}</span>
+              </div>
+            </header>
             <dl class="dynamic-table__card-fields">
-              <div class="dynamic-table__card-row" *ngFor="let col of dataColumns; trackBy: trackByKey">
+              <div
+                class="dynamic-table__card-row"
+                *ngFor="let col of cardBodyFieldColumns; trackBy: trackByKey"
+                [class.dynamic-table__card-row--category]="isCategoryCardColumn(col)">
                 <dt class="dynamic-table__card-label">{{ col.label }}</dt>
-                <dd class="dynamic-table__card-value">{{ formatCell(row, col) }}</dd>
+                <dd class="dynamic-table__card-value">
+                  <span *ngIf="isCategoryCardColumn(col)" class="dynamic-table__category-pill">{{
+                    formatCell(row, col)
+                  }}</span>
+                  <ng-container *ngIf="!isCategoryCardColumn(col)">{{ formatCell(row, col) }}</ng-container>
+                </dd>
               </div>
             </dl>
-            <footer class="dynamic-table__card-actions" *ngIf="actionColumns.length">
-              <div class="dynamic-table__card-action" *ngFor="let col of actionColumns; trackBy: trackByKey">
+            <footer class="dynamic-table__card-actions dynamic-table__card-actions--toolbar" *ngIf="cardActionColumns.length">
+              <div class="dynamic-table__card-action" *ngFor="let col of cardActionColumns; trackBy: trackByKey">
                 <span class="dynamic-table__card-action-label" *ngIf="col.label">{{ col.label }}</span>
-                <ng-container *ngTemplateOutlet="cellTpl; context: { row: row, col: col }"></ng-container>
+                <ng-container *ngTemplateOutlet="cellTpl; context: { row: row, col: col, cardFooter: true }"></ng-container>
               </div>
             </footer>
           </article>

@@ -45,6 +45,8 @@ export interface DynamicTableViewConfig {
   filterPlaceholder?: string;
   /** Default true. */
   showFilter?: boolean;
+  /** Default true. Set false to hide the Table ⇄ Card segmented toggle. */
+  showViewToggle?: boolean;
 }
 
 /** Emitted whenever page, sort, or (debounced) filter changes — use for server requests. */

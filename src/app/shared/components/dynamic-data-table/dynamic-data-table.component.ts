@@ -106,6 +106,15 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy, OnInit {
 
   displayedColumnKeys: string[] = [];
 
+  /**
+   * Card view column slices — stable references for `*ngFor` (getters that `filter()` would
+   * allocate a new array every change-detection tick and trigger dev-mode ExpressionChanged errors).
+   */
+  cardHeroTitleCol: DynamicTableColumn | null = null;
+  cardHeroAmountCol: DynamicTableColumn | null = null;
+  cardBodyFieldColumns: DynamicTableColumn[] = [];
+  cardActionColumns: DynamicTableColumn[] = [];
+
   /** Inline receipt preview (View) — direct URL on `<img>` / `<iframe>` (see spec). */
   receiptModalOpen = false;
   receiptModalHasFile = false;
@@ -152,6 +161,10 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy, OnInit {
     return this.config?.showFilter !== false;
   }
 
+  get showViewToggle(): boolean {
+    return this.config?.showViewToggle !== false;
+  }
+
   get pageSizeOptions(): number[] {
     return this.config?.pagination.pageSizeOptions ?? [5, 10, 25];
   }
@@ -161,7 +174,7 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy, OnInit {
   }
 
   get showTableHead(): boolean {
-    return !!(this.config?.title || this.showFilter);
+    return !!(this.config?.title || this.showFilter || this.showViewToggle);
   }
 
   /**
@@ -262,6 +275,7 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy, OnInit {
       } else {
         this.displayedColumnKeys = [];
       }
+      this.refreshCardLayoutCaches();
     }
     if (changes['rows'] || changes['config']) {
       this.dataSource.data = this.rows ?? [];
@@ -321,14 +335,36 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy, OnInit {
     return this.effectiveCellSwitch(col) !== '__plain__';
   }
 
-  /** Non-action columns — rendered as label/value pairs in card view. */
-  get dataColumns(): DynamicTableColumn[] {
-    return this.columns.filter((c) => !this.isActionColumn(c));
+  /** Recompute card column slices when `config.columns` changes. */
+  private refreshCardLayoutCaches(): void {
+    if (!this.config?.columns?.length) {
+      this.cardHeroTitleCol = null;
+      this.cardHeroAmountCol = null;
+      this.cardBodyFieldColumns = [];
+      this.cardActionColumns = [];
+      return;
+    }
+    const cols = this.columns;
+    const dataCols = cols.filter((c) => !this.isActionColumn(c));
+    this.cardActionColumns = cols.filter((c) => this.isActionColumn(c));
+    const title = dataCols.find((c) => c.key.toLowerCase() === 'title') ?? null;
+    this.cardHeroTitleCol = title;
+    this.cardHeroAmountCol =
+      dataCols.find((c) => c.key.toLowerCase() === 'amount' && c.valueFormat === 'inr') ?? null;
+    if (!title) {
+      this.cardBodyFieldColumns = dataCols;
+      return;
+    }
+    const skip = new Set<string>([title.key]);
+    if (this.cardHeroAmountCol) {
+      skip.add(this.cardHeroAmountCol.key);
+    }
+    this.cardBodyFieldColumns = dataCols.filter((c) => !skip.has(c.key));
   }
 
-  /** Action columns — rendered as a footer button bar in card view. */
-  get actionColumns(): DynamicTableColumn[] {
-    return this.columns.filter((c) => this.isActionColumn(c));
+  isCategoryCardColumn(col: DynamicTableColumn): boolean {
+    const k = col.key.toLowerCase();
+    return k === 'category_name' || k === 'category';
   }
 
   trackByRowIndex(index: number, row: Record<string, unknown>): string | number {
