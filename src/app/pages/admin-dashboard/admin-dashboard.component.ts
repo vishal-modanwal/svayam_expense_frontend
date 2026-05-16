@@ -3,7 +3,6 @@ import {
   ChangeDetectorRef,
   Component,
   ElementRef,
-  HostListener,
   Inject,
   OnDestroy,
   OnInit,
@@ -16,7 +15,12 @@ import { Chart, registerables } from 'chart.js';
 import type { ChartConfiguration } from 'chart.js';
 import { forkJoin, Subscription } from 'rxjs';
 import { Category, Expense } from 'src/app/core/models/app.models';
-import { AdminBudgetDetailsFilter, AdminService } from 'src/app/core/services/admin.service';
+import {
+  AdminBudgetDetailsFilter,
+  AdminService,
+  AdminUsersDetailsFilter,
+  UserActivationRequestDto
+} from 'src/app/core/services/admin.service';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { CategoryService } from 'src/app/core/services/category.service';
 import { ExpenseService } from 'src/app/core/services/expense.service';
@@ -32,14 +36,38 @@ import {
   buildViewConfigFromTableMeta,
   withEmployeeUsersTableEnhancements
 } from 'src/app/core/utils/table-meta.utils';
+import { withNormalizedExpenseNotes } from 'src/app/core/utils/expense-notes.util';
 import { listRowReceiptPath } from 'src/app/core/utils/receipt-url';
+import { UsersDetailsResponse } from 'src/app/core/models/table-meta.models';
 import {
   DynamicTableQuery,
-  DynamicTableViewConfig
+  DynamicTableViewConfig,
+  DynamicTableViewMode
 } from 'src/app/shared/components/dynamic-data-table/dynamic-data-table.models';
+import { DynamicDataTableComponent } from 'src/app/shared/components/dynamic-data-table/dynamic-data-table.component';
 import { AdminSidebarToolAction } from './sidebar/sidebar.component';
 
-type AdminSection = 'expenses' | 'budgets' | 'employees';
+type AdminSection = 'expenses' | 'budgets' | 'employees' | 'categories' | 'notifications' | 'requests';
+
+interface ActivationRequestUi {
+  requestId: number;
+  userId: number;
+  displayName: string;
+}
+
+/** One row from `GET /api/admin/notifications` mapped for the admin UI. */
+interface AdminNotificationUiRow {
+  id: number;
+  tone: 'info' | 'warn';
+  icon: string;
+  title: string;
+  body: string;
+  isRead: boolean;
+  /** ISO 8601 from API for `<time datetime>`; null when missing or invalid. */
+  createdAtIso: string | null;
+  /** Locale-formatted instant for display (empty when unknown). */
+  timeLabel: string;
+}
 
 interface AiChatLine {
   role: 'user' | 'assistant';
@@ -91,6 +119,11 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   summary: any;
   budgetDetails: any[] = [];
   categories: Category[] = [];
+  /** Categories workspace — all rows from GET /category (admin view). */
+  adminCategories: Category[] = [];
+  categoryAdminLoading = false;
+  isCategoryEditModalOpen = false;
+  categoryForDelete: Category | null = null;
 
   activeSection: AdminSection = 'expenses';
   isAiSummaryOpen = false;
@@ -110,6 +143,16 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   navDrawerOpen = false;
   adminNotificationCount = 0;
   adminAlertBadgeCount = 0;
+  /** Pending activation requests (admin top bar badge). */
+  adminActivationRequestCount = 0;
+  /** Rows from `GET /api/admin/notifications` for `/admin/notifications`. */
+  adminApiNotifications: AdminNotificationUiRow[] = [];
+  adminNotificationsLoading = false;
+  adminNotificationListTotal = 0;
+  /** Pending account re-activation rows (`GET /api/admin/activation-requests`). */
+  activationRequestsUi: ActivationRequestUi[] = [];
+  activationRequestsLoading = false;
+  private readonly activationRequestBusyIds = new Set<number>();
   userName = 'Admin';
 
   expenseLoading = false;
@@ -139,9 +182,48 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
    */
   expenseAudience: 'employee' | 'admin' | 'admin-extra' | 'inactive-users' = 'employee';
 
+  /** Table ⇄ Card for All expenses — toolbar lives in section head; synced with `#adminExpenseDt`. */
+  adminExpenseToolbarViewMode: DynamicTableViewMode = 'table';
+  private adminExpenseDataTable?: DynamicDataTableComponent;
+
+  @ViewChild('adminExpenseDt')
+  set adminExpenseDtView(c: DynamicDataTableComponent | undefined) {
+    this.adminExpenseDataTable = c;
+    if (c) {
+      this.adminExpenseToolbarViewMode = c.getViewMode();
+      this.cdr.markForCheck();
+    }
+  }
+
+  /** Budget overview table — toolbar Table/Card in section head. */
+  budgetToolbarViewMode: DynamicTableViewMode = 'table';
+  private budgetDataTable?: DynamicDataTableComponent;
+
+  @ViewChild('budgetDt')
+  set budgetDtView(c: DynamicDataTableComponent | undefined) {
+    this.budgetDataTable = c;
+    if (c) {
+      this.budgetToolbarViewMode = c.getViewMode();
+      this.cdr.markForCheck();
+    }
+  }
+
+  /** Employees list — toolbar Table/Card in section head. */
+  employeeToolbarViewMode: DynamicTableViewMode = 'table';
+  private employeeDataTable?: DynamicDataTableComponent;
+
+  @ViewChild('employeeDt')
+  set employeeDtView(c: DynamicDataTableComponent | undefined) {
+    this.employeeDataTable = c;
+    if (c) {
+      this.employeeToolbarViewMode = c.getViewMode();
+      this.cdr.markForCheck();
+    }
+  }
+
   /**
    * Employee active / inactive counts shown above the expense search bar.
-   * Filled from `usersEmployeeSourceRows` when present, else from GET /admin/users-details in `refreshExpenseToolbarUserCounts`.
+   * Filled from `employeeMetricTotals` when present, else from GET /admin/users-details in `refreshExpenseToolbarUserCounts`.
    * Set manually with `setExpenseToolbarUserCounts` if your API exposes counts elsewhere.
    */
   expenseToolbarActiveUsers: number | null = null;
@@ -172,9 +254,9 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   usersTableConfig: DynamicTableViewConfig | null = null;
   usersTableRows: Record<string, unknown>[] = [];
   usersTableLoading = false;
-  /** Full employee list from API before client filter/sort. */
-  usersEmployeeSourceRows: Record<string, unknown>[] = [];
-  /** Client-side paginator: length = filtered rows (not current page). */
+  /** Active / inactive / total counts (from users-details summary or lightweight count queries). */
+  employeeMetricTotals: { active: number; inactive: number; total: number } | null = null;
+  /** Server-side paginator total for the current `employeeListFilter` + search. */
   employeeTotalCount = 0;
   readonly employeeQuery: DynamicTableQuery = {
     pageIndex: 0,
@@ -185,6 +267,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   };
   employeeSearchInput = '';
   employeeSortMode: 'latest' | 'az' = 'latest';
+  /** Employees table chip filter — same active semantics as row toggle / expense toolbar counts. */
+  employeeListFilter: 'active' | 'inactive' = 'active';
   private readonly employeeToggleBusyIds = new Set<number>();
   /** Snapshot for `app-dynamic-data-table` `@Input` (OnPush). */
   employeeToggleBusyRowIds: number[] = [];
@@ -247,6 +331,12 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     allocated_amount: [0, [Validators.required, Validators.min(1)]]
   });
 
+  readonly categoryEditForm = this.fb.group({
+    category_id: [null as number | null, [Validators.required]],
+    name: ['', [Validators.required]],
+    description: ['']
+  });
+
   constructor(
     private readonly fb: FormBuilder,
     private readonly authService: AuthService,
@@ -278,6 +368,15 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     if (this.activeSection === 'employees') {
       return this.i18n.instant('admin.sectionEmployeesTitle');
     }
+    if (this.activeSection === 'categories') {
+      return this.i18n.instant('admin.sectionCategoriesTitle');
+    }
+    if (this.activeSection === 'notifications') {
+      return this.i18n.instant('admin.sectionNotificationsTitle');
+    }
+    if (this.activeSection === 'requests') {
+      return this.i18n.instant('admin.sectionRequestsTitle');
+    }
     return this.i18n.instant('admin.sectionExpensesTitle');
   }
 
@@ -287,6 +386,15 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     }
     if (this.activeSection === 'employees') {
       return this.i18n.instant('admin.sectionEmployeesSubtitle');
+    }
+    if (this.activeSection === 'categories') {
+      return this.i18n.instant('admin.sectionCategoriesSubtitle');
+    }
+    if (this.activeSection === 'notifications') {
+      return this.i18n.instant('admin.sectionNotificationsSubtitle');
+    }
+    if (this.activeSection === 'requests') {
+      return this.i18n.instant('admin.sectionRequestsSubtitle');
     }
     return this.i18n.instant('admin.sectionExpensesSubtitle');
   }
@@ -319,17 +427,17 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     return Number(this.summary?.overall_usage_hike || 0);
   }
 
-  /** Employees section — metrics from `users-details` cache (same basis as toolbar chips). */
+  /** Employees section — metrics from users-details aggregates (summary or count queries). */
   get employeeSectionTotalUsers(): number {
-    return this.usersEmployeeSourceRows.length;
+    return this.employeeMetricTotals?.total ?? 0;
   }
 
   get employeeSectionActiveCount(): number {
-    return this.usersEmployeeSourceRows.filter((r) => this.readEmployeeRowIsActiveForExpenseToolbar(r)).length;
+    return this.employeeMetricTotals?.active ?? 0;
   }
 
   get employeeSectionInactiveCount(): number {
-    return Math.max(0, this.employeeSectionTotalUsers - this.employeeSectionActiveCount);
+    return this.employeeMetricTotals?.inactive ?? 0;
   }
 
   get aiHighlights(): string[] {
@@ -594,6 +702,21 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.loadExpenses();
   }
 
+  onAdminExpenseToolbarViewChange(mode: DynamicTableViewMode): void {
+    this.adminExpenseToolbarViewMode = mode;
+    this.adminExpenseDataTable?.applyViewMode(mode);
+  }
+
+  onBudgetToolbarViewChange(mode: DynamicTableViewMode): void {
+    this.budgetToolbarViewMode = mode;
+    this.budgetDataTable?.applyViewMode(mode);
+  }
+
+  onEmployeeToolbarViewChange(mode: DynamicTableViewMode): void {
+    this.employeeToolbarViewMode = mode;
+    this.employeeDataTable?.applyViewMode(mode);
+  }
+
   onAdminExpenseDynamicDelete(row: Record<string, unknown>): void {
     const id = Number(row['id']);
     const full = this.adminExpensesCache.find((e) => e.id === id);
@@ -631,6 +754,11 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.loadExpenseTableMeta();
     this.loadBudgetTableMeta();
     this.refreshExpenseToolbarUserCounts();
+    this.refreshAdminTopbarRequestBadge();
+    this.refreshAdminNotificationBadge();
+    if (this.activeSection === 'notifications') {
+      this.loadAdminNotificationsSection();
+    }
   }
 
   onSidebarToolAction(action: AdminSidebarToolAction): void {
@@ -642,14 +770,161 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   }
 
   private normalizeAdminSectionParam(raw: string | null): AdminSection {
-    if (raw === 'budgets' || raw === 'employees' || raw === 'expenses') {
-      return raw;
+    if (
+      raw === 'budgets' ||
+      raw === 'employees' ||
+      raw === 'expenses' ||
+      raw === 'categories' ||
+      raw === 'category' ||
+      raw === 'notifications' ||
+      raw === 'requests'
+    ) {
+      return raw === 'category' ? 'categories' : (raw as AdminSection);
     }
     return 'expenses';
   }
 
+  openNotificationsWorkspace(): void {
+    this.navDrawerOpen = false;
+    void this.router.navigate(['/admin', 'notifications']);
+  }
+
+  openRequestsWorkspace(): void {
+    this.navDrawerOpen = false;
+    void this.router.navigate(['/admin', 'requests']);
+  }
+
+  openAdminExpensesWorkspace(): void {
+    this.navDrawerOpen = false;
+    void this.router.navigate(['/admin', 'expenses']);
+  }
+
+  /** Silent count probe for the admin top bar badge (no error toast). */
+  private refreshAdminTopbarRequestBadge(): void {
+    this.adminService.getActivationRequests().subscribe({
+      next: (res) => {
+        this.adminActivationRequestCount = this.parseActivationRequestsResponse(res).length;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.adminActivationRequestCount = 0;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  /** Loads pending inactive-user activation rows from the API. */
+  loadActivationRequestsSection(): void {
+    this.activationRequestsLoading = true;
+    this.adminService.getActivationRequests().subscribe({
+      next: (res) => {
+        this.activationRequestsUi = this.parseActivationRequestsResponse(res);
+        this.adminActivationRequestCount = this.activationRequestsUi.length;
+        this.activationRequestsLoading = false;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.activationRequestsUi = [];
+        this.adminActivationRequestCount = 0;
+        this.activationRequestsLoading = false;
+        this.toastService.error(this.i18n.instant('admin.requestsLoadFailed'));
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  refreshActivationRequestsSection(): void {
+    this.loadActivationRequestsSection();
+  }
+
+  activationRequestRowBusy(requestId: number): boolean {
+    return this.activationRequestBusyIds.has(requestId);
+  }
+
+  onActivationRequestAccept(row: ActivationRequestUi): void {
+    if (this.activationRequestBusyIds.has(row.requestId)) {
+      return;
+    }
+    this.activationRequestBusyIds.add(row.requestId);
+    this.cdr.markForCheck();
+    this.adminService.approveActivationRequest(row.requestId).subscribe({
+      next: (res) => {
+        this.toastService.success(res.message || this.i18n.instant('admin.requestAcceptedToast'));
+        this.activationRequestBusyIds.delete(row.requestId);
+        this.loadActivationRequestsSection();
+      },
+      error: (err) => {
+        this.activationRequestBusyIds.delete(row.requestId);
+        this.toastService.error(err?.error?.message || this.i18n.instant('admin.requestAcceptFailed'));
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  onActivationRequestDeny(row: ActivationRequestUi): void {
+    if (this.activationRequestBusyIds.has(row.requestId)) {
+      return;
+    }
+    this.activationRequestBusyIds.add(row.requestId);
+    this.cdr.markForCheck();
+    this.adminService.denyActivationRequest(row.requestId).subscribe({
+      next: (res) => {
+        this.toastService.success(res.message || this.i18n.instant('admin.requestDeniedToast'));
+        this.activationRequestBusyIds.delete(row.requestId);
+        this.loadActivationRequestsSection();
+      },
+      error: (err) => {
+        this.activationRequestBusyIds.delete(row.requestId);
+        this.toastService.error(err?.error?.message || this.i18n.instant('admin.requestDenyFailed'));
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  private parseActivationRequestsResponse(res: unknown): ActivationRequestUi[] {
+    if (Array.isArray(res)) {
+      return this.parseActivationRequestsResponse({ data: res as UserActivationRequestDto[] });
+    }
+    const envelope = res as {
+      status?: string;
+      data?: UserActivationRequestDto[];
+      requests?: UserActivationRequestDto[];
+    };
+    const list = envelope.data ?? envelope.requests ?? [];
+    const out: ActivationRequestUi[] = [];
+    for (const raw of list) {
+      const r = raw as UserActivationRequestDto;
+      const requestId = Number(r.id ?? r.request_id ?? r.requestId ?? 0);
+      const userId = Number(r.user_id ?? r.userId ?? 0);
+      const displayName = String(r.name ?? r.user_name ?? r.full_name ?? r.username ?? '').trim();
+      if (!Number.isFinite(requestId) || requestId <= 0 || !displayName) {
+        continue;
+      }
+      out.push({
+        requestId,
+        userId: Number.isFinite(userId) && userId > 0 ? userId : 0,
+        displayName
+      });
+    }
+    return out;
+  }
+
+  goToAdminWorkspaceSection(section: Exclude<AdminSection, 'notifications' | 'requests'>): void {
+    void this.router.navigate(['/admin', section]);
+  }
+
   private applyWorkspaceSection(section: AdminSection): void {
+    const previous = this.activeSection;
     this.activeSection = section;
+    if (previous === 'notifications' && section !== 'notifications') {
+      this.refreshAdminNotificationBadge();
+    }
+    if (previous === 'requests' && section !== 'requests') {
+      this.refreshAdminTopbarRequestBadge();
+    }
+    if (section === 'notifications') {
+      this.loadAdminNotificationsSection();
+    }
     if (section === 'budgets') {
       setTimeout(() => {
         this.rebuildBudgetGaugeModel();
@@ -663,6 +938,264 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     if (section === 'employees') {
       this.loadUsersDetailsForEmployees();
     }
+    if (section === 'categories') {
+      this.loadAdminCategories();
+    }
+    if (section === 'requests') {
+      this.loadActivationRequestsSection();
+    }
+  }
+
+  /**
+   * Loads notifications: `GET /admin/notifications`, then `PATCH /admin/notifications/read-all`.
+   * Badge clears after read-all succeeds.
+   */
+  loadAdminNotificationsSection(): void {
+    this.adminNotificationsLoading = true;
+    this.adminService.getAdminNotifications({ limit: 20, offset: 0 }).subscribe({
+      next: (raw) => {
+        this.applyAdminNotificationsListResponse(raw);
+        this.markAllAdminNotificationsReadAfterList();
+      },
+      error: (err) => {
+        this.adminApiNotifications = [];
+        this.adminNotificationListTotal = 0;
+        this.adminNotificationsLoading = false;
+        this.toastService.error(err?.error?.message || this.i18n.instant('admin.notificationsLoadFailed'));
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  private applyAdminNotificationsListResponse(raw: unknown): void {
+    const { rows, total } = this.parseAdminNotificationsResponse(raw);
+    const ui: AdminNotificationUiRow[] = [];
+    for (let i = 0; i < rows.length; i += 1) {
+      const m = this.mapAdminNotificationRow(rows[i], i);
+      if (m) {
+        ui.push(m);
+      }
+    }
+    this.adminApiNotifications = ui;
+    this.adminNotificationListTotal =
+      typeof total === 'number' && Number.isFinite(total) ? total : ui.length;
+  }
+
+  private markAllAdminNotificationsReadAfterList(): void {
+    this.adminService.markAllAdminNotificationsRead().subscribe({
+      next: () => {
+        this.adminApiNotifications = this.adminApiNotifications.map((n) => ({ ...n, isRead: true }));
+        this.clearAdminNotificationBadge();
+        this.adminNotificationsLoading = false;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.adminNotificationsLoading = false;
+        this.toastService.error(err?.error?.message || this.i18n.instant('admin.notificationsMarkReadFailed'));
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  /** Clears sidebar unread pill after admin opens Notifications. */
+  private clearAdminNotificationBadge(): void {
+    this.adminNotificationCount = 0;
+    this.cdr.markForCheck();
+  }
+
+  /** Top bar + sidebar unread pill via `GET /api/admin/notifications/unread-count`. */
+  private refreshAdminNotificationBadge(): void {
+    if (this.activeSection === 'notifications') {
+      return;
+    }
+    this.adminService.getAdminNotificationsUnreadCount().subscribe({
+      next: (res) => {
+        this.adminNotificationCount = this.readAdminUnreadNotificationCount(res);
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.adminNotificationCount = 0;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  private readAdminUnreadNotificationCount(res: unknown): number {
+    const o = res as Record<string, unknown> | null | undefined;
+    const n = Number(o?.['unread_count'] ?? o?.['unreadCount'] ?? 0);
+    return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+  }
+
+  /**
+   * Backend shape: `{ notifications: [...], pagination: { total, limit, offset, has_more } }`.
+   * Also accepts legacy `{ data }` or a bare array.
+   */
+  private parseAdminNotificationsResponse(raw: unknown): { rows: Record<string, unknown>[]; total?: number } {
+    if (Array.isArray(raw)) {
+      return { rows: raw as Record<string, unknown>[] };
+    }
+    if (!raw || typeof raw !== 'object') {
+      return { rows: [] };
+    }
+    const o = raw as Record<string, unknown>;
+    const list = o['notifications'] ?? o['data'] ?? o['rows'] ?? o['items'] ?? [];
+    const rows = Array.isArray(list) ? (list as Record<string, unknown>[]) : [];
+    const p = o['pagination'] as Record<string, unknown> | undefined;
+    const fromPagination =
+      typeof p?.['totalItems'] === 'number'
+        ? (p['totalItems'] as number)
+        : typeof p?.['total_records'] === 'number'
+          ? (p['total_records'] as number)
+          : typeof p?.['total'] === 'number'
+            ? (p['total'] as number)
+            : undefined;
+    const total = fromPagination ?? (typeof o['total'] === 'number' ? (o['total'] as number) : undefined);
+    return { rows, total };
+  }
+
+  private mapAdminNotificationRow(raw: Record<string, unknown>, fallbackIndex: number): AdminNotificationUiRow | null {
+    const rawId = Number(raw['id'] ?? raw['notification_id'] ?? 0);
+    const id = Number.isFinite(rawId) && rawId > 0 ? rawId : -(fallbackIndex + 1);
+    const title = this.titleFromAdminNotificationApi(raw);
+    const body = this.bodyFromAdminNotificationApi(raw);
+    if (!title && !body) {
+      return null;
+    }
+    const tone = this.inferAdminNotificationTone(raw);
+    const icon = this.pickAdminNotificationIcon(raw, tone);
+    const isRead = this.readBoolish(raw['is_read'] ?? raw['read'] ?? raw['isRead']);
+    const { iso, label } = this.notificationTimeFields(raw);
+    return {
+      id,
+      title: title || this.i18n.instant('admin.notificationsUntitled'),
+      body,
+      tone,
+      icon,
+      isRead,
+      createdAtIso: iso,
+      timeLabel: label
+    };
+  }
+
+  /** Reads `created_at` (and common aliases), returns ISO + localized label. */
+  private notificationTimeFields(raw: Record<string, unknown>): { iso: string | null; label: string } {
+    const rawTs = raw['created_at'] ?? raw['createdAt'] ?? raw['created'] ?? raw['timestamp'];
+    let s = '';
+    if (typeof rawTs === 'string') {
+      s = rawTs.trim();
+    } else if (typeof rawTs === 'number' && Number.isFinite(rawTs)) {
+      const d = new Date(rawTs);
+      if (!Number.isNaN(d.getTime())) {
+        s = d.toISOString();
+      }
+    }
+    if (!s) {
+      return { iso: null, label: '' };
+    }
+    const d = new Date(s);
+    if (Number.isNaN(d.getTime())) {
+      return { iso: null, label: '' };
+    }
+    const iso = d.toISOString();
+    const locale = this.i18n.currentLang() === 'hi' ? 'hi-IN' : 'en-IN';
+    try {
+      const label = new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(d);
+      return { iso, label };
+    } catch {
+      return { iso, label: d.toLocaleString() };
+    }
+  }
+
+  /** Prefer `title` / `subject`; else humanize `type` (e.g. `expense_created` → "Expense Created"). */
+  private titleFromAdminNotificationApi(raw: Record<string, unknown>): string {
+    const explicit = String(raw['title'] ?? raw['subject'] ?? '').trim();
+    if (explicit) {
+      return explicit;
+    }
+    const typ = String(raw['type'] ?? '').trim();
+    return typ ? this.formatNotificationTypeLabel(typ) : '';
+  }
+
+  private formatNotificationTypeLabel(snake: string): string {
+    return snake
+      .replace(/_/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+
+  /** Primary `message`; optional user line when `user_name` / `user_email` are set. */
+  private bodyFromAdminNotificationApi(raw: Record<string, unknown>): string {
+    const msg = String(raw['message'] ?? raw['body'] ?? raw['content'] ?? '').trim();
+    const name = String(raw['user_name'] ?? '').trim();
+    const email = String(raw['user_email'] ?? '').trim();
+    const who = [name, email].filter(Boolean).join(' · ');
+    if (!who || msg.includes(name) || (email && msg.includes(email))) {
+      return msg;
+    }
+    return msg ? `${msg}\n\n${who}` : who;
+  }
+
+  private inferAdminNotificationTone(raw: Record<string, unknown>): 'info' | 'warn' {
+    for (const k of ['severity', 'level', 'priority'] as const) {
+      const sev = String(raw[k] ?? '')
+        .trim()
+        .toLowerCase();
+      if (/\b(warn|warning|error|critical|high|danger|fatal|severe)\b/.test(sev)) {
+        return 'warn';
+      }
+    }
+    const typ = String(raw['type'] ?? '')
+      .trim()
+      .toLowerCase();
+    if (/\b(alert|warning|error|critical)\b/.test(typ)) {
+      return 'warn';
+    }
+    if (/(rejected|denied|failed|failure|exceeded|overspent|over_budget|urgent)/.test(typ)) {
+      return 'warn';
+    }
+    return 'info';
+  }
+
+  private pickAdminNotificationIcon(raw: Record<string, unknown>, tone: 'info' | 'warn'): string {
+    const custom = String(raw['icon'] ?? '').trim().toLowerCase();
+    if (custom && /^[a-z0-9_]+$/.test(custom)) {
+      return custom;
+    }
+    const typ = String(raw['type'] ?? '').toLowerCase();
+    if (typ.includes('expense')) {
+      return 'receipt_long';
+    }
+    if (typ.includes('budget')) {
+      return 'account_balance_wallet';
+    }
+    if (typ.includes('user') || typ.includes('employee')) {
+      return 'person';
+    }
+    if (typ.includes('category')) {
+      return 'category';
+    }
+    if (typ.includes('request') || typ.includes('activation')) {
+      return 'how_to_reg';
+    }
+    return tone === 'warn' ? 'warning' : 'notifications';
+  }
+
+  private readBoolish(v: unknown): boolean {
+    if (v === true || v === 1 || v === '1') {
+      return true;
+    }
+    if (v === false || v === 0 || v === '0') {
+      return false;
+    }
+    const s = String(v ?? '').trim().toLowerCase();
+    if (s === 'true' || s === 'yes' || s === 'read' || s === '1') {
+      return true;
+    }
+    if (s === 'false' || s === 'no' || s === 'unread' || s === '0' || s === '') {
+      return false;
+    }
+    return false;
   }
 
   logoutAdmin(): void {
@@ -672,6 +1205,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.closeEditBudgetModal();
     this.closeBudgetDeleteDialog();
     this.closeBudgetDescriptionModal();
+    this.closeCategoryEditModal();
+    this.closeCategoryDeleteDialog();
     this.authService.logout(true);
   }
 
@@ -1381,32 +1916,42 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   }
 
   loadUsersDetailsForEmployees(): void {
+    this.employeeQuery.pageIndex = 0;
+    this.employeeQuery.filter = '';
+    this.employeeQuery.sortActive = null;
+    this.employeeQuery.sortDirection = '';
+    this.employeeSearchInput = '';
+    this.employeeListFilter = 'active';
+    this.employeeSortMode = 'latest';
     this.usersTableLoading = true;
-    const pagination = { pageSizeOptions: [10, 25, 50], defaultPageSize: 25 };
-    this.adminService.getUsersDetails().subscribe({
+    const pagination = { pageSizeOptions: [10, 25, 50], defaultPageSize: this.employeeQuery.pageSize };
+    this.adminService.getUsersDetails(this.buildEmployeeTableApiFilter()).subscribe({
       next: (res) => {
-        const title = this.i18n.instant('admin.employees');
-        let cfg = buildViewConfigFromEmbeddedColumns(res.columns, pagination, title);
-        cfg = withEmployeeUsersTableEnhancements(cfg, this.i18n.instant('admin.employeeActivityColumn'));
-        this.usersTableConfig = cfg;
-        if (cfg?.pagination?.defaultPageSize) {
-          this.employeeQuery.pageSize = cfg.pagination.defaultPageSize;
+        if (!this.usersTableConfig && res.columns?.length) {
+          const title = this.i18n.instant('admin.employees');
+          let cfg = buildViewConfigFromEmbeddedColumns(res.columns, pagination, title);
+          cfg = withEmployeeUsersTableEnhancements(cfg, this.i18n.instant('admin.employeeActivityColumn'));
+          if (cfg) {
+            const { title: _employeesTableTitleOmit, ...rest } = cfg;
+            cfg = { ...rest, showViewToggle: false };
+          }
+          this.usersTableConfig = cfg;
+          if (cfg?.pagination?.defaultPageSize) {
+            this.employeeQuery.pageSize = cfg.pagination.defaultPageSize;
+          }
+        } else if (!this.usersTableConfig) {
+          this.toastService.error(this.i18n.instant('admin.employeeListNoColumns'));
+          this.usersTableLoading = false;
+          this.cdr.markForCheck();
+          return;
         }
-        this.employeeQuery.pageIndex = 0;
-        this.employeeQuery.filter = '';
-        this.employeeSearchInput = '';
-        const raw = (res.data ?? []) as Record<string, unknown>[];
-        this.usersEmployeeSourceRows = raw.map((r) => ({ ...r }));
-        this.applyEmployeeView();
-        this.applyExpenseToolbarUserCountsFromRows(this.usersEmployeeSourceRows);
-        this.usersTableLoading = false;
-        this.cdr.markForCheck();
+        this.finalizeEmployeeListFetch(res);
       },
       error: () => {
         this.usersTableConfig = null;
-        this.usersEmployeeSourceRows = [];
         this.usersTableRows = [];
         this.employeeTotalCount = 0;
+        this.employeeMetricTotals = null;
         this.expenseToolbarActiveUsers = null;
         this.expenseToolbarInactiveUsers = null;
         this.usersTableLoading = false;
@@ -1418,7 +1963,11 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   onEmployeeDynamicQuery(q: DynamicTableQuery): void {
     this.employeeQuery.pageIndex = q.pageIndex;
     this.employeeQuery.pageSize = q.pageSize;
-    this.applyEmployeeView();
+    if (q.sortActive) {
+      this.employeeQuery.sortActive = q.sortActive;
+      this.employeeQuery.sortDirection = q.sortDirection;
+    }
+    this.loadEmployeeTableFromServer();
     this.cdr.markForCheck();
   }
 
@@ -1430,21 +1979,33 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
   applyEmployeeSort(mode: 'latest' | 'az'): void {
     this.employeeSortMode = mode;
+    this.employeeQuery.sortActive = null;
+    this.employeeQuery.sortDirection = '';
     this.employeeQuery.pageIndex = 0;
-    this.applyEmployeeView();
+    this.loadEmployeeTableFromServer();
+  }
+
+  setEmployeeListFilter(filter: 'active' | 'inactive'): void {
+    if (this.employeeListFilter === filter) {
+      return;
+    }
+    this.employeeListFilter = filter;
+    this.employeeQuery.pageIndex = 0;
+    this.loadEmployeeTableFromServer();
+    this.cdr.markForCheck();
   }
 
   applyEmployeeSearch(): void {
     this.employeeQuery.filter = this.employeeSearchInput.trim();
     this.employeeQuery.pageIndex = 0;
-    this.applyEmployeeView();
+    this.loadEmployeeTableFromServer();
   }
 
   clearEmployeeSearch(): void {
     this.employeeSearchInput = '';
     this.employeeQuery.filter = '';
     this.employeeQuery.pageIndex = 0;
-    this.applyEmployeeView();
+    this.loadEmployeeTableFromServer();
   }
 
   /** Optional override when counts come from a dedicated API instead of users-details rows. */
@@ -1464,7 +2025,9 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       row['status'] ??
       row['enabled'] ??
       row['user_status'] ??
-      row['account_status'];
+      row['account_status'] ??
+      row['activity_status'] ??
+      row['activityStatus'];
     if (typeof v === 'boolean') {
       return v;
     }
@@ -1500,10 +2063,10 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.expenseToolbarInactiveUsers = inactive;
   }
 
-  /** Prefer cached employee rows; otherwise one `users-details` fetch for the expense toolbar chips. */
+  /** Prefer server-derived counts; else legacy full-list payload rows. */
   private refreshExpenseToolbarUserCounts(): void {
-    if (this.usersEmployeeSourceRows.length > 0) {
-      this.applyExpenseToolbarUserCountsFromRows(this.usersEmployeeSourceRows);
+    if (this.employeeMetricTotals != null) {
+      this.setExpenseToolbarUserCounts(this.employeeMetricTotals.active, this.employeeMetricTotals.inactive);
       this.cdr.markForCheck();
       return;
     }
@@ -1535,9 +2098,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
     this.adminService.toggleUserStatus(id).subscribe({
       next: (res) => {
-        this.flipEmployeeActiveInSource(id);
-        this.applyEmployeeView();
-        this.applyExpenseToolbarUserCountsFromRows(this.usersEmployeeSourceRows);
+        this.loadEmployeeTableFromServer();
         this.employeeToggleBusyIds.delete(id);
         this.employeeToggleBusyRowIds = [...this.employeeToggleBusyIds];
         this.toastService.success(res.message || this.i18n.instant('admin.employeeStatusUpdated'));
@@ -1552,82 +2113,110 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  private applyEmployeeView(): void {
-    const q = this.employeeQuery.filter.trim().toLowerCase();
-    let rows = this.usersEmployeeSourceRows.map((r) => ({ ...r }));
-    if (q) {
-      rows = rows.filter((r) => this.employeeRowMatchesSearch(r, q));
+  private buildEmployeeTableApiFilter(): AdminUsersDetailsFilter {
+    const page = this.employeeQuery.pageIndex + 1;
+    const limit = this.employeeQuery.pageSize;
+    const search = this.employeeQuery.filter.trim();
+    const is_active: 0 | 1 = this.employeeListFilter === 'active' ? 1 : 0;
+    const sortActive = this.employeeQuery.sortActive?.trim();
+    const sortBy = sortActive || (this.employeeSortMode === 'az' ? 'name' : 'id');
+    const order: 'ASC' | 'DESC' =
+      sortActive && this.employeeQuery.sortDirection
+        ? this.employeeQuery.sortDirection === 'asc'
+          ? 'ASC'
+          : 'DESC'
+        : this.employeeSortMode === 'az'
+          ? 'ASC'
+          : 'DESC';
+    return {
+      page,
+      limit,
+      sortBy,
+      order,
+      is_active,
+      ...(search ? { search } : {})
+    };
+  }
+
+  private loadEmployeeTableFromServer(): void {
+    if (!this.usersTableConfig) {
+      this.loadUsersDetailsForEmployees();
+      return;
     }
-    rows.sort((a, b) => {
-      if (this.employeeSortMode === 'az') {
-        return this.readEmployeeNameForSort(a).localeCompare(this.readEmployeeNameForSort(b), undefined, {
-          sensitivity: 'base'
-        });
+    this.usersTableLoading = true;
+    this.adminService.getUsersDetails(this.buildEmployeeTableApiFilter()).subscribe({
+      next: (res) => this.finalizeEmployeeListFetch(res),
+      error: (err) => {
+        this.usersTableRows = [];
+        this.employeeTotalCount = 0;
+        this.usersTableLoading = false;
+        this.toastService.error(err?.error?.message || this.i18n.instant('admin.employeeListLoadFailed'));
+        this.cdr.markForCheck();
       }
-      return this.readEmployeeLatestSortKey(b) - this.readEmployeeLatestSortKey(a);
     });
-    this.employeeTotalCount = rows.length;
-    const pageSize = Math.max(1, this.employeeQuery.pageSize);
-    let pageIndex = this.employeeQuery.pageIndex;
-    const totalPages = Math.max(1, Math.ceil(rows.length / pageSize) || 1);
-    const maxPageIndex = Math.max(0, totalPages - 1);
-    if (pageIndex > maxPageIndex) {
-      pageIndex = maxPageIndex;
-      this.employeeQuery.pageIndex = pageIndex;
-    }
-    const start = pageIndex * pageSize;
-    this.usersTableRows = rows.slice(start, start + pageSize);
   }
 
-  private employeeRowMatchesSearch(row: Record<string, unknown>, q: string): boolean {
-    const hay = [
-      this.readEmployeeScalar(row, ['name', 'full_name', 'user_name', 'first_name', 'username', 'display_name']),
-      this.readEmployeeScalar(row, ['email', 'user_email', 'email_id']),
-      this.readEmployeeScalar(row, ['mobile', 'phone', 'mobile_no', 'phone_number', 'contact'])
-    ]
-      .join(' ')
-      .toLowerCase();
-    return hay.includes(q);
+  private finalizeEmployeeListFetch(res: UsersDetailsResponse): void {
+    this.applyEmployeeServerListResponse(res);
+    this.refreshEmployeeSectionMetricsAfterTableLoad(res);
+    this.usersTableLoading = false;
+    this.cdr.markForCheck();
   }
 
-  private readEmployeeScalar(row: Record<string, unknown>, keys: string[]): string {
-    for (const k of keys) {
-      const v = row[k];
-      if (v != null && String(v).trim() !== '') {
-        return String(v).trim();
-      }
-    }
-    return '';
+  private applyEmployeeServerListResponse(res: UsersDetailsResponse): void {
+    const rows = (res.data ?? []) as Record<string, unknown>[];
+    this.usersTableRows = rows.map((r) => ({ ...r }));
+    this.employeeTotalCount = this.readUsersDetailsListTotal(res, rows.length);
   }
 
-  private readEmployeeNameForSort(row: Record<string, unknown>): string {
-    const n = this.readEmployeeScalar(row, ['name', 'full_name', 'user_name', 'username', 'display_name']);
-    if (n) {
-      return n;
+  private readUsersDetailsListTotal(res: UsersDetailsResponse, rowFallback: number): number {
+    const p = res.pagination;
+    if (typeof p?.totalItems === 'number') {
+      return p.totalItems;
     }
-    const first = this.readEmployeeScalar(row, ['first_name']);
-    const last = this.readEmployeeScalar(row, ['last_name']);
-    return `${first} ${last}`.trim() || String(this.getEmployeeRowUserId(row) ?? '');
+    if (typeof p?.total_records === 'number') {
+      return p.total_records;
+    }
+    return rowFallback;
   }
 
-  private readEmployeeLatestSortKey(row: Record<string, unknown>): number {
-    const keys = ['id', 'user_id', 'created_at', 'updated_at', 'joined_at'];
-    for (const k of keys) {
-      const v = row[k];
-      if (typeof v === 'number' && Number.isFinite(v)) {
-        return v;
-      }
-      if (typeof v === 'string' && /^\d+$/.test(v.trim())) {
-        return Number(v.trim());
-      }
-      if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v)) {
-        const t = Date.parse(v);
-        if (!Number.isNaN(t)) {
-          return t;
-        }
-      }
+  private refreshEmployeeSectionMetricsAfterTableLoad(tableRes: UsersDetailsResponse): void {
+    if (this.tryApplyEmployeeSummaryFromResponse(tableRes)) {
+      return;
     }
-    return 0;
+    forkJoin({
+      active: this.adminService.getUsersDetails({ page: 1, limit: 1, is_active: 1 }),
+      inactive: this.adminService.getUsersDetails({ page: 1, limit: 1, is_active: 0 })
+    }).subscribe({
+      next: ({ active, inactive }) => {
+        const a = this.readUsersDetailsListTotal(active, active.data?.length ?? 0);
+        const b = this.readUsersDetailsListTotal(inactive, inactive.data?.length ?? 0);
+        this.employeeMetricTotals = { active: a, inactive: b, total: a + b };
+        this.setExpenseToolbarUserCounts(a, b);
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        /* keep previous employeeMetricTotals when count probes fail */
+      }
+    });
+  }
+
+  private tryApplyEmployeeSummaryFromResponse(res: UsersDetailsResponse): boolean {
+    const s = res.summary;
+    if (!s) {
+      return false;
+    }
+    const a = s.active_users;
+    const b = s.inactive_users;
+    const t = s.total_users;
+    if (typeof a === 'number' && typeof b === 'number') {
+      const total = typeof t === 'number' ? t : a + b;
+      this.employeeMetricTotals = { active: a, inactive: b, total };
+      this.setExpenseToolbarUserCounts(a, b);
+      this.cdr.markForCheck();
+      return true;
+    }
+    return false;
   }
 
   private getEmployeeRowUserId(row: Record<string, unknown>): number | null {
@@ -1636,55 +2225,11 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     return Number.isFinite(n) ? n : null;
   }
 
-  private flipEmployeeActiveInSource(userId: number): void {
-    const row = this.usersEmployeeSourceRows.find((r) => this.getEmployeeRowUserId(r) === userId);
-    if (!row) {
-      return;
-    }
-    const cur =
-      row['is_active'] ??
-      row['isActive'] ??
-      row['active'] ??
-      row['user_active'] ??
-      row['status'] ??
-      row['enabled'] ??
-      row['user_status'] ??
-      row['account_status'];
-    let next: unknown;
-    if (typeof cur === 'boolean') {
-      next = !cur;
-    } else if (typeof cur === 'number') {
-      next = cur === 1 ? 0 : 1;
-    } else {
-      const s = String(cur ?? '').toLowerCase();
-      next = s === '1' || s === 'true' || s === 'active' ? 0 : 1;
-    }
-    row['is_active'] = next;
-    if ('isActive' in row) {
-      row['isActive'] = next;
-    }
-    if ('active' in row) {
-      row['active'] = next;
-    }
-    if ('enabled' in row) {
-      row['enabled'] = next;
-    }
-    if ('user_active' in row) {
-      row['user_active'] = next;
-    }
-    if ('status' in row) {
-      const on =
-        typeof next === 'boolean'
-          ? next
-          : typeof next === 'number'
-            ? next === 1
-            : String(next).toLowerCase() === '1' || String(next).toLowerCase() === 'true';
-      row['status'] = on ? 'active' : 'inactive';
-    }
-  }
-
   private expenseToFlatRow(e: Expense): Record<string, unknown> {
-    return { ...e, amount: Number(e.amount) } as Record<string, unknown>;
+    return withNormalizedExpenseNotes({
+      ...e,
+      amount: Number(e.amount)
+    } as Record<string, unknown>);
   }
 
   private normalizeExpense(item: Expense): Expense {
@@ -1694,7 +2239,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     };
     const rowLoose = item as unknown as Record<string, unknown>;
     const coalescedPath = listRowReceiptPath(rowLoose) ?? item.receipt_path;
-    return {
+    const normalized = withNormalizedExpenseNotes({
       ...item,
       user_id: item.user_id ?? anyItem.user?.id,
       user_name: item.user_name ?? anyItem.user?.name,
@@ -1702,7 +2247,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       category_id: item.category_id ?? anyItem.category?.id ?? item.category_id,
       category_name: item.category_name ?? anyItem.category?.name,
       receipt_path: coalescedPath ?? item.receipt_path
-    };
+    });
+    return normalized as unknown as Expense;
   }
 
   private getExpenseAudienceView(): 'users' | 'users-inactive' | 'admins' | 'admins-extra' {
@@ -1828,6 +2374,138 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       },
       error: (err) => this.toastService.error(err?.error?.message || 'Category load failed')
     });
+  }
+
+  private loadAdminCategories(): void {
+    this.categoryAdminLoading = true;
+    this.categoryService.getAllForAdmin().subscribe({
+      next: (res) => {
+        this.adminCategories = res.data ?? [];
+        this.categoryAdminLoading = false;
+        this.loadCategories();
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.adminCategories = [];
+        this.categoryAdminLoading = false;
+        this.toastService.error(err?.error?.message || this.i18n.instant('admin.categoryListLoadFailed'));
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  refreshAdminCategoriesSection(): void {
+    this.loadAdminCategories();
+  }
+
+  openCategoryEditModal(cat: Category): void {
+    this.categoryEditForm.reset({
+      category_id: cat.id,
+      name: (cat.name || '').trim() || 'Category',
+      description: (cat.description || '').trim()
+    });
+    this.isCategoryEditModalOpen = true;
+    this.cdr.detectChanges();
+  }
+
+  closeCategoryEditModal(): void {
+    this.isCategoryEditModalOpen = false;
+  }
+
+  submitCategoryEdit(): void {
+    if (this.categoryEditForm.invalid) {
+      this.categoryEditForm.markAllAsTouched();
+      return;
+    }
+    const v = this.categoryEditForm.getRawValue();
+    const id = Number(v.category_id);
+    this.categoryService
+      .updateCategory(id, {
+        name: String(v.name).trim(),
+        description: String(v.description || '').trim()
+      })
+      .subscribe({
+        next: (res) => {
+          this.toastService.success(res.message || this.i18n.instant('admin.categoryUpdated'));
+          this.closeCategoryEditModal();
+          this.loadAdminCategories();
+        },
+        error: (err) => this.toastService.error(err?.error?.message || this.i18n.instant('admin.categoryUpdateFailed'))
+      });
+  }
+
+  onCategoryDeleteRequest(cat: Category): void {
+    this.categoryForDelete = cat;
+    this.cdr.detectChanges();
+  }
+
+  closeCategoryDeleteDialog(): void {
+    this.categoryForDelete = null;
+  }
+
+  categoryDeleteConfirmText(): string {
+    const c = this.categoryForDelete;
+    if (!c) {
+      return '';
+    }
+    return this.i18n.instant('admin.deleteCategoryConfirm', { name: c.name });
+  }
+
+  confirmCategoryDelete(): void {
+    const c = this.categoryForDelete;
+    if (!c) {
+      return;
+    }
+    this.categoryService.deleteCategory(c.id).subscribe({
+      next: (res) => {
+        this.toastService.success(res.message || this.i18n.instant('admin.categoryDeleted'));
+        this.closeCategoryDeleteDialog();
+        this.loadAdminCategories();
+      },
+      error: (err) => this.toastService.error(err?.error?.message || this.i18n.instant('admin.categoryDeleteFailed'))
+    });
+  }
+
+  categoryStatusLabel(cat: Category): string {
+    const r = cat as unknown as Record<string, unknown>;
+    if (this.isTruthyCategoryFlag(r['is_deleted']) || this.hasMeaningfulCategoryDeletedAt(r['deleted_at'])) {
+      return this.i18n.instant('admin.categoryStatusDeleted');
+    }
+    const activeField = r['is_active'] !== undefined && r['is_active'] !== null ? r['is_active'] : r['active'];
+    const s = String(r['status'] ?? '').trim().toLowerCase();
+    if (s === 'inactive' || s === 'disabled' || s === 'archived') {
+      return this.i18n.instant('admin.categoryStatusInactive');
+    }
+    if (activeField !== undefined && activeField !== null && String(activeField).trim() !== '') {
+      if (this.isExplicitlyCategoryInactive(activeField)) {
+        return this.i18n.instant('admin.categoryStatusInactive');
+      }
+    }
+    return this.i18n.instant('admin.categoryStatusActive');
+  }
+
+  private isTruthyCategoryFlag(v: unknown): boolean {
+    if (v === true || v === 1) {
+      return true;
+    }
+    const s = String(v ?? '').trim().toLowerCase();
+    return s === '1' || s === 'true' || s === 'yes' || s === 'deleted';
+  }
+
+  private hasMeaningfulCategoryDeletedAt(v: unknown): boolean {
+    if (v == null) {
+      return false;
+    }
+    const s = String(v).trim();
+    return s !== '' && s.toLowerCase() !== 'null' && s.toLowerCase() !== '0000-00-00 00:00:00';
+  }
+
+  private isExplicitlyCategoryInactive(v: unknown): boolean {
+    if (v === false || v === 0) {
+      return true;
+    }
+    const s = String(v ?? '').trim().toLowerCase();
+    return s === '0' || s === 'false' || s === 'no' || s === 'off' || s === 'inactive';
   }
 
   formatBudgetGaugeTick(n: number): string {

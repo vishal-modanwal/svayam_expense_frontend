@@ -43,6 +43,7 @@ import { ExpenseFormModalComponent } from './shared/components/expense-form-moda
 import { ExpenseDataTableComponent } from './shared/components/expense-data-table/expense-data-table.component';
 import { AdminExpenseDataTableComponent } from './shared/components/admin-expense-data-table/admin-expense-data-table.component';
 import { TranslatePipe } from './shared/pipes/translate.pipe';
+import { ModalScrollLockDirective } from './shared/directives/modal-scroll-lock.directive';
 import { I18nService } from './core/services/i18n.service';
 
 export function lottiePlayerFactory(): typeof player {
@@ -71,7 +72,8 @@ export function initAppI18n(i18n: I18nService): () => Promise<void> {
     ExpenseFormModalComponent,
     ExpenseDataTableComponent,
     AdminExpenseDataTableComponent,
-    TranslatePipe
+    TranslatePipe,
+    ModalScrollLockDirective
   ],
   imports: [
     BrowserModule,

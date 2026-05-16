@@ -126,10 +126,23 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   showDashboardNavLink(): boolean {
-    if (this.isLandingRoute()) {
-      return true;
+    if (!this.isLoggedIn()) {
+      return this.isLandingRoute();
     }
-    return this.isLoggedIn();
+    if (this.isAdmin()) {
+      return this.isLandingRoute() || !this.isOnAdminAppRoute();
+    }
+    return !this.isOnUserDashboardRoute();
+  }
+
+  /** Logged-in employee on `/dashboard` — hide duplicate "Dashboard" nav entry. */
+  private isOnUserDashboardRoute(): boolean {
+    return this.normalizedPath() === '/dashboard';
+  }
+
+  /** Logged-in admin on any `/admin/...` route — hide duplicate "Admin" nav entry. */
+  private isOnAdminAppRoute(): boolean {
+    return this.normalizedPath().startsWith('/admin');
   }
 
   /** Optional extra CTA on marketing home (not on login/register). */

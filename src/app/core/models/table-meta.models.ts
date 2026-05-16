@@ -20,4 +20,18 @@ export interface UsersDetailsResponse {
   data?: Record<string, unknown>[];
   columns?: TableMetaColumn[];
   column_count?: number;
+  /** Present when the list is paginated server-side (same shape as budget-details). */
+  pagination?: {
+    totalItems?: number;
+    total_records?: number;
+    currentPage?: number;
+    totalPages?: number;
+    itemsPerPage?: number;
+  };
+  /** Optional aggregate counts when the backend includes them on the list response. */
+  summary?: {
+    total_users?: number;
+    active_users?: number;
+    inactive_users?: number;
+  };
 }

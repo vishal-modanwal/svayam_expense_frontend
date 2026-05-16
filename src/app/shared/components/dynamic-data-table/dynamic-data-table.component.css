@@ -50,6 +50,44 @@ body.dark-theme .dynamic-table__link--delete {
   gap: 4px;
 }
 
+.dynamic-table__receipt-actions {
+  display: inline-flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
+  vertical-align: middle;
+}
+
+.dynamic-table__receipt-actions .mat-icon-button,
+.dynamic-table__receipt-actions a.mat-icon-button {
+  flex: 0 0 auto;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 34px !important;
+  height: 34px !important;
+  line-height: 34px;
+  margin: 0;
+  padding: 0;
+}
+
+.dynamic-table__scroll .dynamic-table__mat--clean .dynamic-table__cell-inner.dynamic-table__cell--align-center .dynamic-table__receipt-actions {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.dynamic-table__card-action .dynamic-table__receipt-actions {
+  display: inline-flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+
 .dynamic-table__actions--receipt {
   gap: 2px;
   flex-wrap: nowrap;
@@ -640,6 +678,322 @@ body.dark-theme .dynamic-table__loading {
   background: transparent;
 }
 
+/* ─── Table view: clean grid (card view / chips unchanged) ─── */
+.dynamic-table__scroll .dynamic-table__mat--clean {
+  width: 100%;
+  table-layout: auto;
+  border-collapse: collapse;
+  background: var(--surface, #ffffff);
+}
+
+.dynamic-table__scroll .dynamic-table__mat--clean .mat-header-cell,
+.dynamic-table__scroll .dynamic-table__mat--clean .mat-cell {
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: 1px solid var(--border, #e8ecf1) !important;
+}
+
+.dynamic-table__scroll .dynamic-table__mat--clean .mat-header-cell.dynamic-table__th,
+.dynamic-table__scroll .dynamic-table__mat--clean .mat-cell.dynamic-table__td {
+  padding: 14px 16px !important;
+  vertical-align: middle !important;
+}
+
+.dynamic-table__scroll .dynamic-table__mat--clean .dynamic-table__header-row {
+  background: var(--surface, #ffffff) !important;
+}
+
+.dynamic-table__scroll .dynamic-table__mat--clean .dynamic-table__data-row:hover {
+  background: rgba(15, 23, 42, 0.03) !important;
+}
+
+body.dark-theme .dynamic-table__scroll .dynamic-table__mat--clean .dynamic-table__data-row:hover {
+  background: rgba(248, 250, 252, 0.04) !important;
+}
+
+.dynamic-table__scroll .dynamic-table__mat--expense {
+  min-width: 1040px;
+}
+
+.dynamic-table__cell--align-start {
+  text-align: left;
+}
+
+.dynamic-table__cell--align-center {
+  text-align: center;
+}
+
+.dynamic-table__cell--align-end {
+  text-align: right;
+}
+
+.dynamic-table__scroll .dynamic-table__mat--clean .mat-cell.dynamic-table__td.dynamic-table__cell--align-center {
+  text-align: center !important;
+}
+
+.dynamic-table__scroll .dynamic-table__mat--clean .mat-cell.dynamic-table__td.dynamic-table__cell--align-end {
+  text-align: right !important;
+}
+
+.dynamic-table__scroll .dynamic-table__mat--clean .mat-cell.dynamic-table__td.dynamic-table__cell--align-start {
+  text-align: left !important;
+}
+
+.dynamic-table__th.dynamic-table__cell--align-center .mat-sort-header-container {
+  justify-content: center;
+}
+
+.dynamic-table__th.dynamic-table__cell--align-end .mat-sort-header-container {
+  justify-content: flex-end;
+}
+
+/* Body: flex centers content vertically; horizontal via justify + text-align on children. */
+.dynamic-table__scroll .dynamic-table__mat--clean .dynamic-table__cell-inner {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+.dynamic-table__scroll .dynamic-table__mat--clean .dynamic-table__cell-inner.dynamic-table__cell--align-center {
+  justify-content: center;
+}
+
+.dynamic-table__scroll .dynamic-table__mat--clean .dynamic-table__cell-inner.dynamic-table__cell--align-end {
+  justify-content: flex-end;
+}
+
+.dynamic-table__cell-text {
+  display: block;
+  max-width: 100%;
+  line-height: 1.45;
+  min-width: 0;
+}
+
+.dynamic-table__scroll .dynamic-table__mat--clean .dynamic-table__cell-inner .dynamic-table__cell-text--truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dynamic-table__cell-text--truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dynamic-table__cell-text--title-short,
+.dynamic-table__cell-text--vendor-short {
+  white-space: nowrap;
+}
+
+.receipt-modal.expense-details-modal {
+  width: min(560px, calc(100vw - 28px));
+  max-width: min(560px, calc(100vw - 28px));
+  max-height: min(72vh, 480px);
+}
+
+.expense-details-modal .receipt-modal__toolbar {
+  padding: 10px 12px 10px 14px;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.expense-details-modal .receipt-modal__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.expense-details-modal__body {
+  padding: 12px 14px 14px;
+  overflow: auto;
+  background: var(--surface, #fff);
+  max-height: calc(72vh - 52px);
+}
+
+.expense-details-modal__list {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.expense-details-modal__row {
+  display: grid;
+  grid-template-columns: minmax(8.5rem, 38%) minmax(0, 1fr);
+  gap: 6px 20px;
+  align-items: start;
+}
+
+.expense-details-modal__row--notes {
+  align-items: start;
+}
+
+.expense-details-modal__label {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted, #64748b);
+  line-height: 1.3;
+  padding-top: 0.1rem;
+}
+
+.expense-details-modal__value {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text, #1e293b);
+  line-height: 1.45;
+  word-break: break-word;
+  text-align: start;
+}
+
+.expense-details-modal__empty {
+  margin: 0;
+  text-align: center;
+  padding: 14px 6px;
+  font-size: 0.84rem;
+}
+
+.dynamic-table__scroll .dynamic-table__mat--clean .dynamic-table__cell-text--amount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text, #0f172a);
+}
+
+.dynamic-table__scroll .dynamic-table__mat--clean .dynamic-table__cell-inner.dynamic-table__cell--align-end .dynamic-table__cell-text {
+  text-align: right;
+  width: 100%;
+}
+
+.dynamic-table__scroll .dynamic-table__mat--clean .dynamic-table__cell-inner.dynamic-table__cell--align-center .dynamic-table__cell-text {
+  text-align: center;
+  width: 100%;
+}
+
+/* Neutral actions in table view only — card footer keeps colored chips. */
+.dynamic-table__scroll .dynamic-table__link--view,
+.dynamic-table__scroll .dynamic-table__link--edit,
+.dynamic-table__scroll .dynamic-table__link--delete {
+  color: var(--text-muted, #64748b) !important;
+  font-weight: 500 !important;
+}
+
+.dynamic-table__scroll .dynamic-table__link--view:hover,
+.dynamic-table__scroll .dynamic-table__link--edit:hover,
+.dynamic-table__scroll .dynamic-table__link--delete:hover {
+  color: var(--text, #334155) !important;
+  background: rgba(15, 23, 42, 0.05) !important;
+}
+
+.dynamic-table__scroll .dynamic-table__icon-btn {
+  color: var(--text-muted, #64748b) !important;
+}
+
+.dynamic-table__scroll .dynamic-table__icon-btn:hover {
+  color: var(--text, #334155) !important;
+  background: rgba(15, 23, 42, 0.06) !important;
+}
+
+.dynamic-table__scroll .dynamic-table__icon-btn--view,
+.dynamic-table__scroll .dynamic-table__icon-btn--edit,
+.dynamic-table__scroll .dynamic-table__icon-btn--delete,
+.dynamic-table__scroll .dynamic-table__icon-btn--download {
+  color: var(--text-muted, #64748b) !important;
+}
+
+body.dark-theme .dynamic-table__scroll .dynamic-table__link--view,
+body.dark-theme .dynamic-table__scroll .dynamic-table__link--edit,
+body.dark-theme .dynamic-table__scroll .dynamic-table__link--delete,
+body.dark-theme .dynamic-table__scroll .dynamic-table__icon-btn {
+  color: #94a3b8 !important;
+}
+
+body.dark-theme .dynamic-table__scroll .dynamic-table__link--view:hover,
+body.dark-theme .dynamic-table__scroll .dynamic-table__link--edit:hover,
+body.dark-theme .dynamic-table__scroll .dynamic-table__link--delete:hover,
+body.dark-theme .dynamic-table__scroll .dynamic-table__icon-btn:hover {
+  color: #e2e8f0 !important;
+  background: rgba(248, 250, 252, 0.06) !important;
+}
+
+.dynamic-table__icon-btn {
+  width: 36px;
+  height: 36px;
+  line-height: 36px;
+}
+
+.dynamic-table__icon-btn mat-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+.dynamic-table__icon-btn--view {
+  color: #2563eb !important;
+}
+
+.dynamic-table__icon-btn--edit {
+  color: #16a34a !important;
+}
+
+.dynamic-table__icon-btn--delete {
+  color: #dc2626 !important;
+}
+
+.dynamic-table__icon-btn--download {
+  color: #2563eb !important;
+}
+
+body.dark-theme .dynamic-table__icon-btn--view,
+body.dark-theme .dynamic-table__icon-btn--download {
+  color: #93c5fd !important;
+}
+
+body.dark-theme .dynamic-table__icon-btn--edit {
+  color: #4ade80 !important;
+}
+
+body.dark-theme .dynamic-table__icon-btn--delete {
+  color: #f87171 !important;
+}
+
+.dynamic-table__scroll .dynamic-table__mat--clean .mat-cell.dynamic-table__td.dynamic-table__cell--align-center {
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+}
+
+.dynamic-table__scroll .dynamic-table__mat--clean .dynamic-table__cell-inner .dynamic-table__icon-btn {
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.dynamic-table__scroll .dynamic-table__mat--clean .dynamic-table__th {
+  font-weight: 600;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted, #64748b);
+}
+
+.dynamic-table__scroll .dynamic-table__mat--clean .dynamic-table__td {
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--text, #1e293b);
+  line-height: 1.45;
+}
+
 .dynamic-table__th {
   font-weight: 600;
   font-size: 0.8rem;
@@ -730,6 +1084,7 @@ body.dark-theme .dynamic-table__paginator {
 .receipt-modal {
   width: min(920px, 100%);
   max-height: min(88vh, 900px);
+  min-height: 0;
   display: flex;
   flex-direction: column;
   border-radius: 14px;
@@ -770,15 +1125,36 @@ body.dark-theme .receipt-modal {
 }
 
 .receipt-modal__body {
-  flex: 1;
-  min-height: 200px;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
   max-height: calc(88vh - 72px);
-  padding: 12px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow: hidden;
+  background: var(--surface-muted, #f1f5f9);
+}
+
+body.dark-theme .receipt-modal__body {
+  background: var(--surface-muted, #1e293b);
+}
+
+/**
+ * Scroll + center live here (not on `__body`) so flex `align-items/justify-content:center`
+ * is not broken by `overflow:auto` on the same box as the image.
+ */
+.receipt-modal__viewport {
+  flex: 1 1 auto;
+  min-height: min(52vh, 420px);
+  width: 100%;
+  padding: 16px 18px 20px;
+  box-sizing: border-box;
   overflow: auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
 }
 
 .receipt-modal__loading {
@@ -811,25 +1187,33 @@ body.dark-theme .receipt-modal {
 }
 
 .receipt-modal__img {
+  display: block;
+  flex-shrink: 0;
   max-width: 100%;
-  max-height: min(72vh, 720px);
   width: auto;
   height: auto;
+  max-height: min(calc(88vh - 160px), 78vh, 720px);
   object-fit: contain;
   border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.08);
+  margin: auto;
 }
 
 .receipt-modal__frame {
-  width: 100%;
-  min-height: 360px;
-  height: min(72vh, 720px);
+  display: block;
+  flex-shrink: 0;
+  width: min(100%, 720px);
+  max-width: 100%;
+  min-height: min(360px, 50vh);
+  height: min(calc(88vh - 160px), 72vh, 720px);
+  margin: auto;
   border: 0;
   border-radius: 8px;
-  background: #f1f5f9;
+  background: var(--surface, #fff);
 }
 
 body.dark-theme .receipt-modal__frame {
-  background: #1e293b;
+  background: var(--surface, #0f172a);
 }
 
 .dynamic-table__row--inactive {
@@ -845,8 +1229,30 @@ body.dark-theme .dynamic-table__row--inactive .dynamic-table__td {
 }
 
 .employee-active-toggle-cell {
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.employee-active-toggle-cell__label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text, #0f172a);
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+
+.employee-active-toggle-cell__label--inactive {
+  color: var(--text-muted, #64748b);
+}
+
+body.dark-theme .employee-active-toggle-cell__label {
+  color: var(--text, #f1f5f9);
+}
+
+body.dark-theme .employee-active-toggle-cell__label--inactive {
+  color: var(--text-muted, #94a3b8);
 }
 
 @media (max-width: 600px) {
@@ -936,6 +1342,19 @@ body.dark-theme .dynamic-table__row--inactive .dynamic-table__td {
     min-width: 480px;
   }
 
+  .dynamic-table__scroll .dynamic-table__mat--expense {
+    min-width: 920px;
+  }
+
+  .dynamic-table__scroll .dynamic-table__mat--clean .mat-header-cell.dynamic-table__th,
+  .dynamic-table__scroll .dynamic-table__mat--clean .mat-cell.dynamic-table__td {
+    padding: 11px 12px !important;
+  }
+
+  .dynamic-table__scroll .dynamic-table__mat--clean .dynamic-table__cell-inner {
+    min-height: 40px;
+  }
+
   .dynamic-table__th {
     font-size: 0.7rem;
     padding: 8px 8px !important;
@@ -1011,6 +1430,11 @@ body.dark-theme .dynamic-table__scroll {
     border-radius: 12px;
   }
 
+  .receipt-modal.expense-details-modal {
+    width: min(560px, calc(100vw - 16px));
+    max-width: min(560px, calc(100vw - 16px));
+  }
+
   .receipt-modal__toolbar {
     padding: 10px 8px 10px 14px;
   }
@@ -1020,7 +1444,11 @@ body.dark-theme .dynamic-table__scroll {
   }
 
   .receipt-modal__body {
-    padding: 10px 12px 12px;
     max-height: calc(92dvh - 60px);
+  }
+
+  .receipt-modal__viewport {
+    padding: 12px 12px 14px;
+    min-height: min(44vh, 320px);
   }
 }

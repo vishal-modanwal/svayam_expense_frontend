@@ -8,7 +8,7 @@
           : ('expenseForm.addTitle' | translate)
     }}
   </h2>
-  <button type="button" class="close-btn" (click)="close()">✖</button>
+  <button type="button" class="close-btn" (click)="close()" [disabled]="submitting">✖</button>
 </div>
 
 <div class="receipt-scanner">
@@ -25,6 +25,16 @@
       (change)="onReceiptPickChange($event)" />
     <span class="receipt-scanner__hint">{{ 'expenseForm.receiptHint' | translate }}</span>
   </div>
+
+  <button
+    *ngIf="canRetryReceiptScan()"
+    mat-stroked-button
+    type="button"
+    class="receipt-retry-scan"
+    (click)="retryReceiptScan()">
+    <mat-icon>refresh</mat-icon>
+    {{ 'expenseForm.retryScan' | translate }}
+  </button>
 
   <span *ngIf="scanning" class="scanning-text">
     <mat-icon>hourglass_empty</mat-icon>
@@ -49,7 +59,7 @@
   <span class="receipt-existing-hint" *ngIf="expense?.receipt_path">{{ 'expenseForm.replaceHint' | translate }}</span>
 </p>
 
-<form [formGroup]="form" (ngSubmit)="submit(); $event.preventDefault()">
+<form [formGroup]="form" (ngSubmit)="submit(); $event.preventDefault()" [attr.aria-busy]="submitting">
   <mat-form-field appearance="outline" class="full">
     <mat-label>{{ 'expenseForm.title' | translate }}</mat-label>
     <input matInput formControlName="title" />
@@ -132,9 +142,14 @@
   </div>
 
   <div class="actions">
-    <button mat-stroked-button type="button" (click)="close()">{{ 'expenseForm.cancel' | translate }}</button>
-    <button mat-raised-button color="primary" type="submit">
-      {{ expense ? ('expenseForm.submitUpdate' | translate) : ('expenseForm.submitAdd' | translate) }}
+    <button mat-stroked-button type="button" (click)="close()" [disabled]="submitting">
+      {{ 'expenseForm.cancel' | translate }}
+    </button>
+    <button mat-raised-button color="primary" type="submit" [disabled]="submitting || scanning">
+      <span *ngIf="submitting">{{ 'expenseForm.saving' | translate }}</span>
+      <span *ngIf="!submitting">
+        {{ expense ? ('expenseForm.submitUpdate' | translate) : ('expenseForm.submitAdd' | translate) }}
+      </span>
     </button>
   </div>
 </form>

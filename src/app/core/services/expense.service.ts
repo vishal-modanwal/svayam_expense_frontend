@@ -36,6 +36,16 @@ export class ExpenseService {
   constructor(private readonly http: HttpClient) {}
 
   /**
+   * POST /api/expense/scan-receipt — multipart with field `receipt` only.
+   * Does not create an expense; server may discard the temp file after responding.
+   */
+  scanReceipt(receiptFile: File): Observable<unknown> {
+    const fd = new FormData();
+    this.appendReceiptFile(fd, receiptFile);
+    return this.http.post<unknown>(`${this.api}/expense/scan-receipt`, fd);
+  }
+
+  /**
    * POST /api/expense — JSON or multipart/form-data.
    * Body: title, category_id, amount, payment_method (Cash | Card | UPI | Net Banking | Others),
    * optional vendor, description, expense_date; optional expense_type (omit for standard; `extra` admin-only).

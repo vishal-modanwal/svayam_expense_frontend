@@ -1,7 +1,8 @@
 .overlay {
   position: fixed;
   inset: 0;
-  z-index: 9999;
+  /* Above app modals (.overlay z-index 9999, AI chat 10050) */
+  z-index: 10100;
   background: rgba(15, 23, 42, 0.55);
   display: grid;
   place-items: center;

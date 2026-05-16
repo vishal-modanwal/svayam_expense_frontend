@@ -21,11 +21,12 @@ export class SidebarComponent {
   @Output() openChange = new EventEmitter<boolean>();
 
   /** Current workspace section (from parent / route) for active link styling. */
-  @Input() activeWorkspace: 'expenses' | 'budgets' | 'employees' = 'expenses';
+  @Input() activeWorkspace: 'expenses' | 'budgets' | 'employees' | 'categories' | 'notifications' | 'requests' = 'expenses';
 
   @Input() userName = '';
   @Input() userRole = '';
   @Input() notificationCount = 0;
+  @Input() requestCount = 0;
   @Input() alertBadgeCount = 0;
 
   @Output() logoutClick = new EventEmitter<void>();
@@ -33,7 +34,10 @@ export class SidebarComponent {
   readonly workspaceLinks: AdminSidebarWorkspaceLink[] = [
     { path: 'expenses', label: 'Expenses', icon: 'receipt_long' },
     { path: 'budgets', label: 'Budgets', icon: 'account_balance_wallet' },
-    { path: 'employees', label: 'Employees', icon: 'groups' }
+    { path: 'employees', label: 'Employees', icon: 'groups' },
+    { path: 'categories', label: 'Categories', icon: 'category' },
+    { path: 'notifications', label: 'Notifications', icon: 'notifications' },
+    { path: 'requests', label: 'Requests', icon: 'how_to_reg' }
   ];
 
   readonly toolLinks: Array<{ action: AdminSidebarToolAction; label: string; icon: string; badge?: number }> = [
@@ -51,6 +55,12 @@ export class SidebarComponent {
         return 'admin.sidebarBudgets';
       case 'employees':
         return 'admin.sidebarEmployees';
+      case 'categories':
+        return 'admin.sidebarCategories';
+      case 'notifications':
+        return 'admin.sidebarNotifications';
+      case 'requests':
+        return 'admin.sidebarRequests';
       default:
         return path;
     }
@@ -91,6 +101,20 @@ export class SidebarComponent {
 
   isWorkspaceActive(path: string): boolean {
     return this.activeWorkspace === path;
+  }
+
+  workspaceLinkBadge(path: string): number | null {
+    if (path === 'notifications' && this.notificationCount > 0) {
+      return this.notificationCount;
+    }
+    if (path === 'requests' && this.requestCount > 0) {
+      return this.requestCount;
+    }
+    return null;
+  }
+
+  workspaceLinkBadgeAriaKey(path: string): string {
+    return path === 'requests' ? 'admin.requestsBadgeAria' : 'admin.notificationsBadgeAria';
   }
 
   onWorkspaceNav(event: Event, path: string): void {

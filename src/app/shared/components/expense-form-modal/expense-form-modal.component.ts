@@ -10,12 +10,14 @@ import {
 import { FormBuilder, Validators } from '@angular/forms';
 import { Category, Expense } from 'src/app/core/models/app.models';
 import { ExpenseService } from 'src/app/core/services/expense.service';
-import { ReceiptOcrService } from 'src/app/core/services/receipt-ocr.service';
 import { ToastService } from 'src/app/core/services/toast.service';
+import { I18nService } from 'src/app/core/services/i18n.service';
 import { environment } from 'src/environments/environment';
 import { buildReceiptUrlFromReceiptPath } from 'src/app/core/utils/receipt-url';
-import { parseReceiptTextHints } from 'src/app/core/utils/receipt-ocr-parser';
+import { coalesceExpenseNotesFromApi } from 'src/app/core/utils/expense-notes.util';
+import { applyScanFieldsToForm } from 'src/app/core/utils/scan-receipt-response.util';
 import { readHttpErrorMessage } from 'src/app/core/utils/http-error.utils';
+import { finalize } from 'rxjs';
 
 @Component({
   selector: 'app-expense-form-modal',
@@ -32,11 +34,15 @@ export class ExpenseFormModalComponent implements OnChanges {
   @Output() saved = new EventEmitter<void>();
 
   submitted = false;
+  /** True while add/update API is in flight — blocks double submit and shows saving label. */
+  submitting = false;
   scanning = false;
   scanStatusLabel = '';
   scanned = false;
+  /** True when last POST /expense/scan-receipt failed; receipt file is kept for retry / save. */
+  scanFailed = false;
 
-  /** Receipt file sent with create/update as multipart field `receipt`. */
+  /** Receipt file sent with create/update as multipart field `receipt`. Held until save or clear. */
   receiptFile: File | null = null;
   receiptFileLabel: string | null = null;
 
@@ -59,8 +65,8 @@ export class ExpenseFormModalComponent implements OnChanges {
   constructor(
     private readonly fb: FormBuilder,
     private readonly expenseService: ExpenseService,
-    private readonly receiptOcrService: ReceiptOcrService,
     private readonly toastService: ToastService,
+    private readonly i18n: I18nService,
     private readonly ngZone: NgZone
   ) {}
 
@@ -88,7 +94,7 @@ export class ExpenseFormModalComponent implements OnChanges {
   /**
    * Only reset when the **expense** record changes (add vs edit or different id).
    * Do not tie to `categories`: when categories load/refresh, resetting would clear
-   * the scanned receipt and OCR-filled fields while the user is still in the modal.
+   * the scanned receipt and filled fields while the user is still in the modal.
    */
   ngOnChanges(changes: SimpleChanges): void {
     const expCh = changes['expense'];
@@ -111,19 +117,24 @@ export class ExpenseFormModalComponent implements OnChanges {
   }
 
   close(): void {
+    if (this.submitting) {
+      return;
+    }
     this.submitted = false;
+    this.submitting = false;
     this.submitError = null;
     this.scanning = false;
     this.scanStatusLabel = '';
     this.scanned = false;
+    this.scanFailed = false;
     this.clearReceiptFile();
     this.resetFormValues();
     this.dismiss.emit();
   }
 
   /**
-   * One control: image → OCR + attach file for save; PDF → attach only (no OCR).
-   * Same multipart `receipt` on create/update.
+   * Image → retain file, POST scan-receipt for auto-fill (file stays client-side for save).
+   * PDF → attach only (no scan endpoint).
    */
   onReceiptPickChange(event: Event): void {
     const file = this.readFileFromEvent(event);
@@ -131,7 +142,12 @@ export class ExpenseFormModalComponent implements OnChanges {
       return;
     }
     if (this.isLikelyReceiptImage(file)) {
-      void this.runReceiptScanOcr(file);
+      this.ngZone.run(() => {
+        this.scanFailed = false;
+        this.scanned = false;
+        this.setReceiptFile(file);
+      });
+      this.runReceiptBackendScan(file);
       return;
     }
     if (this.isLikelyPdfReceipt(file)) {
@@ -139,6 +155,7 @@ export class ExpenseFormModalComponent implements OnChanges {
         this.scanning = false;
         this.scanStatusLabel = '';
         this.scanned = false;
+        this.scanFailed = false;
         this.setReceiptFile(file);
       });
       return;
@@ -152,7 +169,22 @@ export class ExpenseFormModalComponent implements OnChanges {
     this.clearReceiptFile();
   }
 
+  /** Retry POST /expense/scan-receipt with the same retained file (e.g. after a transient error). */
+  retryReceiptScan(): void {
+    if (!this.receiptFile || !this.isLikelyReceiptImage(this.receiptFile) || this.scanning) {
+      return;
+    }
+    this.runReceiptBackendScan(this.receiptFile);
+  }
+
+  canRetryReceiptScan(): boolean {
+    return !!this.receiptFile && this.isLikelyReceiptImage(this.receiptFile) && this.scanFailed && !this.scanning;
+  }
+
   submit(): void {
+    if (this.submitting) {
+      return;
+    }
     this.submitted = true;
     this.submitError = null;
     if (this.form.invalid) {
@@ -180,19 +212,27 @@ export class ExpenseFormModalComponent implements OnChanges {
       ? this.expenseService.updateExpense(id, { ...common }, file)
       : this.expenseService.addExpense({ ...common, expense_date: v.expense_date }, file);
 
-    request$.subscribe({
-      next: (res) => {
-        this.submitError = null;
-        this.toastService.success(res.message || (id ? 'Expense updated' : 'Expense created'));
-        this.saved.emit();
-        this.close();
-      },
-      error: (err) => {
-        const msg = readHttpErrorMessage(err, 'Expense action failed');
-        this.submitError = msg;
-        this.toastService.error(msg);
-      }
-    });
+    this.submitting = true;
+    request$
+      .pipe(
+        finalize(() => {
+          this.submitting = false;
+        })
+      )
+      .subscribe({
+        next: (res) => {
+          this.submitError = null;
+          this.toastService.success(res.message || (id ? 'Expense updated' : 'Expense created'));
+          this.saved.emit();
+          this.submitting = false;
+          this.close();
+        },
+        error: (err) => {
+          const msg = readHttpErrorMessage(err, 'Expense action failed');
+          this.submitError = msg;
+          this.toastService.error(msg);
+        }
+      });
   }
 
   /** True when server rejected create/update for missing category budget (typical 400 copy). */
@@ -201,48 +241,42 @@ export class ExpenseFormModalComponent implements OnChanges {
     return /budget/.test(s) && (/not found|create|pehle|missing|na ho|nahi/i.test(s) || /budget record/i.test(s));
   }
 
-  private async runReceiptScanOcr(file: File): Promise<void> {
+  /**
+   * POST /api/expense/scan-receipt — server suggests fields then discards the upload;
+   * `receiptFile` remains on the client for create/update multipart.
+   */
+  private runReceiptBackendScan(file: File): void {
     this.ngZone.run(() => {
-      this.scanned = false;
-      this.receiptFile = null;
-      this.receiptFileLabel = null;
+      this.scanFailed = false;
       this.scanning = true;
-      this.scanStatusLabel = 'Reading receipt (OCR)…';
+      this.scanStatusLabel = this.i18n.instant('expenseForm.scanningReceipt');
     });
 
-    let ocrHadText = false;
-    try {
-      const text = await this.receiptOcrService.recognizeReceiptImage(file);
-      this.ngZone.run(() => {
-        if (text) {
-          ocrHadText = true;
-          const hints = parseReceiptTextHints(text);
-          this.mergeReceiptHints(hints);
-          const desc = (this.form.get('description')?.value || '').trim();
-          if (!desc) {
-            this.form.patchValue({ description: text.slice(0, 500) });
+    this.expenseService.scanReceipt(file).subscribe({
+      next: (raw) => {
+        this.ngZone.run(() => {
+          const { applied } = applyScanFieldsToForm(raw, this.form, this.categories);
+          if (applied > 0) {
+            this.toastService.success(this.i18n.instant('expenseForm.scanPrefillDone'));
+          } else {
+            this.toastService.info(this.i18n.instant('expenseForm.scanPrefillPartial'));
           }
-        }
-      });
-    } catch (err: unknown) {
-      const detail = err instanceof Error ? err.message : String(err);
-      this.ngZone.run(() => {
-        this.toastService.info(
-          detail
-            ? `OCR failed (${detail.slice(0, 100)}). Receipt will still attach on save if you continue.`
-            : 'OCR could not read this image; receipt can still upload on save.'
-        );
-      });
-    }
-
-    this.ngZone.run(() => {
-      this.setReceiptFile(file);
-      if (ocrHadText) {
-        this.toastService.info('Check title, amount, and date — receipt uploads when you create or update.');
+          this.scanned = true;
+          this.scanning = false;
+          this.scanStatusLabel = '';
+          this.scanFailed = false;
+        });
+      },
+      error: (err) => {
+        this.ngZone.run(() => {
+          const msg = readHttpErrorMessage(err, this.i18n.instant('expenseForm.scanFailed'));
+          this.toastService.error(msg);
+          this.scanning = false;
+          this.scanStatusLabel = '';
+          this.scanFailed = true;
+          this.scanned = false;
+        });
       }
-      this.scanning = false;
-      this.scanStatusLabel = '';
-      this.scanned = true;
     });
   }
 
@@ -262,55 +296,13 @@ export class ExpenseFormModalComponent implements OnChanges {
     return /\.pdf$/i.test(file.name);
   }
 
-  private mergeReceiptHints(hints: {
-    title?: string;
-    amount?: number;
-    vendor?: string;
-    expense_date?: string;
-    description?: string;
-  }): void {
-    if (hints.title != null && String(hints.title).trim() !== '') {
-      const cur = (this.form.get('title')?.value || '').trim();
-      if (!cur) {
-        this.form.patchValue({ title: String(hints.title).slice(0, 120) });
-      }
-    }
-    if (hints.vendor != null && String(hints.vendor).trim() !== '') {
-      const cur = (this.form.get('vendor')?.value || '').trim();
-      if (!cur) {
-        this.form.patchValue({ vendor: String(hints.vendor).slice(0, 120) });
-      }
-    }
-    if (hints.amount != null && Number(hints.amount) > 0) {
-      const cur = Number(this.form.get('amount')?.value);
-      if (!cur || cur === 0) {
-        this.form.patchValue({ amount: hints.amount });
-      }
-    }
-    if (hints.expense_date) {
-      const cur = (this.form.get('expense_date')?.value || '').trim();
-      if (!cur) {
-        const raw = String(hints.expense_date);
-        const d = raw.includes('T') ? raw.substring(0, 10) : raw;
-        if (/^\d{4}-\d{2}-\d{2}$/.test(d)) {
-          this.form.patchValue({ expense_date: d });
-        }
-      }
-    }
-    if (hints.description != null && String(hints.description).trim() !== '') {
-      const cur = (this.form.get('description')?.value || '').trim();
-      if (!cur) {
-        this.form.patchValue({ description: String(hints.description).slice(0, 500) });
-      }
-    }
-  }
-
   private applyExpenseInput(): void {
     this.submitted = false;
     this.submitError = null;
     this.scanning = false;
     this.scanStatusLabel = '';
     this.scanned = false;
+    this.scanFailed = false;
     this.clearReceiptFile();
     const e = this.expense;
     const dateCtl = this.form.get('expense_date');
@@ -324,7 +316,7 @@ export class ExpenseFormModalComponent implements OnChanges {
         amount: Number(e.amount),
         payment_method: e.payment_method || 'UPI',
         vendor: e.vendor || '',
-        description: e.description || '',
+        description: coalesceExpenseNotesFromApi(e as unknown as Record<string, unknown>) || e.description || '',
         expense_date: e.expense_date ? e.expense_date.substring(0, 10) : '',
         expense_type: e.expense_type || 'standard',
         currency: 'INR'
@@ -378,5 +370,6 @@ export class ExpenseFormModalComponent implements OnChanges {
     this.receiptFile = null;
     this.receiptFileLabel = null;
     this.scanned = false;
+    this.scanFailed = false;
   }
 }

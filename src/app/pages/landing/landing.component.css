@@ -62,6 +62,46 @@
   color: var(--primary);
 }
 
+.hero-title-tail {
+  display: inline;
+}
+
+.hero-title-with {
+  color: var(--text);
+}
+
+.hero-typewriter {
+  display: inline-block;
+  min-width: min(13ch, 100%);
+  text-align: left;
+  vertical-align: baseline;
+}
+
+.hero-typewriter__caret {
+  display: inline-block;
+  width: 2px;
+  height: 0.78em;
+  margin-left: 2px;
+  border-radius: 1px;
+  background: var(--primary);
+  vertical-align: -0.12em;
+  animation: hero-typewriter-caret 1.25s ease-in-out infinite;
+}
+
+@keyframes hero-typewriter-caret {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  50%,
+  95% {
+    opacity: 0.2;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
 .hero-lead {
   margin: 0 0 28px;
   font-size: clamp(1rem, 1.6vw, 1.125rem);

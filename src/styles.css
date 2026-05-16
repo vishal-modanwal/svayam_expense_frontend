@@ -300,6 +300,19 @@ html[lang='hi'] .mat-horizontal-stepper-header .mat-step-label {
   }
 }
 
+/* Lock page scroll while any modal overlay is open (see `appModalScrollLock`). */
+body.modal-scroll-locked,
+html.modal-scroll-locked {
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+
+.overlay,
+.receipt-modal-backdrop,
+.profile-modal-overlay {
+  overscroll-behavior: contain;
+}
+
 /* Make any wide images / media block-level and never overflow on mobile. */
 img,
 video,

@@ -37,6 +37,27 @@
 
       <a *ngIf="showLoginNav()" routerLink="/login" class="links">{{ 'nav.login' | translate }}</a>
 
+      <ng-container *ngIf="isAdmin()">
+        <div class="nav-admin-toolbar" role="group" [attr.aria-label]="'nav.ariaAdminQuickLinks' | translate">
+          <button
+            mat-icon-button
+            type="button"
+            routerLink="/admin/requests"
+            class="nav-admin-toolbar__btn"
+            [attr.aria-label]="'nav.ariaOpenAdminRequests' | translate">
+            <mat-icon>how_to_reg</mat-icon>
+          </button>
+          <button
+            mat-icon-button
+            type="button"
+            routerLink="/admin/notifications"
+            class="nav-admin-toolbar__btn"
+            [attr.aria-label]="'nav.ariaOpenNotifications' | translate">
+            <mat-icon>notifications</mat-icon>
+          </button>
+        </div>
+      </ng-container>
+
       <ng-container *ngIf="showProfileMenu()">
         <div
           class="profile-wrapper"
@@ -89,6 +110,28 @@
           HI
         </button>
       </div>
+
+      <ng-container *ngIf="isAdmin()">
+        <div class="nav-admin-toolbar nav-admin-toolbar--mobile" role="group" [attr.aria-label]="'nav.ariaAdminQuickLinks' | translate">
+          <button
+            mat-icon-button
+            type="button"
+            routerLink="/admin/requests"
+            class="nav-admin-toolbar__btn"
+            [attr.aria-label]="'nav.ariaOpenAdminRequests' | translate">
+            <mat-icon>how_to_reg</mat-icon>
+          </button>
+          <button
+            mat-icon-button
+            type="button"
+            routerLink="/admin/notifications"
+            class="nav-admin-toolbar__btn"
+            [attr.aria-label]="'nav.ariaOpenNotifications' | translate">
+            <mat-icon>notifications</mat-icon>
+          </button>
+        </div>
+      </ng-container>
+
       <a *ngIf="showLoginNav()" routerLink="/login" class="nav-login-btn nav-login-btn--mobile">{{ 'nav.signin' | translate }}</a>
       <button
         mat-icon-button
@@ -106,7 +149,7 @@
             <mat-icon>home</mat-icon>
             <span>{{ 'nav.home' | translate }}</span>
           </a>
-          <a mat-menu-item [routerLink]="dashboardRouterLink()" (click)="closeMobileNav()">
+          <a *ngIf="showDashboardNavLink()" mat-menu-item [routerLink]="dashboardRouterLink()" (click)="closeMobileNav()">
             <mat-icon>{{ isAdmin() ? 'admin_panel_settings' : 'dashboard' }}</mat-icon>
             <span>{{ dashboardLabel() }}</span>
           </a>

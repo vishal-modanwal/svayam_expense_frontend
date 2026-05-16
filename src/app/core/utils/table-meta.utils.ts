@@ -23,6 +23,13 @@ export const ADMIN_EXPENSE_RECEIPT_COLUMN: DynamicTableColumn = {
   cellControl: 'adminExpenseReceipt'
 };
 
+export const EXPENSE_DETAILS_COLUMN: DynamicTableColumn = {
+  key: '_details',
+  label: 'Details',
+  sortable: false,
+  cellControl: 'expenseDetails'
+};
+
 export const ADMIN_EXPENSE_DELETE_COLUMN: DynamicTableColumn = {
   key: '_delete',
   label: 'Delete',
@@ -58,12 +65,57 @@ export const USER_EXPENSE_RECEIPT_COLUMN: DynamicTableColumn = {
   cellControl: 'userExpenseReceipt'
 };
 
-/** Last column: receipt file download link per row. */
+/** @deprecated Download is rendered inside `_receipt` column; kept for legacy imports only. */
 export const EXPENSE_RECEIPT_DOWNLOAD_COLUMN: DynamicTableColumn = {
   key: '_download',
   label: 'Download',
   sortable: false,
   cellControl: 'expenseReceiptDownload'
+};
+
+/** Width + alignment for user/admin expense tables (shared `dynamic-data-table`). */
+const EXPENSE_COLUMN_LAYOUT: Partial<Record<string, Pick<DynamicTableColumn, 'minWidth' | 'maxWidth' | 'cellAlign'>>> = {
+  title: { minWidth: '11rem', cellAlign: 'start' },
+  category_name: { minWidth: '8.5rem', cellAlign: 'start' },
+  amount: { minWidth: '7.25rem', cellAlign: 'start' },
+  payment_method: { minWidth: '6rem', cellAlign: 'center' },
+  expense_date: { minWidth: '7rem', cellAlign: 'center' },
+  vendor: { minWidth: '9rem', cellAlign: 'start' },
+  user_name: { minWidth: '9rem', cellAlign: 'start' },
+  description: { minWidth: '3.75rem', maxWidth: '4.5rem', cellAlign: 'center' },
+  _details: { minWidth: '3.75rem', maxWidth: '4.25rem', cellAlign: 'center' },
+  _receipt: { minWidth: '5.75rem', maxWidth: '5.75rem', cellAlign: 'center' },
+  _delete: { minWidth: '3.75rem', maxWidth: '4.25rem', cellAlign: 'center' },
+  _update: { minWidth: '3.75rem', maxWidth: '4.25rem', cellAlign: 'center' }
+};
+
+function applyColumnLayout(
+  columns: DynamicTableColumn[],
+  layoutMap: Partial<Record<string, Pick<DynamicTableColumn, 'minWidth' | 'maxWidth' | 'cellAlign'>>>
+): DynamicTableColumn[] {
+  return columns.map((c) => {
+    const layout = layoutMap[c.key];
+    return layout ? { ...c, ...layout } : { ...c };
+  });
+}
+
+function applyExpenseColumnLayout(columns: DynamicTableColumn[]): DynamicTableColumn[] {
+  return applyColumnLayout(columns, EXPENSE_COLUMN_LAYOUT);
+}
+
+/** Admin budget overview table — alignment + widths (table view). */
+const BUDGET_COLUMN_LAYOUT: Partial<Record<string, Pick<DynamicTableColumn, 'minWidth' | 'maxWidth' | 'cellAlign'>>> = {
+  category: { minWidth: '8rem', cellAlign: 'start' },
+  description_action: { minWidth: '3.75rem', maxWidth: '4.25rem', cellAlign: 'center' },
+  month: { minWidth: '4.5rem', cellAlign: 'center' },
+  year: { minWidth: '4.25rem', cellAlign: 'center' },
+  amount: { minWidth: '7rem', cellAlign: 'end' },
+  spent: { minWidth: '7rem', cellAlign: 'end' },
+  remaining: { minWidth: '7rem', cellAlign: 'end' },
+  usage_pct: { minWidth: '5rem', cellAlign: 'center' },
+  standard_txn_count: { minWidth: '5.5rem', cellAlign: 'center' },
+  actionBudgetEdit: { minWidth: '3.75rem', maxWidth: '4.25rem', cellAlign: 'center' },
+  actionBudgetDelete: { minWidth: '3.75rem', maxWidth: '4.25rem', cellAlign: 'center' }
 };
 
 function pickMetaColumnLabel(meta: TableMetaResponse, keys: string[]): string | undefined {
@@ -93,15 +145,19 @@ function userExpenseLabelKeys(columnKey: string): string[] {
       return ['_delete', 'delete'];
     case '_receipt':
       return ['_receipt', 'receipt', 'receipt_path', 'receiptPath', 'receipt_url'];
-    case '_download':
-      return ['_download', 'download'];
+    case '_details':
+      return ['_details', 'details'];
     default:
       return [columnKey];
   }
 }
 
+function stripExpenseDownloadColumn(columns: DynamicTableColumn[]): DynamicTableColumn[] {
+  return columns.filter((c) => c.key !== '_download' && c.key !== 'description');
+}
+
 /**
- * User expense table: … Receipt (view), Vendor, Download (last column).
+ * User expense table: … Receipt (view + download), Vendor.
  * API meta may only override display labels for matching keys.
  */
 function cloneUserExpenseDashboardColumns(meta?: TableMetaResponse | null): DynamicTableColumn[] {
@@ -111,20 +167,19 @@ function cloneUserExpenseDashboardColumns(meta?: TableMetaResponse | null): Dyna
     { key: 'category_name', label: 'Category', sortable: false },
     { key: 'expense_date', label: 'Date', sortable: true, valueFormat: 'shortDate' },
     { key: 'payment_method', label: 'Payment', sortable: false },
-    { ...USER_EXPENSE_VIEW_NOTES_COLUMN },
     { key: '_update', label: 'Update', sortable: false, cellControl: 'userExpenseEdit' },
+    { ...EXPENSE_DETAILS_COLUMN },
     { ...USER_EXPENSE_DELETE_COLUMN },
     { ...USER_EXPENSE_RECEIPT_COLUMN },
-    { key: 'vendor', label: 'Vendor', sortable: false },
-    { ...EXPENSE_RECEIPT_DOWNLOAD_COLUMN }
+    { key: 'vendor', label: 'Vendor', sortable: false }
   ];
-  if (!meta?.columns?.length) {
-    return columns.map((c) => ({ ...c }));
-  }
-  return columns.map((c) => {
-    const lo = pickMetaColumnLabel(meta, userExpenseLabelKeys(c.key));
-    return lo ? { ...c, label: lo } : { ...c };
-  });
+  const labeled = !meta?.columns?.length
+    ? columns.map((c) => ({ ...c }))
+    : columns.map((c) => {
+        const lo = pickMetaColumnLabel(meta, userExpenseLabelKeys(c.key));
+        return lo ? { ...c, label: lo } : { ...c };
+      });
+  return applyExpenseColumnLayout(stripExpenseDownloadColumn(labeled));
 }
 
 /** User “Recent expenses” table: fixed columns only (no extra fields from meta). */
@@ -223,7 +278,16 @@ const EMPLOYEE_ACTIVE_COLUMN_KEYS = new Set([
   'enabled',
   'user_status',
   'account_status',
-  'activation_status'
+  'activation_status',
+  /** Plain-text activity from API (duplicate of toggle column). */
+  'activity_status',
+  'activitystatus',
+  'user_activity_status',
+  'useractivitystatus',
+  'activity_state',
+  'activitystate',
+  /** Some APIs use a spaced key or label-derived key for the text column. */
+  'activity status'
 ]);
 
 /**
@@ -270,8 +334,8 @@ function adminExpenseLabelKeys(columnKey: string): string[] {
       return ['payment_method', 'payment'];
     case '_receipt':
       return ['_receipt', 'receipt', 'receipt_path', 'receiptPath', 'receipt_url'];
-    case '_download':
-      return ['_download', 'download'];
+    case '_details':
+      return ['_details', 'details'];
     case '_edit':
       return ['_edit', 'update'];
     case '_delete':
@@ -282,7 +346,7 @@ function adminExpenseLabelKeys(columnKey: string): string[] {
 }
 
 /**
- * Admin “All expenses” table: … Receipt (view), … Delete, Download (last column).
+ * Admin “All expenses” table: … Receipt (view + download), … Delete.
  * Fixed columns; API meta may only override labels for matching keys.
  */
 function cloneAdminExpenseDashboardColumns(meta?: TableMetaResponse | null): DynamicTableColumn[] {
@@ -295,16 +359,16 @@ function cloneAdminExpenseDashboardColumns(meta?: TableMetaResponse | null): Dyn
     { key: 'user_name', label: 'Employee name', sortable: false },
     { key: 'vendor', label: 'Vendor', sortable: false },
     { key: 'expense_date', label: 'Expense date', sortable: true, valueFormat: 'shortDate' },
-    { ...ADMIN_EXPENSE_DELETE_COLUMN },
-    { ...EXPENSE_RECEIPT_DOWNLOAD_COLUMN }
+    { ...EXPENSE_DETAILS_COLUMN },
+    { ...ADMIN_EXPENSE_DELETE_COLUMN }
   ];
-  if (!meta?.columns?.length) {
-    return columns.map((c) => ({ ...c }));
-  }
-  return columns.map((c) => {
-    const lo = pickMetaColumnLabel(meta, adminExpenseLabelKeys(c.key));
-    return lo ? { ...c, label: lo } : { ...c };
-  });
+  const labeled = !meta?.columns?.length
+    ? columns.map((c) => ({ ...c }))
+    : columns.map((c) => {
+        const lo = pickMetaColumnLabel(meta, adminExpenseLabelKeys(c.key));
+        return lo ? { ...c, label: lo } : { ...c };
+      });
+  return applyExpenseColumnLayout(stripExpenseDownloadColumn(labeled));
 }
 
 /** Same as user expense table: only `amount` and `expense_date` are API-sortable. */
@@ -329,7 +393,9 @@ export function buildAdminExpenseViewConfigFromTableMeta(
   return clampAdminExpenseApiSortColumns({
     columns: cloneAdminExpenseDashboardColumns(meta),
     pagination,
-    showFilter: false
+    showFilter: false,
+    /** Table/Card toggle rendered in admin section head (next to audience chips). */
+    showViewToggle: false
   });
 }
 
@@ -337,7 +403,8 @@ export function buildFallbackExpenseMetaConfig(pagination: DynamicTablePaginatio
   return clampAdminExpenseApiSortColumns({
     columns: cloneAdminExpenseDashboardColumns(null),
     pagination,
-    showFilter: false
+    showFilter: false,
+    showViewToggle: false
   });
 }
 
@@ -384,9 +451,11 @@ export function buildAdminBudgetOverviewTableConfig(pagination: DynamicTablePagi
     { key: 'actionBudgetDelete', label: 'Delete', sortable: false, cellControl: 'adminBudgetDelete' }
   ];
   return {
-    columns,
+    columns: applyColumnLayout(columns, BUDGET_COLUMN_LAYOUT),
     pagination,
-    showFilter: false
+    showFilter: false,
+    /** Table/Card toggle rendered in admin section head (Budget overview). */
+    showViewToggle: false
   };
 }
 

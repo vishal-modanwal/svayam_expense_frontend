@@ -18,9 +18,11 @@ import { MatSort, Sort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { Observable, Subject, Subscription, merge } from 'rxjs';
 import { debounceTime, distinctUntilChanged, takeUntil, tap } from 'rxjs/operators';
+import { coalesceExpenseNotesFromApi } from 'src/app/core/utils/expense-notes.util';
 import { I18nService } from 'src/app/core/services/i18n.service';
 import { ToastService } from 'src/app/core/services/toast.service';
 import {
+  DynamicTableCellAlign,
   DynamicTableCellControl,
   DynamicTableColumn,
   DynamicTableQuery,
@@ -124,6 +126,11 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy, OnInit {
   receiptPreviewImageUrl: SafeUrl | null = null;
   receiptPreviewFrameUrl: SafeResourceUrl | null = null;
 
+  /** Expense row details (Details column view icon). */
+  expenseDetailsModalOpen = false;
+  expenseDetailsModalHeading = '';
+  expenseDetailsFields: { label: string; value: string }[] = [];
+
   /** Table ⇄ Card view toggle (defaults: card on phones, table on desktops; persisted per-table in localStorage). */
   viewMode: DynamicTableViewMode = 'table';
   /** True if we should auto-track viewport size — set false once the user picks a mode manually. */
@@ -192,6 +199,9 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy, OnInit {
     if (col.key === '_download') {
       return 'expenseReceiptDownload';
     }
+    if (col.key === '_details') {
+      return 'expenseDetails';
+    }
     if (col.key === '_employee_active') {
       return 'employeeActiveToggle';
     }
@@ -215,7 +225,9 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy, OnInit {
       row['status'] ??
       row['enabled'] ??
       row['user_status'] ??
-      row['account_status'];
+      row['account_status'] ??
+      row['activity_status'] ??
+      row['activityStatus'];
     if (typeof v === 'boolean') {
       return v;
     }
@@ -373,7 +385,7 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy, OnInit {
     if (sw === 'adminExpenseReceipt' || sw === 'userExpenseReceipt') {
       return 1;
     }
-    if (sw === 'expenseReceiptDownload') {
+    if (sw === 'expenseDetails') {
       return 2;
     }
     if (sw === 'adminExpenseDelete' || sw === 'userExpenseDelete') {
@@ -396,6 +408,106 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy, OnInit {
     return k === 'category_name' || k === 'category';
   }
 
+  /** User/admin expense tables — receipt column present in config. */
+  get isExpenseTableLayout(): boolean {
+    return this.columns.some(
+      (c) =>
+        c.cellControl === 'adminExpenseReceipt' ||
+        c.cellControl === 'userExpenseReceipt' ||
+        c.key === '_receipt'
+    );
+  }
+
+  columnCellAlign(col: DynamicTableColumn): DynamicTableCellAlign {
+    if (col.cellAlign) {
+      return col.cellAlign;
+    }
+    if (col.cellControl || this.effectiveCellSwitch(col) !== '__plain__') {
+      return 'center';
+    }
+    if (col.valueFormat === 'inr') {
+      return 'end';
+    }
+    const k = col.key.toLowerCase();
+    if (col.valueFormat === 'shortDate' || k === 'payment_method' || k === 'payment') {
+      return 'center';
+    }
+    return 'start';
+  }
+
+  columnAlignClass(col: DynamicTableColumn): string {
+    return `dynamic-table__cell--align-${this.columnCellAlign(col)}`;
+  }
+
+  get isTableView(): boolean {
+    return this.viewMode === 'table';
+  }
+
+  /** Neutral icon actions in table view only (card view keeps colored text chips). */
+  useTableIconActions(col: DynamicTableColumn): boolean {
+    if (!this.isTableView) {
+      return false;
+    }
+    const sw = this.effectiveCellSwitch(col);
+    if (sw === 'employeeActiveToggle' || sw === 'userExpenseActions') {
+      return false;
+    }
+    return sw !== '__plain__';
+  }
+
+  private readonly titleTableDisplayMaxLen = 17;
+  private readonly vendorTableDisplayMaxLen = 12;
+
+  isTitleColumn(col: DynamicTableColumn): boolean {
+    return col.key.toLowerCase() === 'title';
+  }
+
+  isVendorColumn(col: DynamicTableColumn): boolean {
+    return col.key.toLowerCase() === 'vendor';
+  }
+
+  isTruncatedTextColumn(col: DynamicTableColumn): boolean {
+    if (!this.isTableView || col.cellControl || this.isTitleColumn(col) || this.isVendorColumn(col)) {
+      return false;
+    }
+    return this.effectiveCellSwitch(col) === '__plain__';
+  }
+
+  private truncateTableDisplay(full: string, maxLen: number): string {
+    if (full === '—' || full.length <= maxLen) {
+      return full;
+    }
+    return `${full.slice(0, maxLen)}...`;
+  }
+
+  /** Table title/vendor: truncated in table view; other cells use full `formatCell`. */
+  formatCellDisplay(row: Record<string, unknown>, col: DynamicTableColumn): string {
+    const full = this.formatCell(row, col);
+    if (!this.isTableView || full === '—') {
+      return full;
+    }
+    if (this.isTitleColumn(col)) {
+      return this.truncateTableDisplay(full, this.titleTableDisplayMaxLen);
+    }
+    if (this.isVendorColumn(col)) {
+      return this.truncateTableDisplay(full, this.vendorTableDisplayMaxLen);
+    }
+    return full;
+  }
+
+  cellTitleAttr(row: Record<string, unknown>, col: DynamicTableColumn): string | null {
+    if ((this.isTitleColumn(col) || this.isVendorColumn(col)) && this.isTableView) {
+      const full = this.formatCell(row, col);
+      const display = this.formatCellDisplay(row, col);
+      return full !== '—' && full !== display ? full : null;
+    }
+    if (!this.isTruncatedTextColumn(col)) {
+      return null;
+    }
+    const t = this.formatCell(row, col);
+    return t === '—' ? null : t;
+  }
+
   trackByRowIndex(index: number, row: Record<string, unknown>): string | number {
     const id = row['id'] ?? row['user_id'] ?? row['expense_id'];
     if (typeof id === 'string' || typeof id === 'number') {
@@ -404,12 +516,22 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy, OnInit {
     return index;
   }
 
-  /** User clicked the segmented control — flip view + persist. */
+  /** User clicked segmented Table/Card control — external toolbars call the same path. */
   onViewModeChange(mode: DynamicTableViewMode | null): void {
     if (!mode) {
       return;
     }
     this.setViewMode(mode, /* userPicked */ true);
+  }
+
+  /** Current table/card mode (for parent toolbars that render their own toggle). */
+  getViewMode(): DynamicTableViewMode {
+    return this.viewMode;
+  }
+
+  /** Sync view from admin (or other) wrapper toggle — persists like the built-in control. */
+  applyViewMode(mode: DynamicTableViewMode): void {
+    this.onViewModeChange(mode);
   }
 
   private initViewMode(): void {
@@ -617,6 +739,123 @@ export class DynamicDataTableComponent implements OnChanges, OnDestroy, OnInit {
 
   onAdminExpenseDeleteClick(row: Record<string, unknown>): void {
     this.adminExpenseDelete.emit(row);
+  }
+
+  openExpenseDetailsModal(row: Record<string, unknown>, ev?: Event): void {
+    ev?.stopPropagation();
+    ev?.preventDefault();
+    this.expenseDetailsFields = this.buildExpenseDetailFields(row);
+    const titleCol = this.columns.find((c) => c.key.toLowerCase() === 'title');
+    const titleVal = titleCol ? this.formatCell(row, titleCol) : '';
+    this.expenseDetailsModalHeading =
+      titleVal && titleVal !== '—' ? titleVal : this.i18n.instant('table.expenseDetailsTitle');
+    this.expenseDetailsModalOpen = true;
+    this.cdr.detectChanges();
+  }
+
+  closeExpenseDetailsModal(): void {
+    this.expenseDetailsModalOpen = false;
+    this.expenseDetailsFields = [];
+    this.expenseDetailsModalHeading = '';
+    this.cdr.detectChanges();
+  }
+
+  private buildExpenseDetailFields(row: Record<string, unknown>): { label: string; value: string }[] {
+    const actionKeys = new Set([
+      '_receipt',
+      '_download',
+      '_delete',
+      '_update',
+      '_edit',
+      '_details',
+      '_employee_active'
+    ]);
+    const orderedKeys = [
+      'title',
+      'amount',
+      'category_name',
+      'category',
+      'expense_date',
+      'payment_method',
+      'vendor',
+      'user_name',
+      'description'
+    ];
+    const fields: { label: string; value: string }[] = [];
+    const seen = new Set<string>();
+
+    const expenseId = row['id'] ?? row['expense_id'];
+    if (expenseId !== null && expenseId !== undefined && String(expenseId).trim() !== '') {
+      fields.push({
+        label: this.i18n.instant('table.expenseId'),
+        value: String(expenseId)
+      });
+      seen.add('id');
+      seen.add('expense_id');
+    }
+
+    const pushField = (key: string, label: string, value: string): void => {
+      const v = value.trim();
+      if (!v || v === '—' || seen.has(key)) {
+        return;
+      }
+      seen.add(key);
+      fields.push({ label, value: v });
+    };
+
+    for (const key of orderedKeys) {
+      if (key === 'description') {
+        const notesText = this.resolveExpenseNotesText(row);
+        fields.push({
+          label: this.i18n.instant('expenseForm.notes'),
+          value: notesText || this.i18n.instant('table.expenseNotesEmpty')
+        });
+        seen.add('description');
+        seen.add('notes');
+        seen.add('note');
+        continue;
+      }
+      const col = this.columns.find((c) => c.key === key);
+      if (col?.cellControl || actionKeys.has(key)) {
+        continue;
+      }
+      if (col) {
+        pushField(key, col.label, this.formatCell(row, col));
+      }
+    }
+
+    for (const col of this.columns) {
+      if (col.cellControl || actionKeys.has(col.key) || seen.has(col.key)) {
+        continue;
+      }
+      if (col.key === 'description' || col.key === 'notes') {
+        continue;
+      }
+      pushField(col.key, col.label, this.formatCell(row, col));
+    }
+
+    if (!seen.has('notes')) {
+      const notesText = this.resolveExpenseNotesText(row);
+      fields.push({
+        label: this.i18n.instant('expenseForm.notes'),
+        value: notesText || this.i18n.instant('table.expenseNotesEmpty')
+      });
+    }
+
+    return fields;
+  }
+
+  /** Notes from GET expense row (`notes` or `description` from API). */
+  private resolveExpenseNotesText(row: Record<string, unknown>): string {
+    return coalesceExpenseNotesFromApi(row);
+  }
+
+  private resolveExpenseRowId(row: Record<string, unknown>): string | null {
+    const raw = row['id'] ?? row['expense_id'];
+    if (raw === null || raw === undefined || raw === '') {
+      return null;
+    }
+    return String(raw);
   }
 
   onAdminBudgetDescriptionClick(row: Record<string, unknown>, ev?: Event): void {

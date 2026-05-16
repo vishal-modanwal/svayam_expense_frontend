@@ -46,6 +46,8 @@ export interface Expense {
   amount: number;
   payment_method: string;
   vendor?: string;
+  /** User notes; list APIs may send this or `description` (same meaning). */
+  notes?: string | null;
   description?: string;
   expense_date: string;
   expense_type: 'standard' | 'extra';

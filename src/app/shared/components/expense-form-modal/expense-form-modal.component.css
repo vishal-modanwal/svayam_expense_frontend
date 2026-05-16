@@ -240,11 +240,26 @@ body.dark-theme .form-submit-error__icon {
   font-size: 0.72rem;
   line-height: 1.35;
   color: var(--text-muted, #64748b);
-  max-width: min(20rem, 100%);
+  max-width: min(28rem, 100%);
 }
 
 body.dark-theme .receipt-scanner__hint {
   color: var(--text-muted);
+}
+
+.receipt-retry-scan {
+  border-radius: 8px !important;
+  font-weight: 600;
+  font-size: 0.8rem !important;
+  line-height: 1.2 !important;
+}
+
+.receipt-retry-scan mat-icon {
+  margin-right: 4px;
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  vertical-align: middle;
 }
 
 .receipt-file-name {
@@ -369,6 +384,12 @@ body.dark-theme .close-btn {
 
   .receipt-scanner__hint {
     max-width: none;
+  }
+
+  .receipt-retry-scan {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
   }
 
   .receipt-file-name {

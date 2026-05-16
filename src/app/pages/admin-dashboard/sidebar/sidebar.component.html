@@ -13,13 +13,11 @@
     [attr.aria-hidden]="!open"
     [attr.aria-label]="'nav.ariaAdminNav' | translate">
     <header class="sidebar-header">
-      <div class="sidebar-header__brand">
-        <div class="sidebar-header__logo">
-          <img src="assets/svayam-tracker-logo.png" alt="" width="32" height="32" />
-        </div>
-        <div class="sidebar-header__titles">
-          <span class="sidebar-header__app">{{ 'nav.brand' | translate }}</span>
-          <span class="sidebar-header__sub">{{ 'nav.sidebarAdmin' | translate }}</span>
+      <div class="sidebar-header__user">
+        <div class="sidebar-header__avatar" aria-hidden="true">{{ initials }}</div>
+        <div class="sidebar-header__meta">
+          <span class="sidebar-header__name">{{ userName || ('nav.sidebarAdmin' | translate) }}</span>
+          <span class="sidebar-header__role">{{ userRole }}</span>
         </div>
       </div>
       <button
@@ -44,9 +42,10 @@
             <span class="sidebar-nav__label">{{ workspaceLabelKey(link.path) | translate }}</span>
             <span
               class="sidebar-nav__badge"
-              *ngIf="link.badge != null && link.badge > 0"
-              [attr.aria-label]="'admin.alertsAria' | translate: { n: link.badge }">
-              {{ link.badge }}
+              [class.sidebar-nav__badge--alert]="link.path === 'notifications' || link.path === 'requests'"
+              *ngIf="workspaceLinkBadge(link.path) as badgeCount"
+              [attr.aria-label]="workspaceLinkBadgeAriaKey(link.path) | translate: { n: badgeCount }">
+              {{ badgeCount }}
             </span>
           </a>
         </li>
@@ -71,13 +70,6 @@
     </nav>
 
     <footer class="sidebar-footer">
-      <div class="sidebar-footer__user">
-        <div class="sidebar-footer__avatar" aria-hidden="true">{{ initials }}</div>
-        <div class="sidebar-footer__meta">
-          <span class="sidebar-footer__name">{{ userName || ('nav.sidebarAdmin' | translate) }}</span>
-          <span class="sidebar-footer__role">{{ userRole }}</span>
-        </div>
-      </div>
       <button type="button" class="sidebar-footer__logout" (click)="onLogout()">
         <mat-icon aria-hidden="true">logout</mat-icon>
         <span>{{ 'nav.logOut' | translate }}</span>

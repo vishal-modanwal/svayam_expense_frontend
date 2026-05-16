@@ -21,15 +21,35 @@ export class CategoryService {
       );
   }
 
+  /** Same as `getAll` but returns every row from the API (admin category screen). */
+  getAllForAdmin(): Observable<{ status: string; data: Category[] }> {
+    return this.http.get<{ status: string; data: Category[]; categories?: Category[] }>(`${this.api}/category`).pipe(
+      map((res) => {
+        const list = res.data ?? res.categories;
+        return {
+          ...res,
+          data: Array.isArray(list) ? list : []
+        };
+      })
+    );
+  }
+
   getById(id: number): Observable<{ status: string; data: Category }> {
     return this.http.get<{ status: string; data: Category }>(`${this.api}/category/${id}`);
   }
 
-  // Backend intentionally uses POST for update.
+  /**
+   * Update category display name / description.
+   * `POST /api/category/:id` (backend uses POST, not PATCH).
+   */
   updateCategory(id: number, payload: { name: string; description?: string }): Observable<ApiMessage> {
     return this.http.post<ApiMessage>(`${this.api}/category/${id}`, payload);
   }
 
+  /**
+   * Soft-archive a category (removed from active lists; same path, archive semantics on server).
+   * `DELETE /api/category/:id`
+   */
   deleteCategory(id: number): Observable<ApiMessage> {
     return this.http.delete<ApiMessage>(`${this.api}/category/${id}`);
   }

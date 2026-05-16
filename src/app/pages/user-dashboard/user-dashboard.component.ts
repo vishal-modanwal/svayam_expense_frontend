@@ -17,6 +17,7 @@ import {
   buildUserExpenseViewConfigFromTableMeta,
   clampMyExpenseApiSortColumns
 } from 'src/app/core/utils/table-meta.utils';
+import { withNormalizedExpenseNotes } from 'src/app/core/utils/expense-notes.util';
 import { listRowReceiptPath } from 'src/app/core/utils/receipt-url';
 import {
   DynamicTableQuery,
@@ -236,7 +237,12 @@ export class UserDashboardComponent implements OnInit, OnDestroy {
           this.expenses = (res.data || []).map((item) => {
             const row = { ...item, amount: Number(item.amount) } as unknown as Record<string, unknown>;
             const rp = listRowReceiptPath(row) ?? item.receipt_path;
-            return { ...item, amount: Number(item.amount), receipt_path: rp ?? item.receipt_path };
+            const normalized = withNormalizedExpenseNotes({
+              ...item,
+              amount: Number(item.amount),
+              receipt_path: rp ?? item.receipt_path
+            });
+            return normalized as unknown as Expense;
           });
           const p = res.pagination;
           this.totalPages = Math.max(1, p?.totalPages || 1);
@@ -342,7 +348,7 @@ export class UserDashboardComponent implements OnInit, OnDestroy {
     const id = Number(ev.row['id']);
     const expense = this.expenses.find((x) => x.id === id);
     if (ev.action === 'notes') {
-      const desc = ev.row['description'];
+      const desc = ev.row['description'] ?? ev.row['notes'];
       this.openNotes(desc == null ? null : String(desc));
       return;
     }
@@ -433,7 +439,10 @@ export class UserDashboardComponent implements OnInit, OnDestroy {
   }
 
   private expenseToFlatRow(e: Expense): Record<string, unknown> {
-    return { ...e, amount: Number(e.amount) } as Record<string, unknown>;
+    return withNormalizedExpenseNotes({
+      ...e,
+      amount: Number(e.amount)
+    } as Record<string, unknown>);
   }
 
   private triggerDownload(blob: Blob, name: string): void {

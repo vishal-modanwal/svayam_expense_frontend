@@ -5,6 +5,7 @@ export type DynamicTableCellControl =
   | 'adminBudgetDelete'
   | 'adminExpenseEdit'
   | 'adminExpenseReceipt'
+  | 'expenseDetails'
   | 'adminExpenseDelete'
   | 'userExpenseActions'
   | 'userExpenseViewNotes'
@@ -13,6 +14,9 @@ export type DynamicTableCellControl =
   | 'userExpenseReceipt'
   | 'expenseReceiptDownload'
   | 'employeeActiveToggle';
+
+/** Horizontal alignment for header + data cells. */
+export type DynamicTableCellAlign = 'start' | 'center' | 'end';
 
 /** Column definition — typically one object per API column. */
 export interface DynamicTableColumn {
@@ -23,6 +27,10 @@ export interface DynamicTableColumn {
   sortable?: boolean;
   /** e.g. '8rem' — helps horizontal scroll on small screens. */
   minWidth?: string;
+  /** Optional cap for long text columns (ellipsis). */
+  maxWidth?: string;
+  /** Header + cell alignment; expense tables set per column in `table-meta.utils`. */
+  cellAlign?: DynamicTableCellAlign;
   /** Cell value presentation for plain text cells. */
   valueFormat?: 'plain' | 'inr' | 'shortDate';
   /** When set, `cellText` is not used; template renders controls instead. */

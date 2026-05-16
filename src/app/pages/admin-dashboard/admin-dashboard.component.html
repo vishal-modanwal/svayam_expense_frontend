@@ -13,22 +13,49 @@
       <span class="admin-topbar__brand-text">{{ 'nav.brand' | translate }}</span>
     </a>
     <span class="admin-topbar__spacer"></span>
+    <div class="admin-topbar__tools">
     <div class="lang-switch lang-switch--admin" role="group" [attr.aria-label]="'nav.language' | translate">
       <button type="button" class="lang-switch__btn" [class.lang-switch__btn--active]="i18n.currentLang() === 'en'" (click)="setLang('en')">EN</button>
       <span class="lang-switch__sep" aria-hidden="true">|</span>
       <button type="button" class="lang-switch__btn" [class.lang-switch__btn--active]="i18n.currentLang() === 'hi'" (click)="setLang('hi')">HI</button>
     </div>
-    <button
-      mat-icon-button
-      type="button"
-      class="admin-topbar__icon"
-      [attr.aria-label]="'nav.ariaNotifications' | translate"
-      [matBadge]="adminNotificationCount"
-      [matBadgeHidden]="adminNotificationCount < 1"
-      matBadgeSize="small"
-      matBadgeColor="warn">
-      <mat-icon>notifications_none</mat-icon>
-    </button>
+      <nav class="admin-topbar__nav" [attr.aria-label]="'nav.ariaAdminQuickLinks' | translate">
+        <a routerLink="/landing" class="admin-topbar__nav-item">
+          <mat-icon aria-hidden="true">home</mat-icon>
+          <span class="admin-topbar__nav-label">{{ 'nav.home' | translate }}</span>
+        </a>
+        <button
+          type="button"
+          class="admin-topbar__nav-item"
+          [class.admin-topbar__nav-item--has-badge]="adminActivationRequestCount > 0"
+          (click)="openRequestsWorkspace()"
+          [attr.aria-label]="'nav.ariaOpenAdminRequests' | translate">
+          <mat-icon aria-hidden="true">how_to_reg</mat-icon>
+          <span class="admin-topbar__nav-label">{{ 'admin.requestsWellLabel' | translate }}</span>
+          <span
+            *ngIf="adminActivationRequestCount > 0"
+            class="admin-topbar__nav-badge"
+            aria-hidden="true">
+            {{ adminActivationRequestCount > 99 ? '99+' : adminActivationRequestCount }}
+          </span>
+        </button>
+        <button
+          type="button"
+          class="admin-topbar__nav-item"
+          [class.admin-topbar__nav-item--has-badge]="adminNotificationCount > 0"
+          (click)="openNotificationsWorkspace()"
+          [attr.aria-label]="'nav.ariaOpenNotifications' | translate">
+          <mat-icon aria-hidden="true">notifications</mat-icon>
+          <span class="admin-topbar__nav-label">{{ 'admin.notificationsWellLabel' | translate }}</span>
+          <span
+            *ngIf="adminNotificationCount > 0"
+            class="admin-topbar__nav-badge"
+            aria-hidden="true">
+            {{ adminNotificationCount > 99 ? '99+' : adminNotificationCount }}
+          </span>
+        </button>
+      </nav>
+    </div>
   </header>
 
   <app-sidebar
@@ -38,6 +65,7 @@
     [userName]="userName"
     [userRole]="'role.administrator' | translate"
     [notificationCount]="adminNotificationCount"
+    [requestCount]="adminActivationRequestCount"
     [alertBadgeCount]="adminAlertBadgeCount"
     (toolAction)="onSidebarToolAction($event)"
     (logoutClick)="logoutAdmin()">
@@ -227,12 +255,12 @@
             <div class="section-head section-head--table section-head--all-expenses">
               <div class="section-head__title-row">
                 <h3>{{ 'admin.allExpenses' | translate }}</h3>
-                <span class="section-hint section-hint--page-scope">{{ 'admin.thisPage' | translate }}</span>
               </div>
-              <div
-                class="expense-audience-chips"
-                role="group"
-                [attr.aria-label]="'admin.filterAudienceAria' | translate">
+              <div class="admin-dt-head__toolbar">
+                <div
+                  class="expense-audience-chips"
+                  role="group"
+                  [attr.aria-label]="'admin.filterAudienceAria' | translate">
                 <button
                   type="button"
                   class="expense-audience-chip"
@@ -261,9 +289,31 @@
                   (click)="setExpenseAudience('inactive-users')">
                   {{ 'admin.inactiveUsers' | translate }}
                 </button>
+                </div>
+                <mat-button-toggle-group
+                  class="admin-dt-view-toggle"
+                  [value]="adminExpenseToolbarViewMode"
+                  (change)="onAdminExpenseToolbarViewChange($event.value)"
+                  [attr.aria-label]="'table.viewToggleAria' | translate">
+                  <mat-button-toggle
+                    value="table"
+                    [matTooltip]="'table.viewTableTooltip' | translate"
+                    [attr.aria-label]="'table.viewTable' | translate">
+                    <mat-icon>table_rows</mat-icon>
+                    <span class="admin-dt-view-toggle-label">{{ 'table.viewTable' | translate }}</span>
+                  </mat-button-toggle>
+                  <mat-button-toggle
+                    value="card"
+                    [matTooltip]="'table.viewCardTooltip' | translate"
+                    [attr.aria-label]="'table.viewCard' | translate">
+                    <mat-icon>view_agenda</mat-icon>
+                    <span class="admin-dt-view-toggle-label">{{ 'table.viewCard' | translate }}</span>
+                  </mat-button-toggle>
+                </mat-button-toggle-group>
               </div>
             </div>
             <app-dynamic-data-table
+              #adminExpenseDt
               *ngIf="adminExpenseTableConfig"
               [config]="adminExpenseTableConfig"
               [rows]="adminExpenseTableRows"
@@ -308,9 +358,18 @@
       <div class="dashboard dashboard-page dashboard-page--inner">
         <header class="dashboard-hero dashboard-hero--compact">
           <div class="greet">
-            <div class="title-wrap">
-              <h2 id="name">{{ sectionTitle }}</h2>
-              <p class="subtitle">{{ sectionSubtitle }}</p>
+            <div class="title-wrap title-wrap--with-back">
+              <button
+                type="button"
+                class="dashboard-hero__back"
+                (click)="openAdminExpensesWorkspace()"
+                [attr.aria-label]="'admin.backToExpensesAria' | translate">
+                <mat-icon>arrow_back</mat-icon>
+              </button>
+              <div class="title-wrap__text">
+                <h2 id="name">{{ sectionTitle }}</h2>
+                <p class="subtitle">{{ sectionSubtitle }}</p>
+              </div>
             </div>
             <button mat-stroked-button color="primary" type="button" (click)="loadAll()">
               <mat-icon>refresh</mat-icon>
@@ -427,11 +486,33 @@
 
         <div class="main-section main-section--budgets">
           <mat-card class="table-card" *ngIf="budgetTableConfig">
-            <div class="section-head section-head--table">
-              <h3>{{ 'admin.budgetOverview' | translate }}</h3>
-              <span class="section-hint section-hint--page-scope">{{ 'admin.thisPage' | translate }}</span>
+            <div class="section-head section-head--table section-head--budget-overview">
+              <div class="section-head__title-row section-head__title-row--dt-inline">
+                <h3>{{ 'admin.budgetOverview' | translate }}</h3>
+                <mat-button-toggle-group
+                  class="admin-dt-view-toggle"
+                  [value]="budgetToolbarViewMode"
+                  (change)="onBudgetToolbarViewChange($event.value)"
+                  [attr.aria-label]="'table.viewToggleAria' | translate">
+                  <mat-button-toggle
+                    value="table"
+                    [matTooltip]="'table.viewTableTooltip' | translate"
+                    [attr.aria-label]="'table.viewTable' | translate">
+                    <mat-icon>table_rows</mat-icon>
+                    <span class="admin-dt-view-toggle-label">{{ 'table.viewTable' | translate }}</span>
+                  </mat-button-toggle>
+                  <mat-button-toggle
+                    value="card"
+                    [matTooltip]="'table.viewCardTooltip' | translate"
+                    [attr.aria-label]="'table.viewCard' | translate">
+                    <mat-icon>view_agenda</mat-icon>
+                    <span class="admin-dt-view-toggle-label">{{ 'table.viewCard' | translate }}</span>
+                  </mat-button-toggle>
+                </mat-button-toggle-group>
+              </div>
             </div>
             <app-dynamic-data-table
+              #budgetDt
               [config]="budgetTableConfig"
               [rows]="budgetTableRows"
               [totalCount]="budgetTableTotalCount"
@@ -571,9 +652,18 @@
       <div class="dashboard dashboard-page dashboard-page--inner">
         <header class="dashboard-hero dashboard-hero--compact">
           <div class="greet">
-            <div class="title-wrap">
-              <h2 id="name">{{ sectionTitle }}</h2>
-              <p class="subtitle">{{ sectionSubtitle }}</p>
+            <div class="title-wrap title-wrap--with-back">
+              <button
+                type="button"
+                class="dashboard-hero__back"
+                (click)="openAdminExpensesWorkspace()"
+                [attr.aria-label]="'admin.backToExpensesAria' | translate">
+                <mat-icon>arrow_back</mat-icon>
+              </button>
+              <div class="title-wrap__text">
+                <h2 id="name">{{ sectionTitle }}</h2>
+                <p class="subtitle">{{ sectionSubtitle }}</p>
+              </div>
             </div>
             <button mat-stroked-button color="primary" type="button" (click)="loadAll()">
               <mat-icon>refresh</mat-icon>
@@ -680,14 +770,57 @@
 
         <div class="main-section">
           <mat-card class="table-card" *ngIf="usersTableConfig">
-            <div class="section-head section-head--table">
-              <h3>{{ 'admin.employees' | translate }}</h3>
-              <span class="section-hint section-hint--page-scope">{{ 'admin.thisPage' | translate }}</span>
+            <div class="section-head section-head--table section-head--employees-table">
+              <div class="section-head__title-row">
+                <h3>{{ 'admin.employees' | translate }}</h3>
+              </div>
+              <div class="admin-dt-head__toolbar">
+                <div
+                  class="expense-audience-chips"
+                  role="group"
+                  [attr.aria-label]="'admin.employeeStatusChipsAria' | translate">
+                  <button
+                    type="button"
+                    class="expense-audience-chip"
+                    [class.expense-audience-chip--active]="employeeListFilter === 'active'"
+                    (click)="setEmployeeListFilter('active')">
+                    {{ 'admin.activeUsersChip' | translate }}
+                  </button>
+                  <button
+                    type="button"
+                    class="expense-audience-chip"
+                    [class.expense-audience-chip--active]="employeeListFilter === 'inactive'"
+                    (click)="setEmployeeListFilter('inactive')">
+                    {{ 'admin.inactiveUsersChip' | translate }}
+                  </button>
+                </div>
+                <mat-button-toggle-group
+                  class="admin-dt-view-toggle"
+                  [value]="employeeToolbarViewMode"
+                  (change)="onEmployeeToolbarViewChange($event.value)"
+                  [attr.aria-label]="'table.viewToggleAria' | translate">
+                  <mat-button-toggle
+                    value="table"
+                    [matTooltip]="'table.viewTableTooltip' | translate"
+                    [attr.aria-label]="'table.viewTable' | translate">
+                    <mat-icon>table_rows</mat-icon>
+                    <span class="admin-dt-view-toggle-label">{{ 'table.viewTable' | translate }}</span>
+                  </mat-button-toggle>
+                  <mat-button-toggle
+                    value="card"
+                    [matTooltip]="'table.viewCardTooltip' | translate"
+                    [attr.aria-label]="'table.viewCard' | translate">
+                    <mat-icon>view_agenda</mat-icon>
+                    <span class="admin-dt-view-toggle-label">{{ 'table.viewCard' | translate }}</span>
+                  </mat-button-toggle>
+                </mat-button-toggle-group>
+              </div>
             </div>
             <p class="users-meta-hint">
               {{ 'admin.employeesMetaHint' | translate }}
             </p>
             <app-dynamic-data-table
+              #employeeDt
               [config]="usersTableConfig"
               [rows]="usersTableRows"
               [totalCount]="employeeTotalCount"
@@ -702,10 +835,244 @@
         </div>
       </div>
     </ng-container>
+
+    <!-- CATEGORIES -->
+    <ng-container *ngIf="activeSection === 'categories'">
+      <div class="dashboard dashboard-page dashboard-page--inner">
+        <header class="dashboard-hero dashboard-hero--compact">
+          <div class="greet">
+            <div class="title-wrap title-wrap--with-back">
+              <button
+                type="button"
+                class="dashboard-hero__back"
+                (click)="openAdminExpensesWorkspace()"
+                [attr.aria-label]="'admin.backToExpensesAria' | translate">
+                <mat-icon>arrow_back</mat-icon>
+              </button>
+              <div class="title-wrap__text">
+                <h2 id="name">{{ sectionTitle }}</h2>
+                <p class="subtitle">{{ sectionSubtitle }}</p>
+              </div>
+            </div>
+            <button mat-stroked-button color="primary" type="button" (click)="refreshAdminCategoriesSection()">
+              <mat-icon>refresh</mat-icon>
+              {{ 'admin.refresh' | translate }}
+            </button>
+          </div>
+        </header>
+
+        <section
+          class="stat-cards cards stat-cards--admin stat-cards--admin-categories"
+          [attr.aria-label]="'admin.categoriesMetricsAria' | translate">
+          <mat-card class="card usage">
+            <div class="card-left">
+              <div class="icon-box usage-icon">
+                <mat-icon>category</mat-icon>
+              </div>
+              <div class="text">
+                <h3>{{ 'admin.categoriesMetricTotalTitle' | translate }}</h3>
+                <p>{{ 'admin.categoriesMetricTotalSub' | translate }}</p>
+              </div>
+            </div>
+            <div class="card-right">{{ adminCategories.length | number: '1.0-0' }}</div>
+          </mat-card>
+        </section>
+
+        <div class="main-section">
+          <mat-card class="table-card">
+            <div class="section-head section-head--table">
+              <h3>{{ 'admin.categoriesTableTitle' | translate }}</h3>
+            </div>
+            <p class="users-meta-hint">{{ 'admin.categoriesWorkspaceHint' | translate }}</p>
+            <p *ngIf="categoryAdminLoading" class="budget-gauge__loading">{{ 'admin.categoriesLoading' | translate }}</p>
+            <div class="admin-categories-table-wrap" *ngIf="!categoryAdminLoading">
+              <table class="admin-categories-table" *ngIf="adminCategories.length; else noAdminCategories">
+                <thead>
+                  <tr>
+                    <th scope="col">{{ 'admin.categoryColId' | translate }}</th>
+                    <th scope="col">{{ 'admin.categoryColName' | translate }}</th>
+                    <th scope="col">{{ 'admin.categoryColDescription' | translate }}</th>
+                    <th scope="col">{{ 'admin.categoryColStatus' | translate }}</th>
+                    <th scope="col" class="admin-categories-table__actions">{{ 'admin.categoryColActions' | translate }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let cat of adminCategories">
+                    <td>{{ cat.id }}</td>
+                    <td>{{ cat.name }}</td>
+                    <td class="admin-categories-table__desc">{{ cat.description || '—' }}</td>
+                    <td>{{ categoryStatusLabel(cat) }}</td>
+                    <td class="admin-categories-table__actions">
+                      <button
+                        mat-icon-button
+                        type="button"
+                        [attr.aria-label]="'admin.categoryEditAria' | translate: { name: cat.name }"
+                        (click)="openCategoryEditModal(cat)">
+                        <mat-icon>edit</mat-icon>
+                      </button>
+                      <button
+                        mat-icon-button
+                        type="button"
+                        [attr.aria-label]="'admin.categoryDeleteAria' | translate: { name: cat.name }"
+                        (click)="onCategoryDeleteRequest(cat)">
+                        <mat-icon>archive</mat-icon>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <ng-template #noAdminCategories>
+                <p class="budget-gauge__empty">{{ 'admin.categoriesEmpty' | translate }}</p>
+              </ng-template>
+            </div>
+          </mat-card>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- NOTIFICATIONS -->
+    <ng-container *ngIf="activeSection === 'notifications'">
+      <div class="dashboard dashboard-page dashboard-page--inner">
+        <header class="dashboard-hero dashboard-hero--compact">
+          <div class="greet">
+            <div class="title-wrap title-wrap--with-back">
+              <button
+                type="button"
+                class="dashboard-hero__back"
+                (click)="openAdminExpensesWorkspace()"
+                [attr.aria-label]="'admin.backToExpensesAria' | translate">
+                <mat-icon>arrow_back</mat-icon>
+              </button>
+              <div class="title-wrap__text">
+                <h2 id="name">{{ sectionTitle }}</h2>
+                <p class="subtitle">{{ sectionSubtitle }}</p>
+              </div>
+            </div>
+            <button mat-stroked-button color="primary" type="button" (click)="loadAll()">
+              <mat-icon>refresh</mat-icon>
+              {{ 'admin.refresh' | translate }}
+            </button>
+          </div>
+        </header>
+
+        <div class="main-section">
+          <div class="admin-notifications-layout">
+          <p *ngIf="adminNotificationsLoading" class="budget-gauge__loading">{{ 'admin.notificationsLoading' | translate }}</p>
+
+          <ng-container *ngIf="!adminNotificationsLoading">
+          <div class="admin-notifications-list" *ngIf="adminApiNotifications.length; else noAdminNotifications">
+            <mat-card
+              *ngFor="let item of adminApiNotifications"
+              class="admin-notifications-item"
+              [class.admin-notifications-item--warn]="item.tone === 'warn'"
+              [class.admin-notifications-item--unread]="!item.isRead"
+              appearance="outlined">
+              <div class="admin-notifications-item__icon-wrap" aria-hidden="true">
+                <mat-icon>{{ item.icon }}</mat-icon>
+              </div>
+              <div class="admin-notifications-item__body">
+                <div class="admin-notifications-item__head">
+                  <h4 class="admin-notifications-item__title">{{ item.title }}</h4>
+                  <time
+                    *ngIf="item.timeLabel"
+                    class="admin-notifications-item__time"
+                    [attr.datetime]="item.createdAtIso || null"
+                    [attr.title]="item.createdAtIso || item.timeLabel">
+                    {{ item.timeLabel }}
+                  </time>
+                </div>
+                <p class="admin-notifications-item__desc" *ngIf="item.body">{{ item.body }}</p>
+              </div>
+            </mat-card>
+          </div>
+          <ng-template #noAdminNotifications>
+            <mat-card class="admin-notifications-empty" appearance="outlined">
+              <mat-icon class="admin-notifications-empty__icon" color="primary">check_circle</mat-icon>
+              <h3>{{ 'admin.notificationsEmptyTitle' | translate }}</h3>
+              <p>{{ 'admin.notificationsEmptyHint' | translate }}</p>
+            </mat-card>
+          </ng-template>
+          </ng-container>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- REQUESTS (inactive user → activation) -->
+    <ng-container *ngIf="activeSection === 'requests'">
+      <div class="dashboard dashboard-page dashboard-page--inner">
+        <header class="dashboard-hero dashboard-hero--compact">
+          <div class="greet">
+            <div class="title-wrap title-wrap--with-back">
+              <button
+                type="button"
+                class="dashboard-hero__back"
+                (click)="openAdminExpensesWorkspace()"
+                [attr.aria-label]="'admin.backToExpensesAria' | translate">
+                <mat-icon>arrow_back</mat-icon>
+              </button>
+              <div class="title-wrap__text">
+                <h2 id="name">{{ sectionTitle }}</h2>
+                <p class="subtitle">{{ sectionSubtitle }}</p>
+              </div>
+            </div>
+            <button mat-stroked-button color="primary" type="button" (click)="refreshActivationRequestsSection()">
+              <mat-icon>refresh</mat-icon>
+              {{ 'admin.refresh' | translate }}
+            </button>
+          </div>
+        </header>
+
+        <div class="main-section">
+          <p class="users-meta-hint">{{ 'admin.requestsWorkspaceHint' | translate }}</p>
+          <p *ngIf="activationRequestsLoading" class="budget-gauge__loading">{{ 'admin.requestsLoading' | translate }}</p>
+
+          <div class="admin-requests-layout" *ngIf="!activationRequestsLoading">
+            <div class="admin-requests-list" *ngIf="activationRequestsUi.length; else noActivationRequests">
+              <mat-card *ngFor="let r of activationRequestsUi" class="admin-request-row" appearance="outlined">
+                <div class="admin-request-row__inner">
+                  <p class="admin-request-row__text">
+                    {{ 'admin.requestActivateLine' | translate: { name: r.displayName } }}
+                  </p>
+                  <div class="admin-request-row__actions">
+                    <button
+                      mat-stroked-button
+                      type="button"
+                      class="admin-request-btn admin-request-btn--accept"
+                      color="primary"
+                      [disabled]="activationRequestRowBusy(r.requestId)"
+                      [attr.aria-label]="'admin.requestAcceptAria' | translate: { name: r.displayName }"
+                      (click)="onActivationRequestAccept(r)">
+                      {{ 'admin.requestAccept' | translate }}
+                    </button>
+                    <button
+                      mat-stroked-button
+                      type="button"
+                      class="admin-request-btn admin-request-btn--deny"
+                      [disabled]="activationRequestRowBusy(r.requestId)"
+                      [attr.aria-label]="'admin.requestDenyAria' | translate: { name: r.displayName }"
+                      (click)="onActivationRequestDeny(r)">
+                      {{ 'admin.requestDeny' | translate }}
+                    </button>
+                  </div>
+                </div>
+              </mat-card>
+            </div>
+            <ng-template #noActivationRequests>
+              <mat-card class="admin-requests-empty" appearance="outlined">
+                <mat-icon class="admin-requests-empty__icon" color="primary">inbox</mat-icon>
+                <h3>{{ 'admin.requestsEmptyTitle' | translate }}</h3>
+                <p>{{ 'admin.requestsEmptyHint' | translate }}</p>
+              </mat-card>
+            </ng-template>
+          </div>
+        </div>
+      </div>
+    </ng-container>
   </section>
 </div>
 
-<div class="overlay" *ngIf="selectedAdminDeleteExpense !== null" (click)="closeAdminDeleteDialog()">
+<div class="overlay" appModalScrollLock *ngIf="selectedAdminDeleteExpense !== null" (click)="closeAdminDeleteDialog()">
   <mat-card class="modal-card" (click)="$event.stopPropagation()">
     <button type="button" class="close-btn" (click)="closeAdminDeleteDialog()">✖</button>
     <h3>{{ 'admin.deleteExpense' | translate }}</h3>
@@ -717,7 +1084,7 @@
   </mat-card>
 </div>
 
-<div class="overlay" *ngIf="isExpenseFormModalOpen" (click)="closeExpenseFormModal()">
+<div class="overlay" appModalScrollLock *ngIf="isExpenseFormModalOpen" (click)="closeExpenseFormModal()">
   <mat-card class="modal-card form-modal expense-form-modal-card" (click)="$event.stopPropagation()">
     <app-expense-form-modal
       [categories]="categories"
@@ -745,7 +1112,7 @@
   </button>
 </div>
 
-<div class="overlay admin-ai-chat-overlay" *ngIf="isAiChatModalOpen" (click)="closeAiChatModal()">
+<div class="overlay admin-ai-chat-overlay" appModalScrollLock *ngIf="isAiChatModalOpen" (click)="closeAiChatModal()">
   <mat-card class="admin-ai-chat-card" role="dialog" aria-labelledby="ai-chat-title" (click)="$event.stopPropagation()">
     <div class="admin-ai-chat-accent" aria-hidden="true"></div>
     <button type="button" class="close-btn admin-ai-chat-close" [attr.aria-label]="'admin.aiCloseChatAria' | translate" (click)="closeAiChatModal()">✖</button>
@@ -815,7 +1182,7 @@
   </mat-card>
 </div>
 
-<div class="overlay" *ngIf="isAiSummaryOpen" (click)="closeAiSummary()">
+<div class="overlay" appModalScrollLock *ngIf="isAiSummaryOpen" (click)="closeAiSummary()">
   <mat-card class="modal-card modal-card--wide" (click)="$event.stopPropagation()">
     <button type="button" class="close-btn" (click)="closeAiSummary()">✖</button>
     <h3>{{ 'admin.aiSummary' | translate }}</h3>
@@ -825,7 +1192,7 @@
   </mat-card>
 </div>
 
-<div class="overlay" *ngIf="isReportModalOpen" (click)="closeReportModal()">
+<div class="overlay" appModalScrollLock *ngIf="isReportModalOpen" (click)="closeReportModal()">
   <mat-card class="modal-card modal-card--wide" (click)="$event.stopPropagation()">
     <button type="button" class="close-btn" (click)="closeReportModal()">✖</button>
     <h3>{{ 'admin.downloadReport' | translate }}</h3>
@@ -859,7 +1226,7 @@
   </mat-card>
 </div>
 
-<div class="overlay" *ngIf="isAddBudgetModalOpen" (click)="closeAddBudgetModal()">
+<div class="overlay" appModalScrollLock *ngIf="isAddBudgetModalOpen" (click)="closeAddBudgetModal()">
   <mat-card
     class="modal-card modal-card--wide form-modal add-budget-modal-card"
     role="dialog"
@@ -908,7 +1275,7 @@
   </mat-card>
 </div>
 
-<div class="overlay" *ngIf="isEditBudgetModalOpen" (click)="closeEditBudgetModal()">
+<div class="overlay" appModalScrollLock *ngIf="isEditBudgetModalOpen" (click)="closeEditBudgetModal()">
   <mat-card class="modal-card modal-card--wide form-modal add-budget-modal-card" (click)="$event.stopPropagation()">
     <button type="button" class="close-btn" [attr.aria-label]="'admin.closeAria' | translate" (click)="closeEditBudgetModal()">✖</button>
     <header class="add-budget-modal-card__header">
@@ -949,7 +1316,43 @@
   </mat-card>
 </div>
 
-<div class="overlay" *ngIf="selectedBudgetDeleteRow !== null" (click)="closeBudgetDeleteDialog()">
+<div class="overlay" appModalScrollLock *ngIf="isCategoryEditModalOpen" (click)="closeCategoryEditModal()">
+  <mat-card class="modal-card modal-card--wide form-modal add-budget-modal-card" (click)="$event.stopPropagation()">
+    <button type="button" class="close-btn" [attr.aria-label]="'admin.closeAria' | translate" (click)="closeCategoryEditModal()">✖</button>
+    <header class="add-budget-modal-card__header">
+      <h2 class="add-budget-modal-card__title">{{ 'admin.categoryEditTitle' | translate }}</h2>
+      <p class="add-budget-modal-card__subtitle">{{ 'admin.categoryEditSubtitle' | translate }}</p>
+    </header>
+    <form class="add-budget-modal-card__form" [formGroup]="categoryEditForm" (ngSubmit)="submitCategoryEdit()">
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>{{ 'admin.categoryName' | translate }}</mat-label>
+        <input matInput formControlName="name" />
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>{{ 'admin.description' | translate }}</mat-label>
+        <input matInput formControlName="description" />
+      </mat-form-field>
+      <div class="modal-actions modal-actions--start">
+        <button mat-stroked-button type="button" (click)="closeCategoryEditModal()">{{ 'admin.cancel' | translate }}</button>
+        <button mat-raised-button color="primary" type="submit">{{ 'admin.saveChanges' | translate }}</button>
+      </div>
+    </form>
+  </mat-card>
+</div>
+
+<div class="overlay" appModalScrollLock *ngIf="categoryForDelete !== null" (click)="closeCategoryDeleteDialog()">
+  <mat-card class="modal-card" (click)="$event.stopPropagation()">
+    <button type="button" class="close-btn" (click)="closeCategoryDeleteDialog()">✖</button>
+    <h3>{{ 'admin.deleteCategoryTitle' | translate }}</h3>
+    <p>{{ categoryDeleteConfirmText() }}</p>
+    <div class="modal-actions">
+      <button mat-stroked-button type="button" (click)="closeCategoryDeleteDialog()">{{ 'admin.cancel' | translate }}</button>
+      <button mat-raised-button color="primary" type="button" (click)="confirmCategoryDelete()">{{ 'admin.archiveCategoryConfirmBtn' | translate }}</button>
+    </div>
+  </mat-card>
+</div>
+
+<div class="overlay" appModalScrollLock *ngIf="selectedBudgetDeleteRow !== null" (click)="closeBudgetDeleteDialog()">
   <mat-card class="modal-card" (click)="$event.stopPropagation()">
     <button type="button" class="close-btn" (click)="closeBudgetDeleteDialog()">✖</button>
     <h3>{{ 'admin.deleteBudget' | translate }}</h3>
@@ -961,7 +1364,7 @@
   </mat-card>
 </div>
 
-<div class="overlay" *ngIf="isBudgetDescriptionModalOpen" (click)="closeBudgetDescriptionModal()">
+<div class="overlay" appModalScrollLock *ngIf="isBudgetDescriptionModalOpen" (click)="closeBudgetDescriptionModal()">
   <mat-card class="modal-card modal-card--wide" (click)="$event.stopPropagation()">
     <button type="button" class="close-btn" [attr.aria-label]="'admin.closeAria' | translate" (click)="closeBudgetDescriptionModal()">✖</button>
     <h3>{{ 'admin.descriptionModalTitle' | translate }}</h3>

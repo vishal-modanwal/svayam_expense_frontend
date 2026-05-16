@@ -17,7 +17,10 @@ export class AuthInterceptor implements HttpInterceptor {
     if (this.isStaticAssetRequest(req)) {
       return next.handle(req);
     }
-    this.loaderService.show();
+    const skipLoader = this.skipGlobalLoaderForRequest(req);
+    if (!skipLoader) {
+      this.loaderService.show();
+    }
     const token = this.authService.getToken();
     const request = token
       ? req.clone({
@@ -37,8 +40,17 @@ export class AuthInterceptor implements HttpInterceptor {
         }
         return throwError(() => error);
       }),
-      finalize(() => this.loaderService.hide())
+      finalize(() => {
+        if (!skipLoader) {
+          this.loaderService.hide();
+        }
+      })
     );
+  }
+
+  /** Receipt scan prefill only — modal shows inline state; keep full-screen loader for real saves. */
+  private skipGlobalLoaderForRequest(req: HttpRequest<unknown>): boolean {
+    return req.method === 'POST' && req.url.includes('/expense/scan-receipt');
   }
 
   private isStaticAssetRequest(req: HttpRequest<unknown>): boolean {

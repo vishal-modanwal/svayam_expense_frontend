@@ -161,7 +161,7 @@
   </div>
 </div>
 
-<div class="overlay overlay--sheet" *ngIf="isExpenseFormModalOpen" (click)="closeExpenseFormModal()">
+<div class="overlay overlay--sheet" appModalScrollLock *ngIf="isExpenseFormModalOpen" (click)="closeExpenseFormModal()">
   <mat-card class="modal-card form-modal expense-form-modal-card" (click)="$event.stopPropagation()">
     <app-expense-form-modal
       [categories]="categories"
@@ -172,7 +172,7 @@
   </mat-card>
 </div>
 
-<div class="overlay overlay--dialog" *ngIf="selectedNote !== null" (click)="closeNotes()">
+<div class="overlay overlay--dialog" appModalScrollLock *ngIf="selectedNote !== null" (click)="closeNotes()">
   <mat-card class="modal-card modal-card--dialog" (click)="$event.stopPropagation()">
     <button type="button" class="close-btn" (click)="closeNotes()">✖</button>
     <h3>{{ 'user.notes' | translate }}</h3>
@@ -180,7 +180,7 @@
   </mat-card>
 </div>
 
-<div class="overlay overlay--dialog" *ngIf="selectedDeleteExpense !== null" (click)="closeDeleteDialog()">
+<div class="overlay overlay--dialog" appModalScrollLock *ngIf="selectedDeleteExpense !== null" (click)="closeDeleteDialog()">
   <mat-card class="modal-card modal-card--dialog" (click)="$event.stopPropagation()">
     <button type="button" class="close-btn" (click)="closeDeleteDialog()">✖</button>
     <h3>{{ 'user.deleteExpense' | translate }}</h3>
@@ -192,7 +192,7 @@
   </mat-card>
 </div>
 
-<div class="overlay overlay--dialog" *ngIf="isAiSummaryOpen" (click)="closeAiSummary()">
+<div class="overlay overlay--dialog" appModalScrollLock *ngIf="isAiSummaryOpen" (click)="closeAiSummary()">
   <mat-card class="modal-card modal-card--wide modal-card--dialog" (click)="$event.stopPropagation()">
     <button type="button" class="close-btn" (click)="closeAiSummary()">✖</button>
     <h3>{{ 'user.aiSummary' | translate }}</h3>
