@@ -57,6 +57,10 @@
   color: var(--text);
 }
 
+.hero-title-line1 {
+  display: block;
+}
+
 .highlight {
   display: inline;
   color: var(--primary);
@@ -64,6 +68,7 @@
 
 .hero-title-tail {
   display: inline;
+  white-space: nowrap;
 }
 
 .hero-title-with {
@@ -71,10 +76,11 @@
 }
 
 .hero-typewriter {
-  display: inline-block;
-  min-width: min(13ch, 100%);
+  display: inline;
+  min-width: 12ch;
   text-align: left;
   vertical-align: baseline;
+  white-space: nowrap;
 }
 
 .hero-typewriter__caret {
